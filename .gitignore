@@ -1,0 +1,13 @@
+.DS_Store
+.env
+.env.*
+application-local.properties
+application-secret.properties
+target/
+build/
+dist/
+node_modules/
+.idea/
+.vscode/
+*.log
+*.class
