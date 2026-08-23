@@ -33,11 +33,14 @@
         <p class="eyebrow">Catalogue</p>
         <h2>Publications disponibles</h2>
       </div>
-      <input type="search" [(ngModel)]="search" placeholder="Rechercher un titre, auteur ou mot-clé" />
+      <input type="search" [(ngModel)]="search" (ngModelChange)="loadPublications()" placeholder="Rechercher un titre, auteur ou mot-clé" />
     </div>
 
+    <p class="notice" *ngIf="loading">Chargement du catalogue...</p>
+    <p class="notice" *ngIf="message">{{ message }}</p>
+
     <div class="publication-list">
-      <article class="publication-card" *ngFor="let publication of filteredPublications">
+      <article class="publication-card" *ngFor="let publication of publications">
         <div>
           <h3>{{ publication.title }}</h3>
           <p>{{ publication.author }} · {{ publication.institution }} · {{ publication.year }}</p>
@@ -86,6 +89,10 @@
       <label>
         Institution
         <input name="institution" [(ngModel)]="registerForm.institution" placeholder="Institution A" />
+      </label>
+      <label>
+        Mot de passe
+        <input name="registerPassword" type="password" [(ngModel)]="registerForm.password" />
       </label>
       <button class="primary" type="submit">Créer le compte</button>
     </form>

@@ -1,27 +1,10 @@
 import { CommonModule } from '@angular/common';
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
+import { ApiService, Publication, UserSession } from './api.service';
+
 type Page = 'catalogue' | 'connexion' | 'inscription' | 'profil';
-
-interface Publication {
-  title: string;
-  author: string;
-  institution: string;
-  year: number;
-  status: string;
-  visibility: 'PUBLIC' | 'INSTITUTION';
-  keywords: string[];
-}
-
-interface UserSession {
-  firstName: string;
-  lastName: string;
-  email: string;
-  role: string;
-  institution: string;
-  status: 'ACTIF' | 'DESACTIVE';
-}
 
 @Component({
   selector: 'app-root',
@@ -30,105 +13,83 @@ interface UserSession {
   templateUrl: './app.component.html',
   styleUrl: './app.component.css'
 })
-export class AppComponent {
+export class AppComponent implements OnInit {
   page: Page = 'catalogue';
   search = '';
   deletionRequested = false;
+  loading = false;
+  message = '';
 
   loginForm = {
     email: 'sarah@institution-a.example',
-    password: ''
+    password: 'MotDePasse123'
   };
 
   registerForm = {
     firstName: '',
     lastName: '',
     email: '',
-    institution: ''
+    institution: '',
+    password: ''
   };
 
   session: UserSession | null = null;
+  token = '';
+  publications: Publication[] = [];
 
-  publications: Publication[] = [
-    {
-      title: 'Analyse automatique des métadonnées pour les dépôts institutionnels',
-      author: 'Sarah Lemaire',
-      institution: 'Institution A',
-      year: 2026,
-      status: 'PUBLIE',
-      visibility: 'PUBLIC',
-      keywords: ['Dublin Core', 'métadonnées', 'recherche']
-    },
-    {
-      title: 'Validation humaine des suggestions produites par un modèle de langage',
-      author: 'Jan Peeters',
-      institution: 'Institution B',
-      year: 2025,
-      status: 'A_VALIDER',
-      visibility: 'INSTITUTION',
-      keywords: ['validation', 'catalogage', 'qualité']
-    },
-    {
-      title: 'Indexation multilingue de publications scientifiques',
-      author: 'Mina Laurent',
-      institution: 'Institution A',
-      year: 2024,
-      status: 'PUBLIE',
-      visibility: 'PUBLIC',
-      keywords: ['indexation', 'recherche', 'multilingue']
-    }
-  ];
+  constructor(private readonly api: ApiService) {}
 
-  get filteredPublications(): Publication[] {
-    const value = this.search.trim().toLowerCase();
-
-    if (!value) {
-      return this.publications;
-    }
-
-    return this.publications.filter((publication) =>
-      [
-        publication.title,
-        publication.author,
-        publication.institution,
-        publication.status,
-        publication.visibility,
-        ...publication.keywords
-      ]
-        .join(' ')
-        .toLowerCase()
-        .includes(value)
-    );
+  ngOnInit(): void {
+    this.loadPublications();
   }
 
   navigate(page: Page): void {
     this.page = page;
   }
 
+  loadPublications(): void {
+    this.loading = true;
+    this.api.getPublications(this.search).subscribe({
+      next: (publications) => {
+        this.publications = publications;
+        this.loading = false;
+        this.message = '';
+      },
+      error: () => {
+        this.loading = false;
+        this.message = "Impossible de joindre l'API locale.";
+      }
+    });
+  }
+
   login(): void {
-    this.session = {
-      firstName: 'Sarah',
-      lastName: 'Lemaire',
-      email: this.loginForm.email || 'sarah@institution-a.example',
-      role: 'Bibliothécaire',
-      institution: 'Institution A',
-      status: 'ACTIF'
-    };
-    this.deletionRequested = false;
-    this.page = 'profil';
+    this.api.login(this.loginForm).subscribe({
+      next: (response) => {
+        this.token = response.token;
+        this.session = response.user;
+        this.deletionRequested = false;
+        this.message = '';
+        this.page = 'profil';
+      },
+      error: () => {
+        this.message = 'Connexion impossible avec les donnees envoyees.';
+      }
+    });
   }
 
   register(): void {
-    this.session = {
-      firstName: this.registerForm.firstName || 'Nouveau',
-      lastName: this.registerForm.lastName || 'Bibliothécaire',
-      email: this.registerForm.email || 'nouveau@institution-a.example',
-      role: 'Bibliothécaire',
-      institution: this.registerForm.institution || 'Institution A',
-      status: 'ACTIF'
-    };
-    this.deletionRequested = false;
-    this.page = 'profil';
+    this.api.register(this.registerForm).subscribe({
+      next: (response) => {
+        this.token = response.token;
+        this.session = response.user;
+        this.deletionRequested = false;
+        this.message = '';
+        this.page = 'profil';
+      },
+      error: () => {
+        this.message = "Creation du compte impossible avec les donnees envoyees.";
+      }
+    });
   }
 
   requestDeletion(): void {
@@ -136,15 +97,21 @@ export class AppComponent {
       return;
     }
 
-    this.session = {
-      ...this.session,
-      status: 'DESACTIVE'
-    };
-    this.deletionRequested = true;
+    this.api.requestAccountDeletion(this.session.id).subscribe({
+      next: (user) => {
+        this.session = user;
+        this.deletionRequested = true;
+        this.message = '';
+      },
+      error: () => {
+        this.message = 'Demande de suppression impossible.';
+      }
+    });
   }
 
   logout(): void {
     this.session = null;
+    this.token = '';
     this.deletionRequested = false;
     this.page = 'catalogue';
   }
