@@ -9,6 +9,10 @@ Metamind est une plateforme web destinée aux dépôts institutionnels académiq
 - `database/` : scripts et dumps de base de données
 - `docs/` : documentation technique et livrables du projet
 
+## Documentation API
+
+Le contrat OpenAPI est disponible dans `docs/openapi.yaml`. Il decrit les endpoints REST exposes en version `/api/v1`.
+
 ## Deploiement
 
 Le deploiement prevu utilise Docker Compose avec PostgreSQL, le backend Spring Boot, le frontend Angular servi par Nginx et Caddy pour HTTPS.

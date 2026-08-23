@@ -1,0 +1,386 @@
+openapi: 3.0.3
+info:
+  title: Metamind API
+  version: 0.2.0
+  description: API REST de Metamind pour la gestion de publications institutionnelles, de comptes utilisateurs, de credits et d'extraction de metadonnees.
+servers:
+  - url: https://metamind-app.duckdns.org/api/v1
+    description: Serveur de production prevu
+  - url: http://localhost:8080/api/v1
+    description: Serveur local
+tags:
+  - name: Health
+  - name: Auth
+  - name: Publications
+  - name: Institutions
+  - name: Users
+  - name: Credits
+  - name: Extraction
+paths:
+  /health:
+    get:
+      tags: [Health]
+      summary: Verifier l'etat de l'API
+      responses:
+        "200":
+          description: API disponible
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Connecter un utilisateur
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "200":
+          description: Connexion reussie
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "401":
+          description: Identifiants invalides
+  /auth/register:
+    post:
+      tags: [Auth]
+      summary: Inscrire un bibliothecaire
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterRequest"
+      responses:
+        "200":
+          description: Inscription reussie
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+  /publications:
+    get:
+      tags: [Publications]
+      summary: Lister les publications du catalogue
+      parameters:
+        - name: search
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Liste des publications
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Publication"
+    post:
+      tags: [Publications]
+      summary: Creer une publication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreatePublicationRequest"
+      responses:
+        "201":
+          description: Publication creee
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Publication"
+  /publications/{id}:
+    get:
+      tags: [Publications]
+      summary: Consulter une publication
+      parameters:
+        - $ref: "#/components/parameters/id"
+      responses:
+        "200":
+          description: Publication trouvee
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Publication"
+        "404":
+          description: Publication introuvable
+  /publications/{publicationId}/extraction:
+    post:
+      tags: [Extraction]
+      summary: Lancer une extraction de metadonnees
+      parameters:
+        - name: publicationId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: userId
+          in: query
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: Metadonnees suggerees
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MetadataExtraction"
+        "402":
+          description: Solde de credits insuffisant
+  /institutions:
+    get:
+      tags: [Institutions]
+      summary: Lister les institutions
+      responses:
+        "200":
+          description: Liste des institutions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Institution"
+    post:
+      tags: [Institutions]
+      summary: Creer une institution
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateInstitutionRequest"
+      responses:
+        "201":
+          description: Institution creee
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Institution"
+  /institutions/{id}:
+    delete:
+      tags: [Institutions]
+      summary: Desactiver une institution
+      parameters:
+        - $ref: "#/components/parameters/id"
+      responses:
+        "200":
+          description: Institution desactivee
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Institution"
+  /users/{id}/profile:
+    get:
+      tags: [Users]
+      summary: Consulter son profil
+      parameters:
+        - $ref: "#/components/parameters/id"
+      responses:
+        "200":
+          description: Profil utilisateur
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+    put:
+      tags: [Users]
+      summary: Modifier son profil
+      parameters:
+        - $ref: "#/components/parameters/id"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateProfileRequest"
+      responses:
+        "200":
+          description: Profil modifie
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+  /users/{id}:
+    delete:
+      tags: [Users]
+      summary: Demander la suppression logique du compte
+      parameters:
+        - $ref: "#/components/parameters/id"
+      responses:
+        "200":
+          description: Compte desactive
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+  /users/{userId}/credits:
+    get:
+      tags: [Credits]
+      summary: Consulter le solde de credits
+      parameters:
+        - $ref: "#/components/parameters/userId"
+      responses:
+        "200":
+          description: Solde de credits
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreditBalance"
+  /users/{userId}/credits/purchase:
+    post:
+      tags: [Credits]
+      summary: Acheter des credits
+      parameters:
+        - $ref: "#/components/parameters/userId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreditPurchaseRequest"
+      responses:
+        "200":
+          description: Solde mis a jour
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreditBalance"
+components:
+  parameters:
+    id:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+    userId:
+      name: userId
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+  schemas:
+    HealthResponse:
+      type: object
+      properties:
+        status: { type: string, example: UP }
+        service: { type: string, example: metamind-backend }
+        timestamp: { type: string, format: date-time }
+    AuthResponse:
+      type: object
+      properties:
+        token: { type: string }
+        user:
+          $ref: "#/components/schemas/User"
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email: { type: string, format: email, example: sarah@institution-a.example }
+        password: { type: string, format: password, example: "558435" }
+    RegisterRequest:
+      type: object
+      required: [firstName, lastName, email, institution, password]
+      properties:
+        firstName: { type: string, example: Sarah }
+        lastName: { type: string, example: Lemaire }
+        email: { type: string, format: email, example: sarah@institution-a.example }
+        institution: { type: string, example: Institution A }
+        password: { type: string, format: password, example: "558435" }
+    User:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        firstName: { type: string }
+        lastName: { type: string }
+        email: { type: string, format: email }
+        role: { type: string, example: Bibliothecaire }
+        institution: { type: string, example: Institution A }
+        status: { type: string, enum: [ACTIF, DESACTIVE] }
+    UpdateProfileRequest:
+      type: object
+      required: [firstName, lastName, institution]
+      properties:
+        firstName: { type: string }
+        lastName: { type: string }
+        institution: { type: string }
+    Publication:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        title: { type: string }
+        author: { type: string }
+        institution: { type: string }
+        year: { type: integer }
+        status: { type: string, enum: [EN_ATTENTE, EXTRACTION, A_VALIDER, PUBLIE, SUPPRIME] }
+        visibility: { type: string, enum: [PUBLIC, INSTITUTION] }
+        keywords:
+          type: array
+          items:
+            type: string
+    CreatePublicationRequest:
+      type: object
+      required: [title, author, institution, year, visibility, keywords]
+      properties:
+        title: { type: string, example: Analyse automatique des metadonnees }
+        author: { type: string, example: Sarah Lemaire }
+        institution: { type: string, example: Institution A }
+        year: { type: integer, example: 2026 }
+        visibility: { type: string, enum: [PUBLIC, INSTITUTION] }
+        keywords:
+          type: array
+          items:
+            type: string
+    Institution:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        code: { type: string, example: INST-A }
+        name: { type: string, example: Institution A }
+        emailDomain: { type: string, example: institution-a.example }
+        active: { type: boolean }
+    CreateInstitutionRequest:
+      type: object
+      required: [code, name, emailDomain]
+      properties:
+        code: { type: string, example: INST-A }
+        name: { type: string, example: Institution A }
+        emailDomain: { type: string, example: institution-a.example }
+    CreditBalance:
+      type: object
+      properties:
+        institutionId: { type: integer, format: int64 }
+        institution: { type: string, example: Institution A }
+        balance: { type: integer, example: 12 }
+    CreditPurchaseRequest:
+      type: object
+      required: [amount]
+      properties:
+        amount: { type: integer, minimum: 1, example: 20 }
+    MetadataExtraction:
+      type: object
+      properties:
+        publicationId: { type: integer, format: int64 }
+        title: { type: string }
+        suggestedTitle: { type: string }
+        suggestedAuthor: { type: string }
+        suggestedKeywords:
+          type: array
+          items:
+            type: string
+        creditBalance: { type: integer }
