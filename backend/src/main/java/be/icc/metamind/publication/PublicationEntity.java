@@ -88,4 +88,9 @@ public class PublicationEntity {
 	public InstitutionEntity getInstitution() {
 		return institution;
 	}
+
+	public void markExtractionCompleted(String keywordsText) {
+		this.status = PublicationStatus.A_VALIDER;
+		this.keywordsText = keywordsText;
+	}
 }

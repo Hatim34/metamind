@@ -73,6 +73,10 @@ public class InstitutionEntity {
 		creditBalance += amount;
 	}
 
+	public boolean hasCredits() {
+		return creditBalance > 0;
+	}
+
 	public void consumeCredit() {
 		creditBalance -= 1;
 	}
