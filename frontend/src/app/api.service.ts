@@ -87,7 +87,7 @@ export interface CreatePublicationRequest {
 
 @Injectable({ providedIn: 'root' })
 export class ApiService {
-  private readonly baseUrl = 'http://localhost:8080/api/v1';
+  private readonly baseUrl = this.resolveBaseUrl();
 
   constructor(private readonly http: HttpClient) {}
 
@@ -139,5 +139,12 @@ export class ApiService {
 
   requestAccountDeletion(userId: number): Observable<UserSession> {
     return this.http.delete<UserSession>(`${this.baseUrl}/users/${userId}`);
+  }
+
+  private resolveBaseUrl(): string {
+    if (globalThis.location?.origin === 'http://localhost:4200') {
+      return 'http://localhost:8080/api/v1';
+    }
+    return '/api/v1';
   }
 }

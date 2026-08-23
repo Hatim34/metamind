@@ -1,0 +1,57 @@
+services:
+  database:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-metamind}
+      POSTGRES_USER: ${POSTGRES_USER:-metamind}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-metamind} -d ${POSTGRES_DB:-metamind}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+    restart: unless-stopped
+    environment:
+      METAMIND_DATABASE_URL: jdbc:postgresql://database:5432/${POSTGRES_DB:-metamind}
+      METAMIND_DATABASE_USERNAME: ${POSTGRES_USER:-metamind}
+      METAMIND_DATABASE_PASSWORD: ${POSTGRES_PASSWORD}
+      METAMIND_JPA_DDL_AUTO: update
+      METAMIND_H2_CONSOLE: "false"
+      METAMIND_SEED_DATA: "true"
+    depends_on:
+      database:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      METAMIND_DOMAIN: ${METAMIND_DOMAIN:-metamind-app.duckdns.org}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - frontend
+
+volumes:
+  postgres_data:
+  caddy_data:
+  caddy_config:

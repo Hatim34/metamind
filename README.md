@@ -8,3 +8,26 @@ Metamind est une plateforme web destinée aux dépôts institutionnels académiq
 - `frontend/` : application Angular
 - `database/` : scripts et dumps de base de données
 - `docs/` : documentation technique et livrables du projet
+
+## Deploiement
+
+Le deploiement prevu utilise Docker Compose avec PostgreSQL, le backend Spring Boot, le frontend Angular servi par Nginx et Caddy pour HTTPS.
+
+Fichiers principaux :
+
+- `docker-compose.yml`
+- `Caddyfile`
+- `.env.example`
+- `backend/Dockerfile`
+- `frontend/Dockerfile`
+- `frontend/nginx.conf`
+
+Commandes serveur :
+
+```bash
+cp .env.example .env
+docker compose up -d --build
+docker compose ps
+```
+
+La variable `METAMIND_DOMAIN` doit rester sur `metamind-app.duckdns.org` pour le deploiement final. Le fichier `.env` contient les secrets de production et ne doit pas etre versionne.
