@@ -1,5 +1,6 @@
 package be.icc.metamind.publication;
 
+import java.util.Arrays;
 import java.util.List;
 
 public record PublicationResponse(
@@ -23,5 +24,25 @@ public record PublicationResponse(
 				publication.visibility(),
 				publication.keywords()
 		);
+	}
+
+	public static PublicationResponse from(PublicationEntity publication) {
+		return new PublicationResponse(
+				publication.getId(),
+				publication.getTitle(),
+				publication.getAuthor(),
+				publication.getInstitution().getName(),
+				publication.getYear(),
+				publication.getStatus(),
+				publication.getVisibility(),
+				splitKeywords(publication.getKeywordsText())
+		);
+	}
+
+	private static List<String> splitKeywords(String keywordsText) {
+		return Arrays.stream(keywordsText.split(","))
+				.map(String::trim)
+				.filter(keyword -> !keyword.isBlank())
+				.toList();
 	}
 }

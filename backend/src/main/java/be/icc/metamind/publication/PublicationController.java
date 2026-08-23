@@ -2,8 +2,6 @@ package be.icc.metamind.publication;
 
 import java.util.List;
 
-import be.icc.metamind.core.MetamindService;
-
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -13,9 +11,9 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/v1/publications")
 public class PublicationController {
-	private final MetamindService service;
+	private final PublicationService service;
 
-	public PublicationController(MetamindService service) {
+	public PublicationController(PublicationService service) {
 		this.service = service;
 	}
 

@@ -2,6 +2,10 @@ package be.icc.metamind.core;
 
 import be.icc.metamind.institution.InstitutionEntity;
 import be.icc.metamind.institution.InstitutionRepository;
+import be.icc.metamind.publication.PublicationEntity;
+import be.icc.metamind.publication.PublicationRepository;
+import be.icc.metamind.publication.PublicationStatus;
+import be.icc.metamind.publication.Visibility;
 import be.icc.metamind.user.UserEntity;
 import be.icc.metamind.user.PasswordService;
 import be.icc.metamind.user.UserRepository;
@@ -17,17 +21,20 @@ import org.springframework.transaction.annotation.Transactional;
 public class DataInitializer implements ApplicationRunner {
 	private final InstitutionRepository institutionRepository;
 	private final UserRepository userRepository;
+	private final PublicationRepository publicationRepository;
 	private final PasswordService passwordService;
 	private final boolean enabled;
 
 	public DataInitializer(
 			InstitutionRepository institutionRepository,
 			UserRepository userRepository,
+			PublicationRepository publicationRepository,
 			PasswordService passwordService,
 			@Value("${metamind.seed-data:true}") boolean enabled
 	) {
 		this.institutionRepository = institutionRepository;
 		this.userRepository = userRepository;
+		this.publicationRepository = publicationRepository;
 		this.passwordService = passwordService;
 		this.enabled = enabled;
 	}
@@ -35,17 +42,63 @@ public class DataInitializer implements ApplicationRunner {
 	@Override
 	@Transactional
 	public void run(ApplicationArguments args) {
-		if (!enabled || institutionRepository.count() > 0 || userRepository.count() > 0) {
+		if (!enabled) {
 			return;
 		}
 
-		InstitutionEntity institutionA = institutionRepository.save(new InstitutionEntity("INST-A", "Institution A", "institution-a.example"));
-		InstitutionEntity institutionB = institutionRepository.save(new InstitutionEntity("INST-B", "Institution B", "institution-b.example"));
-		InstitutionEntity platform = institutionRepository.save(new InstitutionEntity("META", "Metamind", "metamind.example"));
+		InstitutionEntity institutionA = findOrCreateInstitution("INST-A", "Institution A", "institution-a.example");
+		InstitutionEntity institutionB = findOrCreateInstitution("INST-B", "Institution B", "institution-b.example");
+		InstitutionEntity platform = findOrCreateInstitution("META", "Metamind", "metamind.example");
 
 		String password = passwordService.hash("MotDePasse123");
-		userRepository.save(new UserEntity("Sarah", "Lemaire", "sarah@institution-a.example", password, UserRole.BIBLIOTHECAIRE, institutionA));
-		userRepository.save(new UserEntity("Jan", "Peeters", "jan@institution-b.example", password, UserRole.BIBLIOTHECAIRE, institutionB));
-		userRepository.save(new UserEntity("Nadia", "Benali", "admin@metamind.example", password, UserRole.ADMINISTRATEUR, platform));
+		createUserIfMissing("Sarah", "Lemaire", "sarah@institution-a.example", password, UserRole.BIBLIOTHECAIRE, institutionA);
+		createUserIfMissing("Jan", "Peeters", "jan@institution-b.example", password, UserRole.BIBLIOTHECAIRE, institutionB);
+		createUserIfMissing("Nadia", "Benali", "admin@metamind.example", password, UserRole.ADMINISTRATEUR, platform);
+		createPublicationsIfMissing(institutionA, institutionB);
+	}
+
+	private InstitutionEntity findOrCreateInstitution(String code, String name, String emailDomain) {
+		return institutionRepository.findByCodeIgnoreCase(code)
+				.orElseGet(() -> institutionRepository.save(new InstitutionEntity(code, name, emailDomain)));
+	}
+
+	private void createUserIfMissing(String firstName, String lastName, String email, String password, UserRole role, InstitutionEntity institution) {
+		if (!userRepository.existsByEmailIgnoreCase(email)) {
+			userRepository.save(new UserEntity(firstName, lastName, email, password, role, institution));
+		}
+	}
+
+	private void createPublicationsIfMissing(InstitutionEntity institutionA, InstitutionEntity institutionB) {
+		if (publicationRepository.count() > 0) {
+			return;
+		}
+
+		publicationRepository.save(new PublicationEntity(
+				"Analyse automatique des metadonnees pour les depots institutionnels",
+				"Sarah Lemaire",
+				2026,
+				PublicationStatus.PUBLIE,
+				Visibility.PUBLIC,
+				"Dublin Core,metadonnees,recherche",
+				institutionA
+		));
+		publicationRepository.save(new PublicationEntity(
+				"Validation humaine des suggestions produites par un modele de langage",
+				"Jan Peeters",
+				2025,
+				PublicationStatus.A_VALIDER,
+				Visibility.INSTITUTION,
+				"validation,catalogage,qualite",
+				institutionB
+		));
+		publicationRepository.save(new PublicationEntity(
+				"Indexation multilingue de publications scientifiques",
+				"Mina Laurent",
+				2024,
+				PublicationStatus.PUBLIE,
+				Visibility.PUBLIC,
+				"indexation,recherche,multilingue",
+				institutionA
+		));
 	}
 }

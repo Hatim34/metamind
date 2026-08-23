@@ -11,6 +11,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import be.icc.metamind.institution.InstitutionEntity;
 import be.icc.metamind.institution.InstitutionRepository;
+import be.icc.metamind.publication.PublicationEntity;
+import be.icc.metamind.publication.PublicationRepository;
+import be.icc.metamind.publication.PublicationStatus;
+import be.icc.metamind.publication.Visibility;
 import be.icc.metamind.user.PasswordService;
 import be.icc.metamind.user.UserEntity;
 import be.icc.metamind.user.UserRepository;
@@ -37,6 +41,9 @@ class ApiControllerTests {
 	private UserRepository userRepository;
 
 	@Autowired
+	private PublicationRepository publicationRepository;
+
+	@Autowired
 	private PasswordService passwordService;
 
 	@BeforeEach
@@ -53,6 +60,15 @@ class ApiControllerTests {
 				"sarah@institution-a.example",
 				passwordService.hash("MotDePasse123"),
 				UserRole.BIBLIOTHECAIRE,
+				institution
+		));
+		publicationRepository.save(new PublicationEntity(
+				"Analyse automatique des metadonnees pour les depots institutionnels",
+				"Sarah Lemaire",
+				2026,
+				PublicationStatus.PUBLIE,
+				Visibility.PUBLIC,
+				"Dublin Core,metadonnees,recherche",
 				institution
 		));
 	}
