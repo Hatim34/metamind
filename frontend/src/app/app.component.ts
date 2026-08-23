@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 
 import { ApiService, Publication, UserSession } from './api.service';
 
-type Page = 'catalogue' | 'connexion' | 'inscription' | 'profil';
+type Page = 'catalogue' | 'connexion' | 'inscription' | 'profil' | 'publication';
 
 @Component({
   selector: 'app-root',
@@ -31,6 +31,14 @@ export class AppComponent implements OnInit {
     email: '',
     institution: '',
     password: ''
+  };
+
+  publicationForm = {
+    title: '',
+    author: '',
+    year: new Date().getFullYear(),
+    visibility: 'PUBLIC' as 'PUBLIC' | 'INSTITUTION',
+    keywords: ''
   };
 
   session: UserSession | null = null;
@@ -88,6 +96,37 @@ export class AppComponent implements OnInit {
       },
       error: () => {
         this.message = "Creation du compte impossible avec les donnees envoyees.";
+      }
+    });
+  }
+
+  createPublication(): void {
+    if (!this.session) {
+      this.message = 'Connectez-vous pour ajouter une publication.';
+      return;
+    }
+
+    this.api.createPublication({
+      title: this.publicationForm.title,
+      author: this.publicationForm.author,
+      institution: this.session.institution,
+      year: this.publicationForm.year,
+      visibility: this.publicationForm.visibility,
+      keywords: this.publicationForm.keywords.split(',').map((keyword) => keyword.trim()).filter(Boolean)
+    }).subscribe({
+      next: () => {
+        this.publicationForm = {
+          title: '',
+          author: '',
+          year: new Date().getFullYear(),
+          visibility: 'PUBLIC',
+          keywords: ''
+        };
+        this.page = 'catalogue';
+        this.loadPublications();
+      },
+      error: () => {
+        this.message = "Creation de la publication impossible avec les donnees envoyees.";
       }
     });
   }

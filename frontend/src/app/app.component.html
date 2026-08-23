@@ -9,6 +9,7 @@
       <button type="button" [class.active]="page === 'connexion'" (click)="navigate('connexion')">Connexion</button>
       <button type="button" [class.active]="page === 'inscription'" (click)="navigate('inscription')">Inscription</button>
       <button type="button" [class.active]="page === 'profil'" (click)="navigate('profil')">Profil</button>
+      <button type="button" *ngIf="session" [class.active]="page === 'publication'" (click)="navigate('publication')">Nouvelle publication</button>
     </nav>
   </header>
 
@@ -52,6 +53,42 @@
         </div>
       </article>
     </div>
+  </section>
+
+  <section *ngIf="page === 'publication'" class="panel form-panel">
+    <p class="eyebrow">Publication</p>
+    <h2>Ajouter une publication</h2>
+
+    <form *ngIf="session; else publicationLoginRequired" (ngSubmit)="createPublication()">
+      <label>
+        Titre
+        <input name="publicationTitle" [(ngModel)]="publicationForm.title" />
+      </label>
+      <label>
+        Auteur
+        <input name="publicationAuthor" [(ngModel)]="publicationForm.author" />
+      </label>
+      <label>
+        Année
+        <input name="publicationYear" type="number" [(ngModel)]="publicationForm.year" />
+      </label>
+      <label>
+        Visibilité
+        <select name="publicationVisibility" [(ngModel)]="publicationForm.visibility">
+          <option value="PUBLIC">Public</option>
+          <option value="INSTITUTION">Institution seulement</option>
+        </select>
+      </label>
+      <label>
+        Mots-clés
+        <input name="publicationKeywords" [(ngModel)]="publicationForm.keywords" placeholder="Dublin Core, catalogage" />
+      </label>
+      <button class="primary" type="submit">Ajouter au catalogue</button>
+    </form>
+
+    <ng-template #publicationLoginRequired>
+      <p class="notice">Connectez-vous pour ajouter une publication.</p>
+    </ng-template>
   </section>
 
   <section *ngIf="page === 'connexion'" class="panel form-panel">

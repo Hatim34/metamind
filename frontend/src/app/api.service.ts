@@ -47,6 +47,15 @@ export interface UpdateProfileRequest {
   institution: string;
 }
 
+export interface CreatePublicationRequest {
+  title: string;
+  author: string;
+  institution: string;
+  year: number;
+  visibility: 'PUBLIC' | 'INSTITUTION';
+  keywords: string[];
+}
+
 @Injectable({ providedIn: 'root' })
 export class ApiService {
   private readonly baseUrl = 'http://localhost:8080/api/v1';
@@ -56,6 +65,10 @@ export class ApiService {
   getPublications(search = ''): Observable<Publication[]> {
     const params = search.trim() ? new HttpParams().set('search', search.trim()) : undefined;
     return this.http.get<Publication[]>(`${this.baseUrl}/publications`, { params });
+  }
+
+  createPublication(request: CreatePublicationRequest): Observable<Publication> {
+    return this.http.post<Publication>(`${this.baseUrl}/publications`, request);
   }
 
   login(request: LoginRequest): Observable<AuthResponse> {

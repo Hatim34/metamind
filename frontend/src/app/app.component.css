@@ -140,6 +140,15 @@ input {
   padding: 11px 12px;
 }
 
+select {
+  border: 1px solid #cad3dc;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #1d2835;
+  font: inherit;
+  padding: 11px 12px;
+}
+
 .publication-list {
   display: grid;
   gap: 12px;
