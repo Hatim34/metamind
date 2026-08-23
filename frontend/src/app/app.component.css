@@ -49,6 +49,17 @@ nav {
   gap: 8px;
 }
 
+.language-switch {
+  display: flex;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.language-switch button {
+  min-width: 44px;
+  padding: 8px 10px;
+}
+
 button {
   border: 1px solid #cad3dc;
   border-radius: 8px;
@@ -269,6 +280,10 @@ th {
   .publication-card {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .language-switch {
+    margin-left: 0;
   }
 
   .summary-grid,

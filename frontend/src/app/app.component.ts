@@ -5,6 +5,160 @@ import { FormsModule } from '@angular/forms';
 import { ApiService, Institution, MetadataExtraction, Publication, UserSession } from './api.service';
 
 type Page = 'catalogue' | 'connexion' | 'inscription' | 'profil' | 'publication' | 'administration';
+type Language = 'fr' | 'nl';
+
+const translations = {
+  fr: {
+    title: 'Gestion des métadonnées académiques',
+    catalogue: 'Catalogue',
+    login: 'Connexion',
+    register: 'Inscription',
+    profile: 'Profil',
+    newPublication: 'Nouvelle publication',
+    administration: 'Administration',
+    indicators: 'Indicateurs',
+    publications: 'Publications',
+    activeAccount: 'Compte actif',
+    yes: 'Oui',
+    no: 'Non',
+    status: 'Statut',
+    publicStatus: 'Public',
+    credits: 'Crédits',
+    availablePublications: 'Publications disponibles',
+    searchPlaceholder: 'Rechercher un titre, auteur ou mot-clé',
+    loadingCatalogue: 'Chargement du catalogue...',
+    addPublication: 'Ajouter une publication',
+    titleLabel: 'Titre',
+    author: 'Auteur',
+    year: 'Année',
+    visibility: 'Visibilité',
+    publicVisibility: 'Public',
+    institutionOnly: 'Institution seulement',
+    keywords: 'Mots-clés',
+    addToCatalogue: 'Ajouter au catalogue',
+    loginRequiredPublication: 'Connectez-vous pour ajouter une publication.',
+    librarianSpace: "Accéder à l'espace bibliothécaire",
+    email: 'Email',
+    password: 'Mot de passe',
+    signIn: 'Se connecter',
+    librarianAccount: 'Compte bibliothécaire',
+    adminAccount: 'Compte administrateur',
+    createLibrarianAccount: 'Créer un compte bibliothécaire',
+    firstName: 'Prénom',
+    lastName: 'Nom',
+    institution: 'Institution',
+    createAccount: 'Créer le compte',
+    userAccount: 'Compte utilisateur',
+    role: 'Rôle',
+    buyCredits: 'Acheter 10 crédits',
+    requestDeletion: 'Demander la suppression du compte',
+    logout: 'Se déconnecter',
+    saveProfile: 'Enregistrer le profil',
+    deletionRecorded: 'La demande est enregistrée. Le compte passe au statut DESACTIVE et sera traité selon les règles RGPD.',
+    profileUpdated: 'Le profil est mis à jour.',
+    loginRequiredProfile: 'Connectez-vous pour consulter votre profil.',
+    partnerInstitutions: 'Institutions partenaires',
+    code: 'Code',
+    name: 'Nom',
+    domain: 'Domaine email',
+    action: 'Action',
+    active: 'Active',
+    inactive: 'Inactive',
+    add: 'Ajouter',
+    deactivate: 'Désactiver',
+    adminRequired: 'Connectez-vous avec un compte administrateur.',
+    extract: 'Extraire',
+    apiUnavailable: "Impossible de joindre l'API locale.",
+    loginFailed: 'Connexion impossible avec les donnees envoyees.',
+    registerFailed: 'Creation du compte impossible avec les donnees envoyees.',
+    createPublicationFailed: 'Creation de la publication impossible avec les donnees envoyees.',
+    purchaseFailed: 'Achat de credits impossible.',
+    extractionFailed: 'Extraction impossible. Verifiez le solde de credits.',
+    updateProfileFailed: 'Modification du profil impossible.',
+    deletionFailed: 'Demande de suppression impossible.',
+    loadInstitutionsFailed: 'Chargement des institutions impossible.',
+    createInstitutionFailed: "Creation de l'institution impossible.",
+    deactivateInstitutionFailed: "Desactivation de l'institution impossible.",
+    extractedMetadataPrefix: 'Métadonnées extraites pour',
+    language: 'Langue'
+  },
+  nl: {
+    title: 'Beheer van academische metadata',
+    catalogue: 'Catalogus',
+    login: 'Aanmelden',
+    register: 'Registreren',
+    profile: 'Profiel',
+    newPublication: 'Nieuwe publicatie',
+    administration: 'Beheer',
+    indicators: 'Indicatoren',
+    publications: 'Publicaties',
+    activeAccount: 'Actieve account',
+    yes: 'Ja',
+    no: 'Nee',
+    status: 'Status',
+    publicStatus: 'Publiek',
+    credits: 'Credits',
+    availablePublications: 'Beschikbare publicaties',
+    searchPlaceholder: 'Zoek op titel, auteur of trefwoord',
+    loadingCatalogue: 'Catalogus wordt geladen...',
+    addPublication: 'Een publicatie toevoegen',
+    titleLabel: 'Titel',
+    author: 'Auteur',
+    year: 'Jaar',
+    visibility: 'Zichtbaarheid',
+    publicVisibility: 'Publiek',
+    institutionOnly: 'Alleen instelling',
+    keywords: 'Trefwoorden',
+    addToCatalogue: 'Toevoegen aan catalogus',
+    loginRequiredPublication: 'Meld u aan om een publicatie toe te voegen.',
+    librarianSpace: 'Toegang tot de bibliothecarisruimte',
+    email: 'E-mail',
+    password: 'Wachtwoord',
+    signIn: 'Aanmelden',
+    librarianAccount: 'Bibliothecarisaccount',
+    adminAccount: 'Beheerdersaccount',
+    createLibrarianAccount: 'Een bibliothecarisaccount maken',
+    firstName: 'Voornaam',
+    lastName: 'Naam',
+    institution: 'Instelling',
+    createAccount: 'Account maken',
+    userAccount: 'Gebruikersaccount',
+    role: 'Rol',
+    buyCredits: '10 credits kopen',
+    requestDeletion: 'Verwijdering van de account aanvragen',
+    logout: 'Afmelden',
+    saveProfile: 'Profiel opslaan',
+    deletionRecorded: 'De aanvraag is geregistreerd. De account krijgt de status DESACTIVE en wordt volgens de AVG-regels behandeld.',
+    profileUpdated: 'Het profiel is bijgewerkt.',
+    loginRequiredProfile: 'Meld u aan om uw profiel te bekijken.',
+    partnerInstitutions: 'Partnerinstellingen',
+    code: 'Code',
+    name: 'Naam',
+    domain: 'E-maildomein',
+    action: 'Actie',
+    active: 'Actief',
+    inactive: 'Inactief',
+    add: 'Toevoegen',
+    deactivate: 'Deactiveren',
+    adminRequired: 'Meld u aan met een beheerdersaccount.',
+    extract: 'Extraheren',
+    apiUnavailable: 'De lokale API is niet bereikbaar.',
+    loginFailed: 'Aanmelden is onmogelijk met de verzonden gegevens.',
+    registerFailed: 'Account aanmaken is onmogelijk met de verzonden gegevens.',
+    createPublicationFailed: 'Publicatie aanmaken is onmogelijk met de verzonden gegevens.',
+    purchaseFailed: 'Credits kopen is onmogelijk.',
+    extractionFailed: 'Extractie is onmogelijk. Controleer het creditsaldo.',
+    updateProfileFailed: 'Profiel wijzigen is onmogelijk.',
+    deletionFailed: 'Verwijderingsaanvraag is onmogelijk.',
+    loadInstitutionsFailed: 'Instellingen laden is onmogelijk.',
+    createInstitutionFailed: 'Instelling aanmaken is onmogelijk.',
+    deactivateInstitutionFailed: 'Instelling deactiveren is onmogelijk.',
+    extractedMetadataPrefix: 'Metadata geextraheerd voor',
+    language: 'Taal'
+  }
+} as const;
+
+type TranslationKey = keyof typeof translations.fr;
 
 @Component({
   selector: 'app-root',
@@ -15,6 +169,7 @@ type Page = 'catalogue' | 'connexion' | 'inscription' | 'profil' | 'publication'
 })
 export class AppComponent implements OnInit {
   page: Page = 'catalogue';
+  language: Language = 'fr';
   search = '';
   deletionRequested = false;
   loading = false;
@@ -79,6 +234,14 @@ export class AppComponent implements OnInit {
     }
   }
 
+  setLanguage(language: Language): void {
+    this.language = language;
+  }
+
+  t(key: TranslationKey): string {
+    return translations[this.language][key];
+  }
+
   loadPublications(): void {
     this.loading = true;
     this.api.getPublications(this.search).subscribe({
@@ -89,7 +252,7 @@ export class AppComponent implements OnInit {
       },
       error: () => {
         this.loading = false;
-        this.message = "Impossible de joindre l'API locale.";
+        this.message = this.t('apiUnavailable');
       }
     });
   }
@@ -110,7 +273,7 @@ export class AppComponent implements OnInit {
         }
       },
       error: () => {
-        this.message = 'Connexion impossible avec les donnees envoyees.';
+        this.message = this.t('loginFailed');
       }
     });
   }
@@ -128,7 +291,7 @@ export class AppComponent implements OnInit {
         this.loadCredits();
       },
       error: () => {
-        this.message = "Creation du compte impossible avec les donnees envoyees.";
+        this.message = this.t('registerFailed');
       }
     });
   }
@@ -146,7 +309,7 @@ export class AppComponent implements OnInit {
 
   createPublication(): void {
     if (!this.session) {
-      this.message = 'Connectez-vous pour ajouter une publication.';
+      this.message = this.t('loginRequiredPublication');
       return;
     }
 
@@ -170,7 +333,7 @@ export class AppComponent implements OnInit {
         this.loadPublications();
       },
       error: () => {
-        this.message = "Creation de la publication impossible avec les donnees envoyees.";
+        this.message = this.t('createPublicationFailed');
       }
     });
   }
@@ -202,14 +365,14 @@ export class AppComponent implements OnInit {
         this.message = '';
       },
       error: () => {
-        this.message = "Achat de credits impossible.";
+        this.message = this.t('purchaseFailed');
       }
     });
   }
 
   extractMetadata(publication: Publication): void {
     if (!this.session) {
-      this.message = 'Connectez-vous pour lancer une extraction.';
+      this.message = this.t('loginRequiredPublication');
       return;
     }
 
@@ -221,7 +384,7 @@ export class AppComponent implements OnInit {
         this.loadPublications();
       },
       error: () => {
-        this.message = "Extraction impossible. Verifiez le solde de credits.";
+        this.message = this.t('extractionFailed');
       }
     });
   }
@@ -239,7 +402,7 @@ export class AppComponent implements OnInit {
         this.message = '';
       },
       error: () => {
-        this.message = 'Modification du profil impossible.';
+        this.message = this.t('updateProfileFailed');
       }
     });
   }
@@ -256,7 +419,7 @@ export class AppComponent implements OnInit {
         this.message = '';
       },
       error: () => {
-        this.message = 'Demande de suppression impossible.';
+        this.message = this.t('deletionFailed');
       }
     });
   }
@@ -272,7 +435,7 @@ export class AppComponent implements OnInit {
         this.message = '';
       },
       error: () => {
-        this.message = 'Chargement des institutions impossible.';
+        this.message = this.t('loadInstitutionsFailed');
       }
     });
   }
@@ -288,7 +451,7 @@ export class AppComponent implements OnInit {
         this.loadInstitutions();
       },
       error: () => {
-        this.message = "Creation de l'institution impossible.";
+        this.message = this.t('createInstitutionFailed');
       }
     });
   }
@@ -301,7 +464,7 @@ export class AppComponent implements OnInit {
     this.api.deactivateInstitution(institutionId).subscribe({
       next: () => this.loadInstitutions(),
       error: () => {
-        this.message = "Desactivation de l'institution impossible.";
+        this.message = this.t('deactivateInstitutionFailed');
       }
     });
   }
