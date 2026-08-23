@@ -10,6 +10,7 @@
       <button type="button" [class.active]="page === 'inscription'" (click)="navigate('inscription')">Inscription</button>
       <button type="button" [class.active]="page === 'profil'" (click)="navigate('profil')">Profil</button>
       <button type="button" *ngIf="session" [class.active]="page === 'publication'" (click)="navigate('publication')">Nouvelle publication</button>
+      <button type="button" *ngIf="isAdmin" [class.active]="page === 'administration'" (click)="navigate('administration')">Administration</button>
     </nav>
   </header>
 
@@ -25,6 +26,10 @@
     <article>
       <span>Statut</span>
       <strong>{{ session?.status || 'Public' }}</strong>
+    </article>
+    <article *ngIf="isAdmin">
+      <span>Institutions</span>
+      <strong>{{ institutions.length }}</strong>
     </article>
   </section>
 
@@ -105,6 +110,10 @@
       </label>
       <button class="primary" type="submit">Se connecter</button>
     </form>
+    <div class="quick-actions">
+      <button type="button" (click)="useLibrarianAccount()">Compte bibliothécaire</button>
+      <button type="button" (click)="useAdminAccount()">Compte administrateur</button>
+    </div>
   </section>
 
   <section *ngIf="page === 'inscription'" class="panel form-panel">
@@ -192,6 +201,62 @@
 
     <ng-template #noSession>
       <p class="notice">Connectez-vous pour consulter votre profil.</p>
+    </ng-template>
+  </section>
+
+  <section *ngIf="page === 'administration'" class="panel">
+    <div class="section-heading">
+      <div>
+        <p class="eyebrow">Administration</p>
+        <h2>Institutions partenaires</h2>
+      </div>
+    </div>
+
+    <form *ngIf="isAdmin; else adminRequired" class="admin-form" (ngSubmit)="createInstitution()">
+      <label>
+        Code
+        <input name="institutionCode" [(ngModel)]="institutionForm.code" placeholder="INST-C" />
+      </label>
+      <label>
+        Nom
+        <input name="institutionName" [(ngModel)]="institutionForm.name" placeholder="Institution C" />
+      </label>
+      <label>
+        Domaine email
+        <input name="institutionDomain" [(ngModel)]="institutionForm.emailDomain" placeholder="institution-c.example" />
+      </label>
+      <button class="primary" type="submit">Ajouter</button>
+    </form>
+
+    <div class="table-wrap" *ngIf="isAdmin">
+      <table>
+        <thead>
+          <tr>
+            <th>Code</th>
+            <th>Nom</th>
+            <th>Domaine</th>
+            <th>Statut</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let institution of institutions">
+            <td>{{ institution.code }}</td>
+            <td>{{ institution.name }}</td>
+            <td>{{ institution.emailDomain }}</td>
+            <td>{{ institution.active ? 'Active' : 'Inactive' }}</td>
+            <td>
+              <button type="button" class="danger" [disabled]="!institution.active" (click)="deactivateInstitution(institution.id)">
+                Désactiver
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <ng-template #adminRequired>
+      <p class="notice">Connectez-vous avec un compte administrateur.</p>
     </ng-template>
   </section>
 </main>

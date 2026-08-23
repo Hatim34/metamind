@@ -2,9 +2,9 @@ import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
-import { ApiService, Publication, UserSession } from './api.service';
+import { ApiService, Institution, Publication, UserSession } from './api.service';
 
-type Page = 'catalogue' | 'connexion' | 'inscription' | 'profil' | 'publication';
+type Page = 'catalogue' | 'connexion' | 'inscription' | 'profil' | 'publication' | 'administration';
 
 @Component({
   selector: 'app-root',
@@ -23,6 +23,11 @@ export class AppComponent implements OnInit {
 
   loginForm = {
     email: 'sarah@institution-a.example',
+    password: 'MotDePasse123'
+  };
+
+  adminLoginForm = {
+    email: 'admin@metamind.example',
     password: 'MotDePasse123'
   };
 
@@ -48,9 +53,16 @@ export class AppComponent implements OnInit {
     institution: ''
   };
 
+  institutionForm = {
+    code: '',
+    name: '',
+    emailDomain: ''
+  };
+
   session: UserSession | null = null;
   token = '';
   publications: Publication[] = [];
+  institutions: Institution[] = [];
 
   constructor(private readonly api: ApiService) {}
 
@@ -60,6 +72,9 @@ export class AppComponent implements OnInit {
 
   navigate(page: Page): void {
     this.page = page;
+    if (page === 'administration') {
+      this.loadInstitutions();
+    }
   }
 
   loadPublications(): void {
@@ -87,6 +102,9 @@ export class AppComponent implements OnInit {
         this.profileSaved = false;
         this.message = '';
         this.page = 'profil';
+        if (this.isAdmin) {
+          this.loadInstitutions();
+        }
       },
       error: () => {
         this.message = 'Connexion impossible avec les donnees envoyees.';
@@ -109,6 +127,17 @@ export class AppComponent implements OnInit {
         this.message = "Creation du compte impossible avec les donnees envoyees.";
       }
     });
+  }
+
+  useAdminAccount(): void {
+    this.loginForm = { ...this.adminLoginForm };
+  }
+
+  useLibrarianAccount(): void {
+    this.loginForm = {
+      email: 'sarah@institution-a.example',
+      password: 'MotDePasse123'
+    };
   }
 
   createPublication(): void {
@@ -177,12 +206,62 @@ export class AppComponent implements OnInit {
     });
   }
 
+  loadInstitutions(): void {
+    if (!this.isAdmin) {
+      return;
+    }
+
+    this.api.getInstitutions().subscribe({
+      next: (institutions) => {
+        this.institutions = institutions;
+        this.message = '';
+      },
+      error: () => {
+        this.message = 'Chargement des institutions impossible.';
+      }
+    });
+  }
+
+  createInstitution(): void {
+    if (!this.isAdmin) {
+      return;
+    }
+
+    this.api.createInstitution(this.institutionForm).subscribe({
+      next: () => {
+        this.institutionForm = { code: '', name: '', emailDomain: '' };
+        this.loadInstitutions();
+      },
+      error: () => {
+        this.message = "Creation de l'institution impossible.";
+      }
+    });
+  }
+
+  deactivateInstitution(institutionId: number): void {
+    if (!this.isAdmin) {
+      return;
+    }
+
+    this.api.deactivateInstitution(institutionId).subscribe({
+      next: () => this.loadInstitutions(),
+      error: () => {
+        this.message = "Desactivation de l'institution impossible.";
+      }
+    });
+  }
+
   logout(): void {
     this.session = null;
     this.token = '';
+    this.institutions = [];
     this.deletionRequested = false;
     this.profileSaved = false;
     this.page = 'catalogue';
+  }
+
+  get isAdmin(): boolean {
+    return this.session?.role === 'Administrateur';
   }
 
   private fillProfileForm(user: UserSession): void {

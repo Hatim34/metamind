@@ -23,6 +23,14 @@ export interface UserSession {
   status: 'ACTIF' | 'DESACTIVE';
 }
 
+export interface Institution {
+  id: number;
+  code: string;
+  name: string;
+  emailDomain: string;
+  active: boolean;
+}
+
 export interface AuthResponse {
   token: string;
   user: UserSession;
@@ -47,6 +55,12 @@ export interface UpdateProfileRequest {
   institution: string;
 }
 
+export interface CreateInstitutionRequest {
+  code: string;
+  name: string;
+  emailDomain: string;
+}
+
 export interface CreatePublicationRequest {
   title: string;
   author: string;
@@ -69,6 +83,18 @@ export class ApiService {
 
   createPublication(request: CreatePublicationRequest): Observable<Publication> {
     return this.http.post<Publication>(`${this.baseUrl}/publications`, request);
+  }
+
+  getInstitutions(): Observable<Institution[]> {
+    return this.http.get<Institution[]>(`${this.baseUrl}/institutions`);
+  }
+
+  createInstitution(request: CreateInstitutionRequest): Observable<Institution> {
+    return this.http.post<Institution>(`${this.baseUrl}/institutions`, request);
+  }
+
+  deactivateInstitution(institutionId: number): Observable<Institution> {
+    return this.http.delete<Institution>(`${this.baseUrl}/institutions/${institutionId}`);
   }
 
   login(request: LoginRequest): Observable<AuthResponse> {
