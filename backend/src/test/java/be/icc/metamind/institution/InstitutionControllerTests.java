@@ -1,0 +1,80 @@
+package be.icc.metamind.institution;
+
+import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.is;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.transaction.annotation.Transactional;
+
+@SpringBootTest(properties = "spring.jpa.hibernate.ddl-auto=create-drop")
+@AutoConfigureMockMvc
+@Transactional
+class InstitutionControllerTests {
+	@Autowired
+	private MockMvc mockMvc;
+
+	@Autowired
+	private InstitutionRepository repository;
+
+	@Test
+	void createsAndListsInstitution() throws Exception {
+		String body = """
+				{
+				  "code": "INST-A",
+				  "name": "Institution A",
+				  "emailDomain": "institution-a.example"
+				}
+				""";
+
+		mockMvc.perform(post("/api/v1/institutions")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(body))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.code", is("INST-A")))
+				.andExpect(jsonPath("$.active", is(true)));
+
+		mockMvc.perform(get("/api/v1/institutions"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$", hasSize(1)));
+	}
+
+	@Test
+	void rejectsDuplicatedInstitutionCode() throws Exception {
+		String body = """
+				{
+				  "code": "INST-B",
+				  "name": "Institution B",
+				  "emailDomain": "institution-b.example"
+				}
+				""";
+
+		mockMvc.perform(post("/api/v1/institutions")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(body))
+				.andExpect(status().isOk());
+
+		mockMvc.perform(post("/api/v1/institutions")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(body))
+				.andExpect(status().isConflict());
+	}
+
+	@Test
+	void deactivatesInstitution() throws Exception {
+		InstitutionEntity institution = repository.save(new InstitutionEntity("INST-C", "Institution C", "institution-c.example"));
+
+		mockMvc.perform(delete("/api/v1/institutions/" + institution.getId()))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.active", is(false)));
+	}
+}
