@@ -60,7 +60,7 @@ public class MetamindService {
 				.stream()
 				.filter(account -> account.email().equalsIgnoreCase(request.email()))
 				.findFirst()
-				.orElseGet(() -> createUser("Sarah", "Lemaire", request.email(), "Institution A"));
+				.orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "Les identifiants sont incorrects."));
 
 		return new AuthResponse("token-alpha-" + user.id(), UserResponse.from(user));
 	}
