@@ -33,6 +33,9 @@ public class InstitutionEntity {
 	@Column(nullable = false)
 	private boolean active = true;
 
+	@Column(name = "credit_balance", nullable = false)
+	private int creditBalance;
+
 	protected InstitutionEntity() {
 	}
 
@@ -60,6 +63,18 @@ public class InstitutionEntity {
 
 	public boolean isActive() {
 		return active;
+	}
+
+	public int getCreditBalance() {
+		return creditBalance;
+	}
+
+	public void addCredits(int amount) {
+		creditBalance += amount;
+	}
+
+	public void consumeCredit() {
+		creditBalance -= 1;
 	}
 
 	public void deactivate() {

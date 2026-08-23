@@ -49,6 +49,8 @@ public class DataInitializer implements ApplicationRunner {
 		InstitutionEntity institutionA = findOrCreateInstitution("INST-A", "Institution A", "institution-a.example");
 		InstitutionEntity institutionB = findOrCreateInstitution("INST-B", "Institution B", "institution-b.example");
 		InstitutionEntity platform = findOrCreateInstitution("META", "Metamind", "metamind.example");
+		seedCredits(institutionA);
+		seedCredits(institutionB);
 
 		String password = passwordService.hash("MotDePasse123");
 		createUserIfMissing("Sarah", "Lemaire", "sarah@institution-a.example", password, UserRole.BIBLIOTHECAIRE, institutionA);
@@ -65,6 +67,12 @@ public class DataInitializer implements ApplicationRunner {
 	private void createUserIfMissing(String firstName, String lastName, String email, String password, UserRole role, InstitutionEntity institution) {
 		if (!userRepository.existsByEmailIgnoreCase(email)) {
 			userRepository.save(new UserEntity(firstName, lastName, email, password, role, institution));
+		}
+	}
+
+	private void seedCredits(InstitutionEntity institution) {
+		if (institution.getCreditBalance() == 0) {
+			institution.addCredits(20);
 		}
 	}
 
