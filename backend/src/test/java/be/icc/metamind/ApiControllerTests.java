@@ -89,6 +89,28 @@ class ApiControllerTests {
 	}
 
 	@Test
+	void publicationCanBeCreated() throws Exception {
+		String body = """
+				{
+				  "title": "Controle qualite des metadonnees importees",
+				  "author": "Mina Laurent",
+				  "institution": "Institution A",
+				  "year": 2026,
+				  "visibility": "INSTITUTION",
+				  "keywords": ["qualite", "catalogage"]
+				}
+				""";
+
+		mockMvc.perform(post("/api/v1/publications")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(body))
+				.andExpect(status().isCreated())
+				.andExpect(jsonPath("$.title", is("Controle qualite des metadonnees importees")))
+				.andExpect(jsonPath("$.status", is("A_VALIDER")))
+				.andExpect(jsonPath("$.visibility", is("INSTITUTION")));
+	}
+
+	@Test
 	void librarianCanLogin() throws Exception {
 		String body = """
 				{
