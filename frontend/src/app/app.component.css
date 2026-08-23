@@ -208,6 +208,12 @@ label {
   margin-top: 20px;
 }
 
+.profile-form {
+  border-top: 1px solid #dfe5eb;
+  margin-top: 20px;
+  padding-top: 20px;
+}
+
 .notice {
   background: #f3f7f7;
   border-left: 4px solid #12787b;

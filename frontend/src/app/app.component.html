@@ -169,9 +169,26 @@
       <button type="button" (click)="logout()">Se déconnecter</button>
     </div>
 
+    <form *ngIf="session && !deletionRequested" class="profile-form" (ngSubmit)="updateProfile()">
+      <label>
+        Prénom
+        <input name="profileFirstName" [(ngModel)]="profileForm.firstName" />
+      </label>
+      <label>
+        Nom
+        <input name="profileLastName" [(ngModel)]="profileForm.lastName" />
+      </label>
+      <label>
+        Institution
+        <input name="profileInstitution" [(ngModel)]="profileForm.institution" />
+      </label>
+      <button class="primary" type="submit">Enregistrer le profil</button>
+    </form>
+
     <p class="notice" *ngIf="deletionRequested">
       La demande est enregistrée. Le compte passe au statut DESACTIVE et sera traité selon les règles RGPD.
     </p>
+    <p class="notice" *ngIf="profileSaved">Le profil est mis à jour.</p>
 
     <ng-template #noSession>
       <p class="notice">Connectez-vous pour consulter votre profil.</p>

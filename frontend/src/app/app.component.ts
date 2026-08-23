@@ -19,6 +19,7 @@ export class AppComponent implements OnInit {
   deletionRequested = false;
   loading = false;
   message = '';
+  profileSaved = false;
 
   loginForm = {
     email: 'sarah@institution-a.example',
@@ -39,6 +40,12 @@ export class AppComponent implements OnInit {
     year: new Date().getFullYear(),
     visibility: 'PUBLIC' as 'PUBLIC' | 'INSTITUTION',
     keywords: ''
+  };
+
+  profileForm = {
+    firstName: '',
+    lastName: '',
+    institution: ''
   };
 
   session: UserSession | null = null;
@@ -75,7 +82,9 @@ export class AppComponent implements OnInit {
       next: (response) => {
         this.token = response.token;
         this.session = response.user;
+        this.fillProfileForm(response.user);
         this.deletionRequested = false;
+        this.profileSaved = false;
         this.message = '';
         this.page = 'profil';
       },
@@ -90,7 +99,9 @@ export class AppComponent implements OnInit {
       next: (response) => {
         this.token = response.token;
         this.session = response.user;
+        this.fillProfileForm(response.user);
         this.deletionRequested = false;
+        this.profileSaved = false;
         this.message = '';
         this.page = 'profil';
       },
@@ -131,6 +142,24 @@ export class AppComponent implements OnInit {
     });
   }
 
+  updateProfile(): void {
+    if (!this.session) {
+      return;
+    }
+
+    this.api.updateProfile(this.session.id, this.profileForm).subscribe({
+      next: (user) => {
+        this.session = user;
+        this.fillProfileForm(user);
+        this.profileSaved = true;
+        this.message = '';
+      },
+      error: () => {
+        this.message = 'Modification du profil impossible.';
+      }
+    });
+  }
+
   requestDeletion(): void {
     if (!this.session) {
       return;
@@ -152,6 +181,15 @@ export class AppComponent implements OnInit {
     this.session = null;
     this.token = '';
     this.deletionRequested = false;
+    this.profileSaved = false;
     this.page = 'catalogue';
+  }
+
+  private fillProfileForm(user: UserSession): void {
+    this.profileForm = {
+      firstName: user.firstName,
+      lastName: user.lastName,
+      institution: user.institution
+    };
   }
 }
