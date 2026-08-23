@@ -1,0 +1,136 @@
+<main class="app-shell">
+  <header class="topbar">
+    <div>
+      <p class="eyebrow">Metamind</p>
+      <h1>Gestion des métadonnées académiques</h1>
+    </div>
+    <nav aria-label="Navigation principale">
+      <button type="button" [class.active]="page === 'catalogue'" (click)="navigate('catalogue')">Catalogue</button>
+      <button type="button" [class.active]="page === 'connexion'" (click)="navigate('connexion')">Connexion</button>
+      <button type="button" [class.active]="page === 'inscription'" (click)="navigate('inscription')">Inscription</button>
+      <button type="button" [class.active]="page === 'profil'" (click)="navigate('profil')">Profil</button>
+    </nav>
+  </header>
+
+  <section class="summary-grid" aria-label="Indicateurs">
+    <article>
+      <span>Publications</span>
+      <strong>{{ publications.length }}</strong>
+    </article>
+    <article>
+      <span>Compte actif</span>
+      <strong>{{ session ? 'Oui' : 'Non' }}</strong>
+    </article>
+    <article>
+      <span>Statut</span>
+      <strong>{{ session?.status || 'Public' }}</strong>
+    </article>
+  </section>
+
+  <section *ngIf="page === 'catalogue'" class="panel">
+    <div class="section-heading">
+      <div>
+        <p class="eyebrow">Catalogue</p>
+        <h2>Publications disponibles</h2>
+      </div>
+      <input type="search" [(ngModel)]="search" placeholder="Rechercher un titre, auteur ou mot-clé" />
+    </div>
+
+    <div class="publication-list">
+      <article class="publication-card" *ngFor="let publication of filteredPublications">
+        <div>
+          <h3>{{ publication.title }}</h3>
+          <p>{{ publication.author }} · {{ publication.institution }} · {{ publication.year }}</p>
+        </div>
+        <div class="tags">
+          <span>{{ publication.status }}</span>
+          <span>{{ publication.visibility }}</span>
+          <span *ngFor="let keyword of publication.keywords">{{ keyword }}</span>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <section *ngIf="page === 'connexion'" class="panel form-panel">
+    <p class="eyebrow">Connexion</p>
+    <h2>Accéder à l'espace bibliothécaire</h2>
+    <form (ngSubmit)="login()">
+      <label>
+        Email
+        <input name="loginEmail" type="email" [(ngModel)]="loginForm.email" />
+      </label>
+      <label>
+        Mot de passe
+        <input name="loginPassword" type="password" [(ngModel)]="loginForm.password" />
+      </label>
+      <button class="primary" type="submit">Se connecter</button>
+    </form>
+  </section>
+
+  <section *ngIf="page === 'inscription'" class="panel form-panel">
+    <p class="eyebrow">Inscription</p>
+    <h2>Créer un compte bibliothécaire</h2>
+    <form (ngSubmit)="register()">
+      <label>
+        Prénom
+        <input name="firstName" [(ngModel)]="registerForm.firstName" />
+      </label>
+      <label>
+        Nom
+        <input name="lastName" [(ngModel)]="registerForm.lastName" />
+      </label>
+      <label>
+        Email
+        <input name="registerEmail" type="email" [(ngModel)]="registerForm.email" placeholder="sarah@institution-a.example" />
+      </label>
+      <label>
+        Institution
+        <input name="institution" [(ngModel)]="registerForm.institution" placeholder="Institution A" />
+      </label>
+      <button class="primary" type="submit">Créer le compte</button>
+    </form>
+  </section>
+
+  <section *ngIf="page === 'profil'" class="panel">
+    <p class="eyebrow">Profil</p>
+    <h2>Compte utilisateur</h2>
+
+    <div *ngIf="session; else noSession" class="profile-grid">
+      <div>
+        <span>Nom</span>
+        <strong>{{ session.firstName }} {{ session.lastName }}</strong>
+      </div>
+      <div>
+        <span>Email</span>
+        <strong>{{ session.email }}</strong>
+      </div>
+      <div>
+        <span>Rôle</span>
+        <strong>{{ session.role }}</strong>
+      </div>
+      <div>
+        <span>Institution</span>
+        <strong>{{ session.institution }}</strong>
+      </div>
+      <div>
+        <span>Statut</span>
+        <strong>{{ session.status }}</strong>
+      </div>
+    </div>
+
+    <div *ngIf="session" class="actions">
+      <button type="button" class="danger" (click)="requestDeletion()" [disabled]="deletionRequested">
+        Demander la suppression du compte
+      </button>
+      <button type="button" (click)="logout()">Se déconnecter</button>
+    </div>
+
+    <p class="notice" *ngIf="deletionRequested">
+      La demande est enregistrée. Le compte passe au statut DESACTIVE et sera traité selon les règles RGPD.
+    </p>
+
+    <ng-template #noSession>
+      <p class="notice">Connectez-vous pour consulter votre profil.</p>
+    </ng-template>
+  </section>
+</main>
