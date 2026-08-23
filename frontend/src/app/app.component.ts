@@ -23,12 +23,12 @@ export class AppComponent implements OnInit {
 
   loginForm = {
     email: 'sarah@institution-a.example',
-    password: 'MotDePasse123'
+    password: '558435'
   };
 
   adminLoginForm = {
     email: 'admin@metamind.example',
-    password: 'MotDePasse123'
+    password: '558435'
   };
 
   registerForm = {
@@ -140,7 +140,7 @@ export class AppComponent implements OnInit {
   useLibrarianAccount(): void {
     this.loginForm = {
       email: 'sarah@institution-a.example',
-      password: 'MotDePasse123'
+      password: '558435'
     };
   }
 

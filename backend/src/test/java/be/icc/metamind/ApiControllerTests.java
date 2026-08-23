@@ -58,7 +58,7 @@ class ApiControllerTests {
 				"Sarah",
 				"Lemaire",
 				"sarah@institution-a.example",
-				passwordService.hash("MotDePasse123"),
+				passwordService.hash("558435"),
 				UserRole.BIBLIOTHECAIRE,
 				institution
 		));
@@ -115,7 +115,7 @@ class ApiControllerTests {
 		String body = """
 				{
 				  "email": "sarah@institution-a.example",
-				  "password": "MotDePasse123"
+				  "password": "558435"
 				}
 				""";
 

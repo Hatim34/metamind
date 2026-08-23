@@ -44,7 +44,7 @@ class ExtractionServiceTests {
 				"Sarah",
 				"Lemaire",
 				"sarah@institution-a.example",
-				passwordService.hash("MotDePasse123"),
+				passwordService.hash("558435"),
 				UserRole.BIBLIOTHECAIRE,
 				institution
 		));

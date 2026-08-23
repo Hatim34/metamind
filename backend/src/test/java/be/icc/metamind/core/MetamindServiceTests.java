@@ -37,7 +37,7 @@ class MetamindServiceTests {
 
 	@Test
 	void rejectsUnknownLoginEmail() {
-		LoginRequest request = new LoginRequest("inconnu@institution-a.example", "MotDePasse123");
+		LoginRequest request = new LoginRequest("inconnu@institution-a.example", "558435");
 
 		assertThatThrownBy(() -> service.login(request))
 				.isInstanceOf(ApiException.class)
@@ -52,7 +52,7 @@ class MetamindServiceTests {
 				"Diallo",
 				"amal@institution-a.example",
 				"Institution A",
-				"MotDePasse123"
+				"558435"
 		);
 
 		AuthResponse response = service.register(request);
@@ -69,7 +69,7 @@ class MetamindServiceTests {
 				"Lemaire",
 				"sarah@institution-a.example",
 				"Institution A",
-				"MotDePasse123"
+				"558435"
 		);
 
 		assertThatThrownBy(() -> service.register(request))

@@ -52,7 +52,7 @@ public class DataInitializer implements ApplicationRunner {
 		seedCredits(institutionA);
 		seedCredits(institutionB);
 
-		String password = passwordService.hash("MotDePasse123");
+		String password = passwordService.hash("558435");
 		createUserIfMissing("Sarah", "Lemaire", "sarah@institution-a.example", password, UserRole.BIBLIOTHECAIRE, institutionA);
 		createUserIfMissing("Jan", "Peeters", "jan@institution-b.example", password, UserRole.BIBLIOTHECAIRE, institutionB);
 		createUserIfMissing("Nadia", "Benali", "admin@metamind.example", password, UserRole.ADMINISTRATEUR, platform);

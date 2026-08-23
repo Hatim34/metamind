@@ -9,17 +9,17 @@ class PasswordServiceTests {
 
 	@Test
 	void hashesPasswordWithoutKeepingPlainValue() {
-		String hash = passwordService.hash("MotDePasse123");
+		String hash = passwordService.hash("558435");
 
-		assertThat(hash).isNotEqualTo("MotDePasse123");
+		assertThat(hash).isNotEqualTo("558435");
 		assertThat(hash).isNotBlank();
 	}
 
 	@Test
 	void comparesPasswordWithHash() {
-		String hash = passwordService.hash("MotDePasse123");
+		String hash = passwordService.hash("558435");
 
-		assertThat(passwordService.matches("MotDePasse123", hash)).isTrue();
+		assertThat(passwordService.matches("558435", hash)).isTrue();
 		assertThat(passwordService.matches("Erreur123", hash)).isFalse();
 	}
 }
