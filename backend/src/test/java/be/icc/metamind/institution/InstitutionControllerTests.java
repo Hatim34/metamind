@@ -39,7 +39,7 @@ class InstitutionControllerTests {
 		mockMvc.perform(post("/api/v1/institutions")
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(body))
-				.andExpect(status().isOk())
+				.andExpect(status().isCreated())
 				.andExpect(jsonPath("$.code", is("INST-A")))
 				.andExpect(jsonPath("$.active", is(true)));
 
@@ -61,7 +61,7 @@ class InstitutionControllerTests {
 		mockMvc.perform(post("/api/v1/institutions")
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(body))
-				.andExpect(status().isOk());
+				.andExpect(status().isCreated());
 
 		mockMvc.perform(post("/api/v1/institutions")
 						.contentType(MediaType.APPLICATION_JSON)
