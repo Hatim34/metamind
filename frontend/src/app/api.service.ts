@@ -31,6 +31,21 @@ export interface Institution {
   active: boolean;
 }
 
+export interface CreditBalance {
+  institutionId: number;
+  institution: string;
+  balance: number;
+}
+
+export interface MetadataExtraction {
+  publicationId: number;
+  title: string;
+  suggestedTitle: string;
+  suggestedAuthor: string;
+  suggestedKeywords: string[];
+  creditBalance: number;
+}
+
 export interface AuthResponse {
   token: string;
   user: UserSession;
@@ -95,6 +110,19 @@ export class ApiService {
 
   deactivateInstitution(institutionId: number): Observable<Institution> {
     return this.http.delete<Institution>(`${this.baseUrl}/institutions/${institutionId}`);
+  }
+
+  getCreditBalance(userId: number): Observable<CreditBalance> {
+    return this.http.get<CreditBalance>(`${this.baseUrl}/users/${userId}/credits`);
+  }
+
+  purchaseCredits(userId: number, amount: number): Observable<CreditBalance> {
+    return this.http.post<CreditBalance>(`${this.baseUrl}/users/${userId}/credits/purchase`, { amount });
+  }
+
+  extractMetadata(publicationId: number, userId: number): Observable<MetadataExtraction> {
+    const params = new HttpParams().set('userId', userId);
+    return this.http.post<MetadataExtraction>(`${this.baseUrl}/publications/${publicationId}/extraction`, {}, { params });
   }
 
   login(request: LoginRequest): Observable<AuthResponse> {

@@ -2,7 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
-import { ApiService, Institution, Publication, UserSession } from './api.service';
+import { ApiService, Institution, MetadataExtraction, Publication, UserSession } from './api.service';
 
 type Page = 'catalogue' | 'connexion' | 'inscription' | 'profil' | 'publication' | 'administration';
 
@@ -63,6 +63,8 @@ export class AppComponent implements OnInit {
   token = '';
   publications: Publication[] = [];
   institutions: Institution[] = [];
+  creditBalance: number | null = null;
+  extractionResult: MetadataExtraction | null = null;
 
   constructor(private readonly api: ApiService) {}
 
@@ -102,6 +104,7 @@ export class AppComponent implements OnInit {
         this.profileSaved = false;
         this.message = '';
         this.page = 'profil';
+        this.loadCredits();
         if (this.isAdmin) {
           this.loadInstitutions();
         }
@@ -122,6 +125,7 @@ export class AppComponent implements OnInit {
         this.profileSaved = false;
         this.message = '';
         this.page = 'profil';
+        this.loadCredits();
       },
       error: () => {
         this.message = "Creation du compte impossible avec les donnees envoyees.";
@@ -167,6 +171,57 @@ export class AppComponent implements OnInit {
       },
       error: () => {
         this.message = "Creation de la publication impossible avec les donnees envoyees.";
+      }
+    });
+  }
+
+  loadCredits(): void {
+    if (!this.session) {
+      this.creditBalance = null;
+      return;
+    }
+
+    this.api.getCreditBalance(this.session.id).subscribe({
+      next: (credits) => {
+        this.creditBalance = credits.balance;
+      },
+      error: () => {
+        this.creditBalance = null;
+      }
+    });
+  }
+
+  purchaseCredits(amount: number): void {
+    if (!this.session) {
+      return;
+    }
+
+    this.api.purchaseCredits(this.session.id, amount).subscribe({
+      next: (credits) => {
+        this.creditBalance = credits.balance;
+        this.message = '';
+      },
+      error: () => {
+        this.message = "Achat de credits impossible.";
+      }
+    });
+  }
+
+  extractMetadata(publication: Publication): void {
+    if (!this.session) {
+      this.message = 'Connectez-vous pour lancer une extraction.';
+      return;
+    }
+
+    this.api.extractMetadata(publication.id, this.session.id).subscribe({
+      next: (result) => {
+        this.extractionResult = result;
+        this.creditBalance = result.creditBalance;
+        this.message = '';
+        this.loadPublications();
+      },
+      error: () => {
+        this.message = "Extraction impossible. Verifiez le solde de credits.";
       }
     });
   }
@@ -255,6 +310,8 @@ export class AppComponent implements OnInit {
     this.session = null;
     this.token = '';
     this.institutions = [];
+    this.creditBalance = null;
+    this.extractionResult = null;
     this.deletionRequested = false;
     this.profileSaved = false;
     this.page = 'catalogue';
