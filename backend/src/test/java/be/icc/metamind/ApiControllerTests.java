@@ -9,6 +9,14 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import be.icc.metamind.institution.InstitutionEntity;
+import be.icc.metamind.institution.InstitutionRepository;
+import be.icc.metamind.user.PasswordService;
+import be.icc.metamind.user.UserEntity;
+import be.icc.metamind.user.UserRepository;
+import be.icc.metamind.user.UserRole;
+
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -21,6 +29,33 @@ import org.springframework.test.web.servlet.MockMvc;
 class ApiControllerTests {
 	@Autowired
 	private MockMvc mockMvc;
+
+	@Autowired
+	private InstitutionRepository institutionRepository;
+
+	@Autowired
+	private UserRepository userRepository;
+
+	@Autowired
+	private PasswordService passwordService;
+
+	@BeforeEach
+	void setUp() {
+		if (userRepository.existsByEmailIgnoreCase("sarah@institution-a.example")) {
+			return;
+		}
+
+		InstitutionEntity institution = institutionRepository.findByCodeIgnoreCase("INST-A")
+				.orElseGet(() -> institutionRepository.save(new InstitutionEntity("INST-A", "Institution A", "institution-a.example")));
+		userRepository.save(new UserEntity(
+				"Sarah",
+				"Lemaire",
+				"sarah@institution-a.example",
+				passwordService.hash("MotDePasse123"),
+				UserRole.BIBLIOTHECAIRE,
+				institution
+		));
+	}
 
 	@Test
 	void healthReturnsUpStatus() throws Exception {

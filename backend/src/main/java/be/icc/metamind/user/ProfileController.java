@@ -1,6 +1,5 @@
 package be.icc.metamind.user;
 
-import be.icc.metamind.core.MetamindService;
 import jakarta.validation.Valid;
 
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -14,9 +13,9 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/v1/users")
 public class ProfileController {
-	private final MetamindService service;
+	private final AccountService service;
 
-	public ProfileController(MetamindService service) {
+	public ProfileController(AccountService service) {
 		this.service = service;
 	}
 

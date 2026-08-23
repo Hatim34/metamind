@@ -20,4 +20,23 @@ public record UserResponse(
 				user.status()
 		);
 	}
+
+	public static UserResponse from(UserEntity user) {
+		return new UserResponse(
+				user.getId(),
+				user.getFirstName(),
+				user.getLastName(),
+				user.getEmail(),
+				displayRole(user.getRole()),
+				user.getInstitution().getName(),
+				user.getStatus()
+		);
+	}
+
+	private static String displayRole(UserRole role) {
+		return switch (role) {
+			case BIBLIOTHECAIRE -> "Bibliothecaire";
+			case ADMINISTRATEUR -> "Administrateur";
+		};
+	}
 }
