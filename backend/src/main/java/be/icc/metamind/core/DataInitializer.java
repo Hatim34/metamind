@@ -3,6 +3,7 @@ package be.icc.metamind.core;
 import be.icc.metamind.institution.InstitutionEntity;
 import be.icc.metamind.institution.InstitutionRepository;
 import be.icc.metamind.user.UserEntity;
+import be.icc.metamind.user.PasswordService;
 import be.icc.metamind.user.UserRepository;
 import be.icc.metamind.user.UserRole;
 
@@ -16,15 +17,18 @@ import org.springframework.transaction.annotation.Transactional;
 public class DataInitializer implements ApplicationRunner {
 	private final InstitutionRepository institutionRepository;
 	private final UserRepository userRepository;
+	private final PasswordService passwordService;
 	private final boolean enabled;
 
 	public DataInitializer(
 			InstitutionRepository institutionRepository,
 			UserRepository userRepository,
+			PasswordService passwordService,
 			@Value("${metamind.seed-data:true}") boolean enabled
 	) {
 		this.institutionRepository = institutionRepository;
 		this.userRepository = userRepository;
+		this.passwordService = passwordService;
 		this.enabled = enabled;
 	}
 
@@ -39,8 +43,9 @@ public class DataInitializer implements ApplicationRunner {
 		InstitutionEntity institutionB = institutionRepository.save(new InstitutionEntity("INST-B", "Institution B", "institution-b.example"));
 		InstitutionEntity platform = institutionRepository.save(new InstitutionEntity("META", "Metamind", "metamind.example"));
 
-		userRepository.save(new UserEntity("Sarah", "Lemaire", "sarah@institution-a.example", "MotDePasse123", UserRole.BIBLIOTHECAIRE, institutionA));
-		userRepository.save(new UserEntity("Jan", "Peeters", "jan@institution-b.example", "MotDePasse123", UserRole.BIBLIOTHECAIRE, institutionB));
-		userRepository.save(new UserEntity("Nadia", "Benali", "admin@metamind.example", "MotDePasse123", UserRole.ADMINISTRATEUR, platform));
+		String password = passwordService.hash("MotDePasse123");
+		userRepository.save(new UserEntity("Sarah", "Lemaire", "sarah@institution-a.example", password, UserRole.BIBLIOTHECAIRE, institutionA));
+		userRepository.save(new UserEntity("Jan", "Peeters", "jan@institution-b.example", password, UserRole.BIBLIOTHECAIRE, institutionB));
+		userRepository.save(new UserEntity("Nadia", "Benali", "admin@metamind.example", password, UserRole.ADMINISTRATEUR, platform));
 	}
 }
