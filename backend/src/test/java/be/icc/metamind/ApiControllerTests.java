@@ -1,0 +1,80 @@
+package be.icc.metamind;
+
+import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.is;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.MockMvc;
+
+@SpringBootTest
+@AutoConfigureMockMvc
+class ApiControllerTests {
+	@Autowired
+	private MockMvc mockMvc;
+
+	@Test
+	void healthReturnsUpStatus() throws Exception {
+		mockMvc.perform(get("/api/v1/health"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.status", is("UP")));
+	}
+
+	@Test
+	void publicationsCanBeListedAndFiltered() throws Exception {
+		mockMvc.perform(get("/api/v1/publications").param("search", "Dublin"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$", hasSize(1)))
+				.andExpect(jsonPath("$[0].status", is("PUBLIE")));
+	}
+
+	@Test
+	void librarianCanLogin() throws Exception {
+		String body = """
+				{
+				  "email": "sarah@institution-a.example",
+				  "password": "MotDePasse123"
+				}
+				""";
+
+		mockMvc.perform(post("/api/v1/auth/login")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(body))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.token", is("token-alpha-1")))
+				.andExpect(jsonPath("$.user.role", is("Bibliothecaire")));
+	}
+
+	@Test
+	void profileCanBeUpdated() throws Exception {
+		String body = """
+				{
+				  "firstName": "Sarah",
+				  "lastName": "Lemaire",
+				  "institution": "Institution A"
+				}
+				""";
+
+		mockMvc.perform(put("/api/v1/users/1/profile")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(body))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.institution", is("Institution A")));
+	}
+
+	@Test
+	void accountDeletionUsesSoftDeleteStatus() throws Exception {
+		mockMvc.perform(delete("/api/v1/users/1"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.status", is("DESACTIVE")));
+	}
+}
