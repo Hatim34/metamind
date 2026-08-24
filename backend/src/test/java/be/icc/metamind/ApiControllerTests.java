@@ -161,6 +161,27 @@ class ApiControllerTests {
 	}
 
 	@Test
+	void creditsAndExtractionWorkflowIsSecuredAndConsumesOneCredit() throws Exception {
+		UserEntity user = userRepository.findByEmailIgnoreCase("sarah@institution-a.example").orElseThrow();
+		PublicationEntity publication = publicationRepository.findAll().getFirst();
+		String authorization = bearerToken();
+
+		mockMvc.perform(post("/api/v1/users/" + user.getId() + "/credits/purchase")
+						.header("Authorization", authorization)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{\"amount\":3}"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.balance", is(3)));
+
+		mockMvc.perform(post("/api/v1/publications/" + publication.getId() + "/extraction")
+						.header("Authorization", authorization))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.publicationId", is(publication.getId().intValue())))
+				.andExpect(jsonPath("$.creditBalance", is(2)))
+				.andExpect(jsonPath("$.suggestedKeywords", hasSize(3)));
+	}
+
+	@Test
 	void protectedProfileRejectsMissingToken() throws Exception {
 		UserEntity user = userRepository.findByEmailIgnoreCase("sarah@institution-a.example").orElseThrow();
 

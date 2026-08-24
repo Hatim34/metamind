@@ -102,7 +102,7 @@
         {{ t('keywords') }}
         <input name="publicationKeywords" [(ngModel)]="publicationForm.keywords" placeholder="Dublin Core, catalogage" />
       </label>
-      <button class="primary" type="submit">{{ t('addToCatalogue') }}</button>
+      <button class="primary" type="submit" [disabled]="!isPublicationFormValid()">{{ t('addToCatalogue') }}</button>
     </form>
 
     <ng-template #publicationLoginRequired>
@@ -154,7 +154,7 @@
         {{ t('password') }}
         <input name="registerPassword" type="password" [(ngModel)]="registerForm.password" />
       </label>
-      <button class="primary" type="submit">{{ t('createAccount') }}</button>
+      <button class="primary" type="submit" [disabled]="!isRegisterFormValid()">{{ t('createAccount') }}</button>
     </form>
   </section>
 
@@ -206,7 +206,7 @@
         {{ t('institution') }}
         <input name="profileInstitution" [(ngModel)]="profileForm.institution" />
       </label>
-      <button class="primary" type="submit">{{ t('saveProfile') }}</button>
+      <button class="primary" type="submit" [disabled]="!profileForm.firstName.trim() || !profileForm.lastName.trim() || !profileForm.institution.trim()">{{ t('saveProfile') }}</button>
     </form>
 
     <p class="notice" *ngIf="deletionRequested">
@@ -240,7 +240,7 @@
         {{ t('domain') }}
         <input name="institutionDomain" [(ngModel)]="institutionForm.emailDomain" placeholder="institution-c.example" />
       </label>
-      <button class="primary" type="submit">{{ t('add') }}</button>
+      <button class="primary" type="submit" [disabled]="!isInstitutionFormValid()">{{ t('add') }}</button>
     </form>
 
     <div class="table-wrap" *ngIf="isAdmin">

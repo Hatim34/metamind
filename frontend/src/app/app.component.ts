@@ -80,7 +80,8 @@ const translations = {
     createInstitutionFailed: "Creation de l'institution impossible.",
     deactivateInstitutionFailed: "Desactivation de l'institution impossible.",
     extractedMetadataPrefix: 'Métadonnées extraites pour',
-    language: 'Langue'
+    language: 'Langue',
+    invalidForm: 'Veuillez compléter correctement les champs obligatoires.'
   },
   nl: {
     title: 'Beheer van academische metadata',
@@ -154,7 +155,8 @@ const translations = {
     createInstitutionFailed: 'Instelling aanmaken is onmogelijk.',
     deactivateInstitutionFailed: 'Instelling deactiveren is onmogelijk.',
     extractedMetadataPrefix: 'Metadata geextraheerd voor',
-    language: 'Taal'
+    language: 'Taal',
+    invalidForm: 'Vul de verplichte velden correct in.'
   }
 } as const;
 
@@ -280,6 +282,11 @@ export class AppComponent implements OnInit {
   }
 
   register(): void {
+    if (!this.isRegisterFormValid()) {
+      this.message = this.t('invalidForm');
+      return;
+    }
+
     this.api.register(this.registerForm).subscribe({
       next: (response) => {
         this.token = response.token;
@@ -312,6 +319,10 @@ export class AppComponent implements OnInit {
   createPublication(): void {
     if (!this.session) {
       this.message = this.t('loginRequiredPublication');
+      return;
+    }
+    if (!this.isPublicationFormValid()) {
+      this.message = this.t('invalidForm');
       return;
     }
 
@@ -395,6 +406,10 @@ export class AppComponent implements OnInit {
     if (!this.session) {
       return;
     }
+    if (!this.profileForm.firstName.trim() || !this.profileForm.lastName.trim() || !this.profileForm.institution.trim()) {
+      this.message = this.t('invalidForm');
+      return;
+    }
 
     this.api.updateProfile(this.session.id, this.profileForm).subscribe({
       next: (user) => {
@@ -446,6 +461,10 @@ export class AppComponent implements OnInit {
     if (!this.isAdmin) {
       return;
     }
+    if (!this.isInstitutionFormValid()) {
+      this.message = this.t('invalidForm');
+      return;
+    }
 
     this.api.createInstitution(this.institutionForm).subscribe({
       next: () => {
@@ -485,6 +504,27 @@ export class AppComponent implements OnInit {
 
   get isAdmin(): boolean {
     return this.session?.role === 'Administrateur';
+  }
+
+  isPublicationFormValid(): boolean {
+    return this.publicationForm.title.trim().length >= 3
+      && this.publicationForm.author.trim().length >= 2
+      && this.publicationForm.year >= 1900
+      && this.publicationForm.year <= 2100;
+  }
+
+  isRegisterFormValid(): boolean {
+    return this.registerForm.firstName.trim().length >= 2
+      && this.registerForm.lastName.trim().length >= 2
+      && this.registerForm.email.includes('@')
+      && this.registerForm.institution.trim().length >= 2
+      && this.registerForm.password.length >= 6;
+  }
+
+  isInstitutionFormValid(): boolean {
+    return this.institutionForm.code.trim().length >= 3
+      && this.institutionForm.name.trim().length >= 2
+      && this.institutionForm.emailDomain.includes('.');
   }
 
   private fillProfileForm(user: UserSession): void {
