@@ -5,7 +5,7 @@ services:
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-metamind}
       POSTGRES_USER: ${POSTGRES_USER:-metamind}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -21,10 +21,11 @@ services:
     environment:
       METAMIND_DATABASE_URL: jdbc:postgresql://database:5432/${POSTGRES_DB:-metamind}
       METAMIND_DATABASE_USERNAME: ${POSTGRES_USER:-metamind}
-      METAMIND_DATABASE_PASSWORD: ${POSTGRES_PASSWORD}
+      METAMIND_DATABASE_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
       METAMIND_JPA_DDL_AUTO: update
       METAMIND_H2_CONSOLE: "false"
       METAMIND_SEED_DATA: "true"
+      METAMIND_JWT_SECRET: ${METAMIND_JWT_SECRET:?METAMIND_JWT_SECRET is required}
     depends_on:
       database:
         condition: service_healthy
