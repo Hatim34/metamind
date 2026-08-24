@@ -12,6 +12,7 @@ tags:
   - name: Health
   - name: Auth
   - name: Publications
+  - name: Open Data
   - name: Institutions
   - name: Users
   - name: Credits
@@ -138,6 +139,34 @@ paths:
                 $ref: "#/components/schemas/MetadataExtraction"
         "402":
           description: Solde de credits insuffisant
+  /open-data/rss:
+    get:
+      tags: [Open Data]
+      summary: Exposer les publications publiques au format RSS
+      responses:
+        "200":
+          description: Flux RSS public
+          content:
+            application/rss+xml:
+              schema:
+                type: string
+                example: "<?xml version=\"1.0\" encoding=\"UTF-8\"?><rss version=\"2.0\"><channel></channel></rss>"
+  /open-data/publications/{id}/dublin-core:
+    get:
+      tags: [Open Data]
+      summary: Exporter une publication publique au format Dublin Core
+      parameters:
+        - $ref: "#/components/parameters/id"
+      responses:
+        "200":
+          description: Metadonnees Dublin Core
+          content:
+            application/xml:
+              schema:
+                type: string
+                example: "<?xml version=\"1.0\" encoding=\"UTF-8\"?><metadata xmlns:dc=\"http://purl.org/dc/elements/1.1/\"></metadata>"
+        "404":
+          description: Publication publique introuvable
   /institutions:
     get:
       tags: [Institutions]
@@ -320,7 +349,7 @@ components:
         lastName: { type: string, example: Lemaire }
         email: { type: string, format: email, example: sarah@institution-a.example }
         institution: { type: string, example: Institution A }
-        password: { type: string, format: password, example: "558435" }
+        password: { type: string, format: password, example: "MotDePasse123" }
     User:
       type: object
       properties:

@@ -26,6 +26,7 @@ services:
       METAMIND_H2_CONSOLE: "false"
       METAMIND_SEED_DATA: "true"
       METAMIND_JWT_SECRET: ${METAMIND_JWT_SECRET:?METAMIND_JWT_SECRET is required}
+      METAMIND_PUBLIC_URL: https://${METAMIND_DOMAIN:-metamind-app.duckdns.org}
     depends_on:
       database:
         condition: service_healthy

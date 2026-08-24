@@ -518,7 +518,7 @@ export class AppComponent implements OnInit {
       && this.registerForm.lastName.trim().length >= 2
       && this.registerForm.email.includes('@')
       && this.registerForm.institution.trim().length >= 2
-      && this.registerForm.password.length >= 6;
+      && this.registerForm.password.length >= 8;
   }
 
   isInstitutionFormValid(): boolean {

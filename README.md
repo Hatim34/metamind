@@ -12,6 +12,7 @@ Metamind est une plateforme web destinée aux dépôts institutionnels académiq
 ## Documentation API
 
 Le contrat OpenAPI est disponible dans `docs/openapi.yaml`. Il decrit les endpoints REST exposes en version `/api/v1`.
+Les exports Open Data publics sont disponibles via `/api/v1/open-data/rss` et `/api/v1/open-data/publications/{id}/dublin-core`.
 
 ## Securite API
 

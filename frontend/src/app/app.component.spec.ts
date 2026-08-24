@@ -124,4 +124,16 @@ describe('AppComponent', () => {
 
     expect(component.isPublicationFormValid()).toBeTrue();
   });
+
+  it('refuse une inscription avec un mot de passe trop court', () => {
+    component.registerForm = {
+      firstName: 'Sarah',
+      lastName: 'Lemaire',
+      email: 'sarah@institution-a.example',
+      institution: 'Institution A',
+      password: '558435'
+    };
+
+    expect(component.isRegisterFormValid()).toBeFalse();
+  });
 });
