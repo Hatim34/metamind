@@ -2,6 +2,7 @@ package be.icc.metamind;
 
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.startsWith;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -27,9 +28,11 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.transaction.annotation.Transactional;
 
-@SpringBootTest
+@SpringBootTest(properties = "spring.jpa.hibernate.ddl-auto=create-drop")
 @AutoConfigureMockMvc
+@Transactional
 class ApiControllerTests {
 	@Autowired
 	private MockMvc mockMvc;
@@ -102,6 +105,7 @@ class ApiControllerTests {
 				""";
 
 		mockMvc.perform(post("/api/v1/publications")
+						.header("Authorization", bearerToken())
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(body))
 				.andExpect(status().isCreated())
@@ -123,12 +127,13 @@ class ApiControllerTests {
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(body))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.token", is("token-alpha-1")))
+				.andExpect(jsonPath("$.token", startsWith("eyJ")))
 				.andExpect(jsonPath("$.user.role", is("Bibliothecaire")));
 	}
 
 	@Test
 	void profileCanBeUpdated() throws Exception {
+		UserEntity user = userRepository.findByEmailIgnoreCase("sarah@institution-a.example").orElseThrow();
 		String body = """
 				{
 				  "firstName": "Sarah",
@@ -137,7 +142,8 @@ class ApiControllerTests {
 				}
 				""";
 
-		mockMvc.perform(put("/api/v1/users/1/profile")
+		mockMvc.perform(put("/api/v1/users/" + user.getId() + "/profile")
+						.header("Authorization", bearerToken())
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(body))
 				.andExpect(status().isOk())
@@ -146,8 +152,38 @@ class ApiControllerTests {
 
 	@Test
 	void accountDeletionUsesSoftDeleteStatus() throws Exception {
-		mockMvc.perform(delete("/api/v1/users/1"))
+		UserEntity user = userRepository.findByEmailIgnoreCase("sarah@institution-a.example").orElseThrow();
+
+		mockMvc.perform(delete("/api/v1/users/" + user.getId())
+						.header("Authorization", bearerToken()))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.status", is("DESACTIVE")));
+	}
+
+	@Test
+	void protectedProfileRejectsMissingToken() throws Exception {
+		UserEntity user = userRepository.findByEmailIgnoreCase("sarah@institution-a.example").orElseThrow();
+
+		mockMvc.perform(get("/api/v1/users/" + user.getId() + "/profile"))
+				.andExpect(status().isUnauthorized());
+	}
+
+	private String bearerToken() throws Exception {
+		String body = """
+				{
+				  "email": "sarah@institution-a.example",
+				  "password": "558435"
+				}
+				""";
+		String response = mockMvc.perform(post("/api/v1/auth/login")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(body))
+				.andExpect(status().isOk())
+				.andReturn()
+				.getResponse()
+				.getContentAsString();
+
+		String token = response.replaceFirst(".*\\\"token\\\"\\s*:\\s*\\\"([^\\\"]+)\\\".*", "$1");
+		return "Bearer " + token;
 	}
 }

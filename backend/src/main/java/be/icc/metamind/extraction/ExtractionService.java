@@ -1,13 +1,13 @@
 package be.icc.metamind.extraction;
 
 import java.util.List;
+import java.util.Objects;
 
 import be.icc.metamind.api.ApiException;
 import be.icc.metamind.institution.InstitutionEntity;
 import be.icc.metamind.publication.PublicationEntity;
 import be.icc.metamind.publication.PublicationRepository;
 import be.icc.metamind.user.UserEntity;
-import be.icc.metamind.user.UserRepository;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -16,20 +16,20 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class ExtractionService {
 	private final PublicationRepository publicationRepository;
-	private final UserRepository userRepository;
 
-	public ExtractionService(PublicationRepository publicationRepository, UserRepository userRepository) {
+	public ExtractionService(PublicationRepository publicationRepository) {
 		this.publicationRepository = publicationRepository;
-		this.userRepository = userRepository;
 	}
 
 	@Transactional
-	public MetadataExtractionResponse extract(long publicationId, long userId) {
-		UserEntity user = userRepository.findById(userId)
-				.orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Le compte utilisateur est introuvable."));
+	public MetadataExtractionResponse extract(long publicationId, UserEntity user) {
 		PublicationEntity publication = publicationRepository.findById(publicationId)
 				.orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "La publication demandee est introuvable."));
 		InstitutionEntity institution = user.getInstitution();
+
+		if (!Objects.equals(publication.getInstitution().getId(), institution.getId())) {
+			throw new ApiException(HttpStatus.FORBIDDEN, "Cette publication appartient a une autre institution.");
+		}
 
 		if (!institution.hasCredits()) {
 			throw new ApiException(HttpStatus.PAYMENT_REQUIRED, "Le solde de credits est insuffisant.");

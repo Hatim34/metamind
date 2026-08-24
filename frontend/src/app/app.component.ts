@@ -261,6 +261,7 @@ export class AppComponent implements OnInit {
     this.api.login(this.loginForm).subscribe({
       next: (response) => {
         this.token = response.token;
+        this.api.setToken(response.token);
         this.session = response.user;
         this.fillProfileForm(response.user);
         this.deletionRequested = false;
@@ -282,6 +283,7 @@ export class AppComponent implements OnInit {
     this.api.register(this.registerForm).subscribe({
       next: (response) => {
         this.token = response.token;
+        this.api.setToken(response.token);
         this.session = response.user;
         this.fillProfileForm(response.user);
         this.deletionRequested = false;
@@ -376,7 +378,7 @@ export class AppComponent implements OnInit {
       return;
     }
 
-    this.api.extractMetadata(publication.id, this.session.id).subscribe({
+    this.api.extractMetadata(publication.id).subscribe({
       next: (result) => {
         this.extractionResult = result;
         this.creditBalance = result.creditBalance;
@@ -472,6 +474,7 @@ export class AppComponent implements OnInit {
   logout(): void {
     this.session = null;
     this.token = '';
+    this.api.setToken('');
     this.institutions = [];
     this.creditBalance = null;
     this.extractionResult = null;

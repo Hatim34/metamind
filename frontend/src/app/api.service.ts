@@ -1,4 +1,4 @@
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 
@@ -88,41 +88,45 @@ export interface CreatePublicationRequest {
 @Injectable({ providedIn: 'root' })
 export class ApiService {
   private readonly baseUrl = this.resolveBaseUrl();
+  private token = '';
 
   constructor(private readonly http: HttpClient) {}
 
+  setToken(token: string): void {
+    this.token = token;
+  }
+
   getPublications(search = ''): Observable<Publication[]> {
     const params = search.trim() ? new HttpParams().set('search', search.trim()) : undefined;
-    return this.http.get<Publication[]>(`${this.baseUrl}/publications`, { params });
+    return this.http.get<Publication[]>(`${this.baseUrl}/publications`, { params, headers: this.optionalAuthHeaders() });
   }
 
   createPublication(request: CreatePublicationRequest): Observable<Publication> {
-    return this.http.post<Publication>(`${this.baseUrl}/publications`, request);
+    return this.http.post<Publication>(`${this.baseUrl}/publications`, request, { headers: this.authHeaders() });
   }
 
   getInstitutions(): Observable<Institution[]> {
-    return this.http.get<Institution[]>(`${this.baseUrl}/institutions`);
+    return this.http.get<Institution[]>(`${this.baseUrl}/institutions`, { headers: this.authHeaders() });
   }
 
   createInstitution(request: CreateInstitutionRequest): Observable<Institution> {
-    return this.http.post<Institution>(`${this.baseUrl}/institutions`, request);
+    return this.http.post<Institution>(`${this.baseUrl}/institutions`, request, { headers: this.authHeaders() });
   }
 
   deactivateInstitution(institutionId: number): Observable<Institution> {
-    return this.http.delete<Institution>(`${this.baseUrl}/institutions/${institutionId}`);
+    return this.http.delete<Institution>(`${this.baseUrl}/institutions/${institutionId}`, { headers: this.authHeaders() });
   }
 
   getCreditBalance(userId: number): Observable<CreditBalance> {
-    return this.http.get<CreditBalance>(`${this.baseUrl}/users/${userId}/credits`);
+    return this.http.get<CreditBalance>(`${this.baseUrl}/users/${userId}/credits`, { headers: this.authHeaders() });
   }
 
   purchaseCredits(userId: number, amount: number): Observable<CreditBalance> {
-    return this.http.post<CreditBalance>(`${this.baseUrl}/users/${userId}/credits/purchase`, { amount });
+    return this.http.post<CreditBalance>(`${this.baseUrl}/users/${userId}/credits/purchase`, { amount }, { headers: this.authHeaders() });
   }
 
-  extractMetadata(publicationId: number, userId: number): Observable<MetadataExtraction> {
-    const params = new HttpParams().set('userId', userId);
-    return this.http.post<MetadataExtraction>(`${this.baseUrl}/publications/${publicationId}/extraction`, {}, { params });
+  extractMetadata(publicationId: number): Observable<MetadataExtraction> {
+    return this.http.post<MetadataExtraction>(`${this.baseUrl}/publications/${publicationId}/extraction`, {}, { headers: this.authHeaders() });
   }
 
   login(request: LoginRequest): Observable<AuthResponse> {
@@ -134,11 +138,19 @@ export class ApiService {
   }
 
   updateProfile(userId: number, request: UpdateProfileRequest): Observable<UserSession> {
-    return this.http.put<UserSession>(`${this.baseUrl}/users/${userId}/profile`, request);
+    return this.http.put<UserSession>(`${this.baseUrl}/users/${userId}/profile`, request, { headers: this.authHeaders() });
   }
 
   requestAccountDeletion(userId: number): Observable<UserSession> {
-    return this.http.delete<UserSession>(`${this.baseUrl}/users/${userId}`);
+    return this.http.delete<UserSession>(`${this.baseUrl}/users/${userId}`, { headers: this.authHeaders() });
+  }
+
+  private authHeaders(): HttpHeaders {
+    return new HttpHeaders({ Authorization: `Bearer ${this.token}` });
+  }
+
+  private optionalAuthHeaders(): HttpHeaders | undefined {
+    return this.token ? this.authHeaders() : undefined;
   }
 
   private resolveBaseUrl(): string {

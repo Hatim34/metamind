@@ -5,8 +5,8 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import be.icc.metamind.api.ApiException;
-import be.icc.metamind.institution.InstitutionEntity;
-import be.icc.metamind.institution.InstitutionRepository;
+import be.icc.metamind.user.UserEntity;
+import be.icc.metamind.user.UserRole;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -15,37 +15,37 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class PublicationService {
 	private final PublicationRepository publicationRepository;
-	private final InstitutionRepository institutionRepository;
 
-	public PublicationService(PublicationRepository publicationRepository, InstitutionRepository institutionRepository) {
+	public PublicationService(PublicationRepository publicationRepository) {
 		this.publicationRepository = publicationRepository;
-		this.institutionRepository = institutionRepository;
 	}
 
 	@Transactional(readOnly = true)
-	public List<PublicationResponse> findPublications(String search) {
+	public List<PublicationResponse> findPublications(String search, UserEntity currentUser) {
 		String value = Optional.ofNullable(search).orElse("").trim();
 		List<PublicationEntity> publications = value.isBlank()
 				? publicationRepository.findAll()
 				: publicationRepository.findByTitleContainingIgnoreCaseOrAuthorContainingIgnoreCaseOrKeywordsTextContainingIgnoreCase(value, value, value);
 
 		return publications.stream()
+				.filter(publication -> isVisibleFor(publication, currentUser))
 				.map(PublicationResponse::from)
 				.toList();
 	}
 
 	@Transactional(readOnly = true)
-	public PublicationResponse findPublication(long id) {
-		return publicationRepository.findById(id)
-				.map(PublicationResponse::from)
+	public PublicationResponse findPublication(long id, UserEntity currentUser) {
+		PublicationEntity publication = publicationRepository.findById(id)
 				.orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "La publication demandee est introuvable."));
+		if (!isVisibleFor(publication, currentUser)) {
+			throw new ApiException(HttpStatus.FORBIDDEN, "Cette publication n'est pas accessible avec ce compte.");
+		}
+		return PublicationResponse.from(publication);
 	}
 
 	@Transactional
-	public PublicationResponse createPublication(PublicationRequest request) {
+	public PublicationResponse createPublication(PublicationRequest request, UserEntity currentUser) {
 		validate(request);
-		InstitutionEntity institution = institutionRepository.findByNameIgnoreCase(request.institution().trim())
-				.orElseThrow(() -> new ApiException(HttpStatus.BAD_REQUEST, "L'institution indiquee est inconnue."));
 
 		PublicationEntity publication = publicationRepository.save(new PublicationEntity(
 				request.title().trim(),
@@ -54,14 +54,24 @@ public class PublicationService {
 				PublicationStatus.A_VALIDER,
 				request.visibility(),
 				normalizeKeywords(request.keywords()),
-				institution
+				currentUser.getInstitution()
 		));
 		return PublicationResponse.from(publication);
 	}
 
+	private boolean isVisibleFor(PublicationEntity publication, UserEntity currentUser) {
+		if (currentUser != null && currentUser.getRole() == UserRole.ADMINISTRATEUR) {
+			return true;
+		}
+		if (currentUser != null && publication.getInstitution().getId().equals(currentUser.getInstitution().getId())) {
+			return true;
+		}
+		return publication.getStatus() == PublicationStatus.PUBLIE && publication.getVisibility() == Visibility.PUBLIC;
+	}
+
 	private void validate(PublicationRequest request) {
-		if (isBlank(request.title()) || isBlank(request.author()) || isBlank(request.institution())) {
-			throw new ApiException(HttpStatus.BAD_REQUEST, "Le titre, l'auteur et l'institution sont obligatoires.");
+		if (isBlank(request.title()) || isBlank(request.author())) {
+			throw new ApiException(HttpStatus.BAD_REQUEST, "Le titre et l'auteur sont obligatoires.");
 		}
 		if (request.year() < 1900 || request.year() > 2100) {
 			throw new ApiException(HttpStatus.BAD_REQUEST, "L'annee de publication est invalide.");

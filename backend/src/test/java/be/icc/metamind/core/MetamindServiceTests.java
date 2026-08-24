@@ -59,7 +59,7 @@ class MetamindServiceTests {
 
 		assertThat(response.user().email()).isEqualTo("amal@institution-a.example");
 		assertThat(response.user().status()).isEqualTo(UserStatus.ACTIF);
-		assertThat(response.token()).startsWith("token-alpha-");
+		assertThat(response.token()).startsWith("eyJ");
 	}
 
 	@Test

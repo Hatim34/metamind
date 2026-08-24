@@ -8,6 +8,11 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import be.icc.metamind.user.PasswordService;
+import be.icc.metamind.user.UserEntity;
+import be.icc.metamind.user.UserRepository;
+import be.icc.metamind.user.UserRole;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -26,6 +31,28 @@ class InstitutionControllerTests {
 	@Autowired
 	private InstitutionRepository repository;
 
+	@Autowired
+	private UserRepository userRepository;
+
+	@Autowired
+	private PasswordService passwordService;
+
+	@BeforeEach
+	void setUp() {
+		InstitutionEntity platform = repository.findByCodeIgnoreCase("META")
+				.orElseGet(() -> repository.save(new InstitutionEntity("META", "Metamind", "metamind.example")));
+		if (!userRepository.existsByEmailIgnoreCase("admin@metamind.example")) {
+			userRepository.save(new UserEntity(
+					"Nadia",
+					"Benali",
+					"admin@metamind.example",
+					passwordService.hash("558435"),
+					UserRole.ADMINISTRATEUR,
+					platform
+			));
+		}
+	}
+
 	@Test
 	void createsAndListsInstitution() throws Exception {
 		String body = """
@@ -37,15 +64,17 @@ class InstitutionControllerTests {
 				""";
 
 		mockMvc.perform(post("/api/v1/institutions")
+						.header("Authorization", bearerToken())
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(body))
 				.andExpect(status().isCreated())
 				.andExpect(jsonPath("$.code", is("INST-A")))
 				.andExpect(jsonPath("$.active", is(true)));
 
-		mockMvc.perform(get("/api/v1/institutions"))
+		mockMvc.perform(get("/api/v1/institutions")
+						.header("Authorization", bearerToken()))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$", hasSize(1)));
+				.andExpect(jsonPath("$", hasSize(2)));
 	}
 
 	@Test
@@ -59,11 +88,13 @@ class InstitutionControllerTests {
 				""";
 
 		mockMvc.perform(post("/api/v1/institutions")
+						.header("Authorization", bearerToken())
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(body))
 				.andExpect(status().isCreated());
 
 		mockMvc.perform(post("/api/v1/institutions")
+						.header("Authorization", bearerToken())
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(body))
 				.andExpect(status().isConflict());
@@ -73,8 +104,28 @@ class InstitutionControllerTests {
 	void deactivatesInstitution() throws Exception {
 		InstitutionEntity institution = repository.save(new InstitutionEntity("INST-C", "Institution C", "institution-c.example"));
 
-		mockMvc.perform(delete("/api/v1/institutions/" + institution.getId()))
+		mockMvc.perform(delete("/api/v1/institutions/" + institution.getId())
+						.header("Authorization", bearerToken()))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.active", is(false)));
+	}
+
+	private String bearerToken() throws Exception {
+		String body = """
+				{
+				  "email": "admin@metamind.example",
+				  "password": "558435"
+				}
+				""";
+		String response = mockMvc.perform(post("/api/v1/auth/login")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(body))
+				.andExpect(status().isOk())
+				.andReturn()
+				.getResponse()
+				.getContentAsString();
+
+		String token = response.replaceFirst(".*\\\"token\\\"\\s*:\\s*\\\"([^\\\"]+)\\\".*", "$1");
+		return "Bearer " + token;
 	}
 }

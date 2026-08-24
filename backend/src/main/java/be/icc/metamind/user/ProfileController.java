@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -20,17 +21,20 @@ public class ProfileController {
 	}
 
 	@GetMapping("/{id}/profile")
-	public UserResponse getProfile(@PathVariable long id) {
+	public UserResponse getProfile(@PathVariable long id, @RequestHeader("Authorization") String authorization) {
+		service.authenticateSelfOrAdmin(id, authorization);
 		return service.getProfile(id);
 	}
 
 	@PutMapping("/{id}/profile")
-	public UserResponse updateProfile(@PathVariable long id, @Valid @RequestBody UpdateProfileRequest request) {
+	public UserResponse updateProfile(@PathVariable long id, @RequestHeader("Authorization") String authorization, @Valid @RequestBody UpdateProfileRequest request) {
+		service.authenticateSelfOrAdmin(id, authorization);
 		return service.updateProfile(id, request);
 	}
 
 	@DeleteMapping("/{id}")
-	public UserResponse requestDeletion(@PathVariable long id) {
+	public UserResponse requestDeletion(@PathVariable long id, @RequestHeader("Authorization") String authorization) {
+		service.authenticateSelfOrAdmin(id, authorization);
 		return service.requestAccountDeletion(id);
 	}
 }

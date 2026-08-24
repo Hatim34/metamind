@@ -86,6 +86,8 @@ paths:
     post:
       tags: [Publications]
       summary: Creer une publication
+      security:
+        - bearerAuth: []
       requestBody:
         required: true
         content:
@@ -118,15 +120,11 @@ paths:
     post:
       tags: [Extraction]
       summary: Lancer une extraction de metadonnees
+      security:
+        - bearerAuth: []
       parameters:
         - name: publicationId
           in: path
-          required: true
-          schema:
-            type: integer
-            format: int64
-        - name: userId
-          in: query
           required: true
           schema:
             type: integer
@@ -144,6 +142,8 @@ paths:
     get:
       tags: [Institutions]
       summary: Lister les institutions
+      security:
+        - bearerAuth: []
       responses:
         "200":
           description: Liste des institutions
@@ -156,6 +156,8 @@ paths:
     post:
       tags: [Institutions]
       summary: Creer une institution
+      security:
+        - bearerAuth: []
       requestBody:
         required: true
         content:
@@ -173,6 +175,8 @@ paths:
     delete:
       tags: [Institutions]
       summary: Desactiver une institution
+      security:
+        - bearerAuth: []
       parameters:
         - $ref: "#/components/parameters/id"
       responses:
@@ -186,6 +190,8 @@ paths:
     get:
       tags: [Users]
       summary: Consulter son profil
+      security:
+        - bearerAuth: []
       parameters:
         - $ref: "#/components/parameters/id"
       responses:
@@ -198,6 +204,8 @@ paths:
     put:
       tags: [Users]
       summary: Modifier son profil
+      security:
+        - bearerAuth: []
       parameters:
         - $ref: "#/components/parameters/id"
       requestBody:
@@ -217,6 +225,8 @@ paths:
     delete:
       tags: [Users]
       summary: Demander la suppression logique du compte
+      security:
+        - bearerAuth: []
       parameters:
         - $ref: "#/components/parameters/id"
       responses:
@@ -230,6 +240,8 @@ paths:
     get:
       tags: [Credits]
       summary: Consulter le solde de credits
+      security:
+        - bearerAuth: []
       parameters:
         - $ref: "#/components/parameters/userId"
       responses:
@@ -243,6 +255,8 @@ paths:
     post:
       tags: [Credits]
       summary: Acheter des credits
+      security:
+        - bearerAuth: []
       parameters:
         - $ref: "#/components/parameters/userId"
       requestBody:
@@ -259,6 +273,11 @@ paths:
               schema:
                 $ref: "#/components/schemas/CreditBalance"
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
   parameters:
     id:
       name: id
@@ -335,11 +354,10 @@ components:
             type: string
     CreatePublicationRequest:
       type: object
-      required: [title, author, institution, year, visibility, keywords]
+      required: [title, author, year, visibility, keywords]
       properties:
         title: { type: string, example: Analyse automatique des metadonnees }
         author: { type: string, example: Sarah Lemaire }
-        institution: { type: string, example: Institution A }
         year: { type: integer, example: 2026 }
         visibility: { type: string, enum: [PUBLIC, INSTITUTION] }
         keywords:

@@ -58,7 +58,7 @@ class ExtractionServiceTests {
 				institution
 		));
 
-		MetadataExtractionResponse response = extractionService.extract(publication.getId(), user.getId());
+		MetadataExtractionResponse response = extractionService.extract(publication.getId(), user);
 
 		assertThat(response.creditBalance()).isEqualTo(1);
 		assertThat(response.suggestedKeywords()).contains("Dublin Core");

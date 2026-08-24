@@ -2,6 +2,7 @@ package be.icc.metamind.user;
 
 import be.icc.metamind.api.ApiException;
 import be.icc.metamind.auth.AuthResponse;
+import be.icc.metamind.auth.JwtService;
 import be.icc.metamind.auth.LoginRequest;
 import be.icc.metamind.auth.RegisterRequest;
 import be.icc.metamind.institution.InstitutionEntity;
@@ -16,11 +17,13 @@ public class AccountService {
 	private final UserRepository userRepository;
 	private final InstitutionRepository institutionRepository;
 	private final PasswordService passwordService;
+	private final JwtService jwtService;
 
-	public AccountService(UserRepository userRepository, InstitutionRepository institutionRepository, PasswordService passwordService) {
+	public AccountService(UserRepository userRepository, InstitutionRepository institutionRepository, PasswordService passwordService, JwtService jwtService) {
 		this.userRepository = userRepository;
 		this.institutionRepository = institutionRepository;
 		this.passwordService = passwordService;
+		this.jwtService = jwtService;
 	}
 
 	@Transactional(readOnly = true)
@@ -30,7 +33,7 @@ public class AccountService {
 				.filter(account -> account.getStatus() == UserStatus.ACTIF)
 				.orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "Les identifiants sont incorrects."));
 
-		return new AuthResponse("token-alpha-" + user.getId(), UserResponse.from(user));
+		return new AuthResponse(jwtService.createToken(user), UserResponse.from(user));
 	}
 
 	@Transactional
@@ -50,7 +53,34 @@ public class AccountService {
 		);
 
 		UserEntity saved = userRepository.save(user);
-		return new AuthResponse("token-alpha-" + saved.getId(), UserResponse.from(saved));
+		return new AuthResponse(jwtService.createToken(saved), UserResponse.from(saved));
+	}
+
+	@Transactional(readOnly = true)
+	public UserEntity authenticate(String authorizationHeader) {
+		UserEntity user = findUser(jwtService.readUserId(authorizationHeader));
+		if (user.getStatus() != UserStatus.ACTIF) {
+			throw new ApiException(HttpStatus.UNAUTHORIZED, "Le compte utilisateur est desactive.");
+		}
+		return user;
+	}
+
+	@Transactional(readOnly = true)
+	public UserEntity authenticateSelfOrAdmin(long id, String authorizationHeader) {
+		UserEntity currentUser = authenticate(authorizationHeader);
+		if (currentUser.getRole() == UserRole.ADMINISTRATEUR || currentUser.getId() == id) {
+			return currentUser;
+		}
+		throw new ApiException(HttpStatus.FORBIDDEN, "Cette action n'est pas autorisee pour ce compte.");
+	}
+
+	@Transactional(readOnly = true)
+	public UserEntity authenticateAdmin(String authorizationHeader) {
+		UserEntity currentUser = authenticate(authorizationHeader);
+		if (currentUser.getRole() == UserRole.ADMINISTRATEUR) {
+			return currentUser;
+		}
+		throw new ApiException(HttpStatus.FORBIDDEN, "Cette action est reservee a l'administrateur.");
 	}
 
 	@Transactional(readOnly = true)

@@ -62,7 +62,7 @@ public class MetamindService {
 				.findFirst()
 				.orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "Les identifiants sont incorrects."));
 
-		return new AuthResponse("token-alpha-" + user.id(), UserResponse.from(user));
+		return new AuthResponse(localToken(user.id()), UserResponse.from(user));
 	}
 
 	public AuthResponse register(RegisterRequest request) {
@@ -75,7 +75,7 @@ public class MetamindService {
 		}
 
 		UserAccount user = createUser(request.firstName(), request.lastName(), request.email(), request.institution());
-		return new AuthResponse("token-alpha-" + user.id(), UserResponse.from(user));
+		return new AuthResponse(localToken(user.id()), UserResponse.from(user));
 	}
 
 	public UserResponse getProfile(long id) {
@@ -125,5 +125,9 @@ public class MetamindService {
 		UserAccount user = new UserAccount(id, firstName, lastName, email, "Bibliothecaire", institution, UserStatus.ACTIF);
 		users.put(id, user);
 		return user;
+	}
+
+	private String localToken(long userId) {
+		return "eyJhbGciOiJIUzI1NiJ9.local-" + userId + ".signature";
 	}
 }

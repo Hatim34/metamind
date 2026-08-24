@@ -6,6 +6,7 @@ import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -37,6 +38,27 @@ public class GlobalExceptionHandler {
 				HttpStatus.BAD_REQUEST.getReasonPhrase(),
 				"Les donnees envoyees ne sont pas valides.",
 				details
+		));
+	}
+
+	@ExceptionHandler(MissingRequestHeaderException.class)
+	public ResponseEntity<ApiErrorResponse> handleMissingHeader(MissingRequestHeaderException exception) {
+		if (!"Authorization".equalsIgnoreCase(exception.getHeaderName())) {
+			return ResponseEntity.badRequest().body(new ApiErrorResponse(
+					Instant.now(),
+					HttpStatus.BAD_REQUEST.value(),
+					HttpStatus.BAD_REQUEST.getReasonPhrase(),
+					"Un en-tete obligatoire est manquant.",
+					List.of(exception.getHeaderName())
+			));
+		}
+
+		return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(new ApiErrorResponse(
+				Instant.now(),
+				HttpStatus.UNAUTHORIZED.value(),
+				HttpStatus.UNAUTHORIZED.getReasonPhrase(),
+				"Le jeton d'authentification est manquant.",
+				List.of()
 		));
 	}
 }
