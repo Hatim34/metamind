@@ -57,12 +57,30 @@ class ApiControllerTests {
 
 		InstitutionEntity institution = institutionRepository.findByCodeIgnoreCase("INST-A")
 				.orElseGet(() -> institutionRepository.save(new InstitutionEntity("INST-A", "Institution A", "institution-a.example")));
+		InstitutionEntity otherInstitution = institutionRepository.findByCodeIgnoreCase("INST-B")
+				.orElseGet(() -> institutionRepository.save(new InstitutionEntity("INST-B", "Institution B", "institution-b.example")));
 		userRepository.save(new UserEntity(
 				"Sarah",
 				"Lemaire",
 				"sarah@institution-a.example",
 				passwordService.hash("558435"),
 				UserRole.BIBLIOTHECAIRE,
+				institution
+		));
+		userRepository.save(new UserEntity(
+				"Jan",
+				"Peeters",
+				"jan@institution-b.example",
+				passwordService.hash("558435"),
+				UserRole.BIBLIOTHECAIRE,
+				otherInstitution
+		));
+		userRepository.save(new UserEntity(
+				"Admin",
+				"Metamind",
+				"admin@metamind.example",
+				passwordService.hash("558435"),
+				UserRole.ADMINISTRATEUR,
 				institution
 		));
 		publicationRepository.save(new PublicationEntity(
@@ -72,6 +90,15 @@ class ApiControllerTests {
 				PublicationStatus.PUBLIE,
 				Visibility.PUBLIC,
 				"Dublin Core,metadonnees,recherche",
+				institution
+		));
+		publicationRepository.save(new PublicationEntity(
+				"Rapport interne reserve a l institution",
+				"Sarah Lemaire",
+				2026,
+				PublicationStatus.A_VALIDER,
+				Visibility.INSTITUTION,
+				"catalogage,validation",
 				institution
 		));
 	}
@@ -182,6 +209,31 @@ class ApiControllerTests {
 	}
 
 	@Test
+	void institutionOnlyPublicationIsHiddenFromOtherInstitutions() throws Exception {
+		PublicationEntity restrictedPublication = publicationRepository.findAll().stream()
+				.filter(publication -> publication.getVisibility() == Visibility.INSTITUTION)
+				.findFirst()
+				.orElseThrow();
+
+		mockMvc.perform(get("/api/v1/publications/" + restrictedPublication.getId()))
+				.andExpect(status().isForbidden());
+
+		mockMvc.perform(get("/api/v1/publications/" + restrictedPublication.getId())
+						.header("Authorization", bearerToken("jan@institution-b.example", "558435")))
+				.andExpect(status().isForbidden());
+
+		mockMvc.perform(get("/api/v1/publications/" + restrictedPublication.getId())
+						.header("Authorization", bearerToken("sarah@institution-a.example", "558435")))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.visibility", is("INSTITUTION")));
+
+		mockMvc.perform(get("/api/v1/publications/" + restrictedPublication.getId())
+						.header("Authorization", bearerToken("admin@metamind.example", "558435")))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.visibility", is("INSTITUTION")));
+	}
+
+	@Test
 	void protectedProfileRejectsMissingToken() throws Exception {
 		UserEntity user = userRepository.findByEmailIgnoreCase("sarah@institution-a.example").orElseThrow();
 
@@ -190,12 +242,16 @@ class ApiControllerTests {
 	}
 
 	private String bearerToken() throws Exception {
+		return bearerToken("sarah@institution-a.example", "558435");
+	}
+
+	private String bearerToken(String email, String password) throws Exception {
 		String body = """
 				{
-				  "email": "sarah@institution-a.example",
-				  "password": "558435"
+				  "email": "%s",
+				  "password": "%s"
 				}
-				""";
+				""".formatted(email, password);
 		String response = mockMvc.perform(post("/api/v1/auth/login")
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(body))
