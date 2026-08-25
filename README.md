@@ -6,7 +6,7 @@ Metamind est une plateforme web destinée aux dépôts institutionnels académiq
 
 - `backend/` : API Spring Boot
 - `frontend/` : application Angular
-- `database/` : scripts et dumps de base de données
+- `database/` : dump PostgreSQL du livrable 14
 - `docs/` : documentation technique et livrables du projet
 
 ## Documentation API
