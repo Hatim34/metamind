@@ -277,6 +277,40 @@ class ApiControllerTests {
 	}
 
 	@Test
+	void librarianStatisticsAreLimitedToInstitution() throws Exception {
+		mockMvc.perform(get("/api/v1/statistics")
+						.header("Authorization", bearerToken()))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.scope", is("Institution A")))
+				.andExpect(jsonPath("$.totalPublications", is(2)))
+				.andExpect(jsonPath("$.publishedPublications", is(1)))
+				.andExpect(jsonPath("$.pendingValidationPublications", is(1)))
+				.andExpect(jsonPath("$.institutionOnlyPublications", is(1)));
+	}
+
+	@Test
+	void adminStatisticsAreGlobal() throws Exception {
+		InstitutionEntity otherInstitution = institutionRepository.findByCodeIgnoreCase("INST-B").orElseThrow();
+		publicationRepository.save(new PublicationEntity(
+				"Corpus institutionnel reserve",
+				"Jan Peeters",
+				2026,
+				PublicationStatus.PUBLIE,
+				Visibility.INSTITUTION,
+				"corpus,recherche",
+				otherInstitution
+		));
+
+		mockMvc.perform(get("/api/v1/statistics")
+						.header("Authorization", bearerToken("admin@metamind.example", "558435")))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.scope", is("GLOBAL")))
+				.andExpect(jsonPath("$.totalPublications", is(3)))
+				.andExpect(jsonPath("$.publishedPublications", is(2)))
+				.andExpect(jsonPath("$.institutionOnlyPublications", is(2)));
+	}
+
+	@Test
 	void protectedProfileRejectsMissingToken() throws Exception {
 		UserEntity user = userRepository.findByEmailIgnoreCase("sarah@institution-a.example").orElseThrow();
 

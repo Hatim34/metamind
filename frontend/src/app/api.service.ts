@@ -39,6 +39,16 @@ export interface CreditBalance {
   balance: number;
 }
 
+export interface DashboardStatistics {
+  scope: string;
+  totalPublications: number;
+  publishedPublications: number;
+  pendingValidationPublications: number;
+  publicPublications: number;
+  institutionOnlyPublications: number;
+  creditBalance: number;
+}
+
 export interface MetadataExtraction {
   publicationId: number;
   title: string;
@@ -129,6 +139,10 @@ export class ApiService {
 
   getCreditBalance(userId: number): Observable<CreditBalance> {
     return this.http.get<CreditBalance>(`${this.baseUrl}/users/${userId}/credits`, { headers: this.authHeaders() });
+  }
+
+  getStatistics(): Observable<DashboardStatistics> {
+    return this.http.get<DashboardStatistics>(`${this.baseUrl}/statistics`, { headers: this.authHeaders() });
   }
 
   purchaseCredits(userId: number, amount: number): Observable<CreditBalance> {

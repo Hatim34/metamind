@@ -64,6 +64,28 @@ describe('ApiService', () => {
     request.flush({ institutionId: 1, institution: 'Institution A', balance: 25 });
   });
 
+  it('charge les statistiques du tableau de bord', () => {
+    service.setToken('token-test');
+
+    service.getStatistics().subscribe((response) => {
+      expect(response.scope).toBe('Institution A');
+      expect(response.totalPublications).toBe(2);
+    });
+
+    const request = httpMock.expectOne('/api/v1/statistics');
+    expect(request.request.method).toBe('GET');
+    expect(request.request.headers.get('Authorization')).toBe('Bearer token-test');
+    request.flush({
+      scope: 'Institution A',
+      totalPublications: 2,
+      publishedPublications: 1,
+      pendingValidationPublications: 1,
+      publicPublications: 1,
+      institutionOnlyPublications: 1,
+      creditBalance: 20
+    });
+  });
+
   it('demande une extraction de metadonnees', () => {
     service.setToken('token-test');
 

@@ -2,7 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
-import { ApiService, Institution, MetadataExtraction, Publication, PublicationStatus, UserSession } from './api.service';
+import { ApiService, DashboardStatistics, Institution, MetadataExtraction, Publication, PublicationStatus, UserSession } from './api.service';
 
 type Page = 'catalogue' | 'connexion' | 'inscription' | 'profil' | 'publication' | 'administration';
 type Language = 'fr' | 'nl';
@@ -18,6 +18,8 @@ const translations = {
     administration: 'Administration',
     indicators: 'Indicateurs',
     publications: 'Publications',
+    published: 'Publiées',
+    pendingValidation: 'À valider',
     activeAccount: 'Compte actif',
     yes: 'Oui',
     no: 'Non',
@@ -98,6 +100,8 @@ const translations = {
     administration: 'Beheer',
     indicators: 'Indicatoren',
     publications: 'Publicaties',
+    published: 'Gepubliceerd',
+    pendingValidation: 'Te valideren',
     activeAccount: 'Actieve account',
     yes: 'Ja',
     no: 'Nee',
@@ -231,6 +235,7 @@ export class AppComponent implements OnInit {
   publications: Publication[] = [];
   institutions: Institution[] = [];
   creditBalance: number | null = null;
+  statistics: DashboardStatistics | null = null;
   extractionResult: MetadataExtraction | null = null;
 
   constructor(private readonly api: ApiService) {}
@@ -283,6 +288,7 @@ export class AppComponent implements OnInit {
         this.message = '';
         this.page = 'profil';
         this.loadCredits();
+        this.loadStatistics();
         if (this.isAdmin) {
           this.loadInstitutions();
         }
@@ -310,6 +316,7 @@ export class AppComponent implements OnInit {
         this.message = '';
         this.page = 'profil';
         this.loadCredits();
+        this.loadStatistics();
       },
       error: () => {
         this.message = this.t('registerFailed');
@@ -379,6 +386,23 @@ export class AppComponent implements OnInit {
     });
   }
 
+  loadStatistics(): void {
+    if (!this.session) {
+      this.statistics = null;
+      return;
+    }
+
+    this.api.getStatistics().subscribe({
+      next: (statistics) => {
+        this.statistics = statistics;
+        this.creditBalance = statistics.creditBalance;
+      },
+      error: () => {
+        this.statistics = null;
+      }
+    });
+  }
+
   purchaseCredits(amount: number): void {
     if (!this.session) {
       return;
@@ -387,6 +411,7 @@ export class AppComponent implements OnInit {
     this.api.purchaseCredits(this.session.id, amount).subscribe({
       next: (credits) => {
         this.creditBalance = credits.balance;
+        this.loadStatistics();
         this.message = '';
       },
       error: () => {
@@ -406,6 +431,7 @@ export class AppComponent implements OnInit {
         this.extractionResult = result;
         this.creditBalance = result.creditBalance;
         this.message = '';
+        this.loadStatistics();
         this.loadPublications();
       },
       error: () => {
@@ -424,6 +450,7 @@ export class AppComponent implements OnInit {
       next: (updatedPublication) => {
         this.publications = this.publications.map((item) => item.id === updatedPublication.id ? updatedPublication : item);
         this.message = status === 'SUPPRIME' ? this.t('publicationDeleted') : this.t('publicationPublished');
+        this.loadStatistics();
         this.loadPublications(false);
       },
       error: () => {
@@ -526,6 +553,7 @@ export class AppComponent implements OnInit {
     this.api.setToken('');
     this.institutions = [];
     this.creditBalance = null;
+    this.statistics = null;
     this.extractionResult = null;
     this.deletionRequested = false;
     this.profileSaved = false;

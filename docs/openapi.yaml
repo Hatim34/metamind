@@ -17,6 +17,7 @@ tags:
   - name: Users
   - name: Credits
   - name: Extraction
+  - name: Statistics
 paths:
   /health:
     get:
@@ -326,6 +327,22 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/CreditBalance"
+  /statistics:
+    get:
+      tags: [Statistics]
+      summary: Consulter les statistiques du tableau de bord
+      description: Les statistiques sont globales pour un administrateur et limitees a l'institution du bibliothecaire.
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Statistiques disponibles
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Statistics"
+        "401":
+          description: Jeton JWT absent ou invalide
 components:
   securitySchemes:
     bearerAuth:
@@ -461,3 +478,13 @@ components:
           items:
             type: string
         creditBalance: { type: integer }
+    Statistics:
+      type: object
+      properties:
+        scope: { type: string, example: Institution A }
+        totalPublications: { type: integer, example: 120 }
+        publishedPublications: { type: integer, example: 90 }
+        pendingValidationPublications: { type: integer, example: 12 }
+        publicPublications: { type: integer, example: 80 }
+        institutionOnlyPublications: { type: integer, example: 40 }
+        creditBalance: { type: integer, example: 25 }

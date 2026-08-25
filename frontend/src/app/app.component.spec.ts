@@ -44,6 +44,7 @@ describe('AppComponent', () => {
       'createInstitution',
       'deactivateInstitution',
       'getCreditBalance',
+      'getStatistics',
       'purchaseCredits',
       'extractMetadata',
       'updatePublicationStatus',
@@ -54,6 +55,15 @@ describe('AppComponent', () => {
     ]);
     api.getPublications.and.returnValue(of(publications));
     api.getCreditBalance.and.returnValue(of({ institutionId: 1, institution: 'Institution A', balance: 20 }));
+    api.getStatistics.and.returnValue(of({
+      scope: 'Institution A',
+      totalPublications: 2,
+      publishedPublications: 1,
+      pendingValidationPublications: 1,
+      publicPublications: 1,
+      institutionOnlyPublications: 1,
+      creditBalance: 20
+    }));
 
     await TestBed.configureTestingModule({
       imports: [AppComponent],
@@ -85,11 +95,31 @@ describe('AppComponent', () => {
     expect(component.session?.email).toBe('sarah@institution-a.example');
     expect(component.page).toBe('profil');
     expect(component.creditBalance).toBe(20);
+    expect(component.statistics?.scope).toBe('Institution A');
+  });
+
+  it('charge les statistiques du tableau de bord', () => {
+    component.session = authResponse.user;
+
+    component.loadStatistics();
+
+    expect(api.getStatistics).toHaveBeenCalled();
+    expect(component.statistics?.totalPublications).toBe(2);
+    expect(component.creditBalance).toBe(20);
   });
 
   it('met a jour le solde apres un achat de credits', () => {
     const balance: CreditBalance = { institutionId: 1, institution: 'Institution A', balance: 30 };
     api.purchaseCredits.and.returnValue(of(balance));
+    api.getStatistics.and.returnValue(of({
+      scope: 'Institution A',
+      totalPublications: 2,
+      publishedPublications: 1,
+      pendingValidationPublications: 1,
+      publicPublications: 1,
+      institutionOnlyPublications: 1,
+      creditBalance: 30
+    }));
     component.session = authResponse.user;
 
     component.purchaseCredits(10);

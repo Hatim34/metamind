@@ -21,7 +21,15 @@
   <section class="summary-grid" [attr.aria-label]="t('indicators')">
     <article>
       <span>{{ t('publications') }}</span>
-      <strong>{{ publications.length }}</strong>
+      <strong>{{ statistics?.totalPublications ?? publications.length }}</strong>
+    </article>
+    <article *ngIf="session">
+      <span>{{ t('published') }}</span>
+      <strong>{{ statistics?.publishedPublications ?? '-' }}</strong>
+    </article>
+    <article *ngIf="session">
+      <span>{{ t('pendingValidation') }}</span>
+      <strong>{{ statistics?.pendingValidationPublications ?? '-' }}</strong>
     </article>
     <article>
       <span>{{ t('activeAccount') }}</span>
