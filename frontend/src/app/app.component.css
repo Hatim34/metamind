@@ -197,6 +197,14 @@ select {
   padding: 6px 9px;
 }
 
+.publication-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+  min-width: 250px;
+}
+
 .form-panel {
   max-width: 620px;
 }
@@ -298,5 +306,10 @@ th {
 
   .tags {
     justify-content: flex-start;
+  }
+
+  .publication-actions {
+    justify-content: flex-start;
+    min-width: 0;
   }
 }

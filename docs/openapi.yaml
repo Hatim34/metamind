@@ -117,6 +117,31 @@ paths:
                 $ref: "#/components/schemas/Publication"
         "404":
           description: Publication introuvable
+  /publications/{id}/status:
+    put:
+      tags: [Publications]
+      summary: Modifier le statut d'une publication
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/id"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PublicationStatusRequest"
+      responses:
+        "200":
+          description: Statut modifie
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Publication"
+        "400":
+          description: Statut invalide pour une modification manuelle
+        "403":
+          description: Publication rattachee a une autre institution
   /publications/{publicationId}/extraction:
     post:
       tags: [Extraction]
@@ -393,6 +418,11 @@ components:
           type: array
           items:
             type: string
+    PublicationStatusRequest:
+      type: object
+      required: [status]
+      properties:
+        status: { type: string, enum: [A_VALIDER, PUBLIE, SUPPRIME], example: PUBLIE }
     Institution:
       type: object
       properties:

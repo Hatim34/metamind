@@ -83,4 +83,27 @@ describe('ApiService', () => {
       creditBalance: 19
     });
   });
+
+  it('modifie le statut d une publication', () => {
+    service.setToken('token-test');
+
+    service.updatePublicationStatus(5, { status: 'PUBLIE' }).subscribe((response) => {
+      expect(response.status).toBe('PUBLIE');
+    });
+
+    const request = httpMock.expectOne('/api/v1/publications/5/status');
+    expect(request.request.method).toBe('PUT');
+    expect(request.request.body).toEqual({ status: 'PUBLIE' });
+    expect(request.request.headers.get('Authorization')).toBe('Bearer token-test');
+    request.flush({
+      id: 5,
+      title: 'Analyse automatique des metadonnees',
+      author: 'Sarah Lemaire',
+      institution: 'Institution A',
+      year: 2026,
+      status: 'PUBLIE',
+      visibility: 'PUBLIC',
+      keywords: ['Dublin Core']
+    });
+  });
 });

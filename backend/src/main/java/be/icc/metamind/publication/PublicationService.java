@@ -59,6 +59,20 @@ public class PublicationService {
 		return PublicationResponse.from(publication);
 	}
 
+	@Transactional
+	public PublicationResponse updateStatus(long id, PublicationStatusRequest request, UserEntity currentUser) {
+		PublicationEntity publication = publicationRepository.findById(id)
+				.orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "La publication demandee est introuvable."));
+		if (!canManage(publication, currentUser)) {
+			throw new ApiException(HttpStatus.FORBIDDEN, "Cette publication ne peut pas etre modifiee avec ce compte.");
+		}
+		if (request.status() == PublicationStatus.EN_ATTENTE || request.status() == PublicationStatus.EXTRACTION) {
+			throw new ApiException(HttpStatus.BAD_REQUEST, "Ce statut est reserve au traitement interne.");
+		}
+		publication.updateStatus(request.status());
+		return PublicationResponse.from(publication);
+	}
+
 	private boolean isVisibleFor(PublicationEntity publication, UserEntity currentUser) {
 		if (currentUser != null && currentUser.getRole() == UserRole.ADMINISTRATEUR) {
 			return true;
@@ -67,6 +81,11 @@ public class PublicationService {
 			return true;
 		}
 		return publication.getStatus() == PublicationStatus.PUBLIE && publication.getVisibility() == Visibility.PUBLIC;
+	}
+
+	private boolean canManage(PublicationEntity publication, UserEntity currentUser) {
+		return currentUser.getRole() == UserRole.ADMINISTRATEUR
+				|| publication.getInstitution().getId().equals(currentUser.getInstitution().getId());
 	}
 
 	private void validate(PublicationRequest request) {

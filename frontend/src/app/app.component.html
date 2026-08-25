@@ -67,9 +67,17 @@
           <span>{{ publication.visibility }}</span>
           <span *ngFor="let keyword of publication.keywords">{{ keyword }}</span>
         </div>
-        <button type="button" *ngIf="session" class="primary" (click)="extractMetadata(publication)">
-          {{ t('extract') }}
-        </button>
+        <div class="publication-actions" *ngIf="session">
+          <button type="button" class="primary" *ngIf="canExtractPublication(publication)" (click)="extractMetadata(publication)">
+            {{ t('extract') }}
+          </button>
+          <button type="button" *ngIf="canPublishPublication(publication)" (click)="updatePublicationStatus(publication, 'PUBLIE')">
+            {{ t('publish') }}
+          </button>
+          <button type="button" class="danger" *ngIf="canDeletePublication(publication)" (click)="updatePublicationStatus(publication, 'SUPPRIME')">
+            {{ t('deletePublication') }}
+          </button>
+        </div>
       </article>
     </div>
   </section>

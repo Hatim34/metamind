@@ -8,10 +8,12 @@ export interface Publication {
   author: string;
   institution: string;
   year: number;
-  status: string;
+  status: PublicationStatus;
   visibility: 'PUBLIC' | 'INSTITUTION';
   keywords: string[];
 }
+
+export type PublicationStatus = 'EN_ATTENTE' | 'EXTRACTION' | 'A_VALIDER' | 'PUBLIE' | 'SUPPRIME';
 
 export interface UserSession {
   id: number;
@@ -85,6 +87,10 @@ export interface CreatePublicationRequest {
   keywords: string[];
 }
 
+export interface UpdatePublicationStatusRequest {
+  status: Extract<PublicationStatus, 'A_VALIDER' | 'PUBLIE' | 'SUPPRIME'>;
+}
+
 @Injectable({ providedIn: 'root' })
 export class ApiService {
   private readonly baseUrl = this.resolveBaseUrl();
@@ -103,6 +109,10 @@ export class ApiService {
 
   createPublication(request: CreatePublicationRequest): Observable<Publication> {
     return this.http.post<Publication>(`${this.baseUrl}/publications`, request, { headers: this.authHeaders() });
+  }
+
+  updatePublicationStatus(publicationId: number, request: UpdatePublicationStatusRequest): Observable<Publication> {
+    return this.http.put<Publication>(`${this.baseUrl}/publications/${publicationId}/status`, request, { headers: this.authHeaders() });
   }
 
   getInstitutions(): Observable<Institution[]> {

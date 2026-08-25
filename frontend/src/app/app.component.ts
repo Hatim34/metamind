@@ -2,7 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
-import { ApiService, Institution, MetadataExtraction, Publication, UserSession } from './api.service';
+import { ApiService, Institution, MetadataExtraction, Publication, PublicationStatus, UserSession } from './api.service';
 
 type Page = 'catalogue' | 'connexion' | 'inscription' | 'profil' | 'publication' | 'administration';
 type Language = 'fr' | 'nl';
@@ -68,12 +68,17 @@ const translations = {
     deactivate: 'Désactiver',
     adminRequired: 'Connectez-vous avec un compte administrateur.',
     extract: 'Extraire',
+    publish: 'Publier',
+    deletePublication: 'Supprimer',
     apiUnavailable: "Impossible de joindre l'API locale.",
     loginFailed: 'Connexion impossible avec les donnees envoyees.',
     registerFailed: 'Creation du compte impossible avec les donnees envoyees.',
     createPublicationFailed: 'Creation de la publication impossible avec les donnees envoyees.',
     purchaseFailed: 'Achat de credits impossible.',
     extractionFailed: 'Extraction impossible. Verifiez le solde de credits.',
+    publicationPublished: 'La publication est publiee.',
+    publicationDeleted: 'La publication est supprimee logiquement.',
+    statusUpdateFailed: 'Modification du statut impossible.',
     updateProfileFailed: 'Modification du profil impossible.',
     deletionFailed: 'Demande de suppression impossible.',
     loadInstitutionsFailed: 'Chargement des institutions impossible.',
@@ -143,12 +148,17 @@ const translations = {
     deactivate: 'Deactiveren',
     adminRequired: 'Meld u aan met een beheerdersaccount.',
     extract: 'Extraheren',
+    publish: 'Publiceren',
+    deletePublication: 'Verwijderen',
     apiUnavailable: 'De lokale API is niet bereikbaar.',
     loginFailed: 'Aanmelden is onmogelijk met de verzonden gegevens.',
     registerFailed: 'Account aanmaken is onmogelijk met de verzonden gegevens.',
     createPublicationFailed: 'Publicatie aanmaken is onmogelijk met de verzonden gegevens.',
     purchaseFailed: 'Credits kopen is onmogelijk.',
     extractionFailed: 'Extractie is onmogelijk. Controleer het creditsaldo.',
+    publicationPublished: 'De publicatie is gepubliceerd.',
+    publicationDeleted: 'De publicatie is logisch verwijderd.',
+    statusUpdateFailed: 'Status wijzigen is onmogelijk.',
     updateProfileFailed: 'Profiel wijzigen is onmogelijk.',
     deletionFailed: 'Verwijderingsaanvraag is onmogelijk.',
     loadInstitutionsFailed: 'Instellingen laden is onmogelijk.',
@@ -244,13 +254,15 @@ export class AppComponent implements OnInit {
     return translations[this.language][key];
   }
 
-  loadPublications(): void {
+  loadPublications(clearMessage = true): void {
     this.loading = true;
     this.api.getPublications(this.search).subscribe({
       next: (publications) => {
         this.publications = publications;
         this.loading = false;
-        this.message = '';
+        if (clearMessage) {
+          this.message = '';
+        }
       },
       error: () => {
         this.loading = false;
@@ -402,6 +414,24 @@ export class AppComponent implements OnInit {
     });
   }
 
+  updatePublicationStatus(publication: Publication, status: Extract<PublicationStatus, 'A_VALIDER' | 'PUBLIE' | 'SUPPRIME'>): void {
+    if (!this.canManagePublication(publication)) {
+      this.message = this.t('statusUpdateFailed');
+      return;
+    }
+
+    this.api.updatePublicationStatus(publication.id, { status }).subscribe({
+      next: (updatedPublication) => {
+        this.publications = this.publications.map((item) => item.id === updatedPublication.id ? updatedPublication : item);
+        this.message = status === 'SUPPRIME' ? this.t('publicationDeleted') : this.t('publicationPublished');
+        this.loadPublications(false);
+      },
+      error: () => {
+        this.message = this.t('statusUpdateFailed');
+      }
+    });
+  }
+
   updateProfile(): void {
     if (!this.session) {
       return;
@@ -504,6 +534,22 @@ export class AppComponent implements OnInit {
 
   get isAdmin(): boolean {
     return this.session?.role === 'Administrateur';
+  }
+
+  canManagePublication(publication: Publication): boolean {
+    return !!this.session && (this.isAdmin || publication.institution === this.session.institution);
+  }
+
+  canExtractPublication(publication: Publication): boolean {
+    return !!this.session && publication.institution === this.session.institution && publication.status !== 'SUPPRIME';
+  }
+
+  canPublishPublication(publication: Publication): boolean {
+    return this.canManagePublication(publication) && publication.status !== 'PUBLIE' && publication.status !== 'SUPPRIME';
+  }
+
+  canDeletePublication(publication: Publication): boolean {
+    return this.canManagePublication(publication) && publication.status !== 'SUPPRIME';
   }
 
   isPublicationFormValid(): boolean {

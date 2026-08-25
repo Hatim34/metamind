@@ -93,4 +93,8 @@ public class PublicationEntity {
 		this.status = PublicationStatus.A_VALIDER;
 		this.keywordsText = keywordsText;
 	}
+
+	public void updateStatus(PublicationStatus status) {
+		this.status = status;
+	}
 }

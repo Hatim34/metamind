@@ -46,6 +46,7 @@ describe('AppComponent', () => {
       'getCreditBalance',
       'purchaseCredits',
       'extractMetadata',
+      'updatePublicationStatus',
       'login',
       'register',
       'updateProfile',
@@ -123,6 +124,45 @@ describe('AppComponent', () => {
     };
 
     expect(component.isPublicationFormValid()).toBeTrue();
+  });
+
+  it('publie une publication de la meme institution', () => {
+    api.updatePublicationStatus.and.returnValue(of({ ...publications[0], status: 'PUBLIE' }));
+    component.session = authResponse.user;
+    component.publications = [{ ...publications[0], status: 'A_VALIDER' }];
+
+    component.updatePublicationStatus(component.publications[0], 'PUBLIE');
+
+    expect(api.updatePublicationStatus).toHaveBeenCalledWith(1, { status: 'PUBLIE' });
+    expect(component.message).toBe(component.t('publicationPublished'));
+  });
+
+  it('enregistre une suppression logique de publication', () => {
+    api.updatePublicationStatus.and.returnValue(of({ ...publications[0], status: 'SUPPRIME' }));
+    component.session = authResponse.user;
+    component.publications = publications;
+
+    component.updatePublicationStatus(publications[0], 'SUPPRIME');
+
+    expect(api.updatePublicationStatus).toHaveBeenCalledWith(1, { status: 'SUPPRIME' });
+    expect(component.message).toBe(component.t('publicationDeleted'));
+  });
+
+  it('refuse de gerer une publication d une autre institution', () => {
+    component.session = authResponse.user;
+    const publication = { ...publications[0], institution: 'Institution B' };
+
+    component.updatePublicationStatus(publication, 'PUBLIE');
+
+    expect(api.updatePublicationStatus).not.toHaveBeenCalled();
+    expect(component.message).toBe(component.t('statusUpdateFailed'));
+  });
+
+  it('limite l extraction aux publications de son institution', () => {
+    component.session = authResponse.user;
+
+    expect(component.canExtractPublication(publications[0])).toBeTrue();
+    expect(component.canExtractPublication({ ...publications[0], institution: 'Institution B' })).toBeFalse();
   });
 
   it('refuse une inscription avec un mot de passe trop court', () => {

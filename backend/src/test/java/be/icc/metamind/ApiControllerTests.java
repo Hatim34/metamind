@@ -234,6 +234,49 @@ class ApiControllerTests {
 	}
 
 	@Test
+	void publicationStatusCanBeUpdatedByInstitutionLibrarian() throws Exception {
+		PublicationEntity publication = publicationRepository.findAll().stream()
+				.filter(item -> item.getStatus() == PublicationStatus.A_VALIDER)
+				.findFirst()
+				.orElseThrow();
+
+		mockMvc.perform(put("/api/v1/publications/" + publication.getId() + "/status")
+						.header("Authorization", bearerToken())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{\"status\":\"PUBLIE\"}"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.status", is("PUBLIE")));
+	}
+
+	@Test
+	void publicationStatusRejectsOtherInstitutionLibrarian() throws Exception {
+		PublicationEntity publication = publicationRepository.findAll().stream()
+				.filter(item -> item.getStatus() == PublicationStatus.A_VALIDER)
+				.findFirst()
+				.orElseThrow();
+
+		mockMvc.perform(put("/api/v1/publications/" + publication.getId() + "/status")
+						.header("Authorization", bearerToken("jan@institution-b.example", "558435"))
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{\"status\":\"PUBLIE\"}"))
+				.andExpect(status().isForbidden());
+	}
+
+	@Test
+	void publicationStatusRejectsInternalProcessingStatus() throws Exception {
+		PublicationEntity publication = publicationRepository.findAll().stream()
+				.filter(item -> item.getStatus() == PublicationStatus.A_VALIDER)
+				.findFirst()
+				.orElseThrow();
+
+		mockMvc.perform(put("/api/v1/publications/" + publication.getId() + "/status")
+						.header("Authorization", bearerToken())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{\"status\":\"EXTRACTION\"}"))
+				.andExpect(status().isBadRequest());
+	}
+
+	@Test
 	void protectedProfileRejectsMissingToken() throws Exception {
 		UserEntity user = userRepository.findByEmailIgnoreCase("sarah@institution-a.example").orElseThrow();
 
