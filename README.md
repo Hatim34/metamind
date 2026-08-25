@@ -15,6 +15,13 @@ Le contrat OpenAPI est disponible dans `docs/openapi.yaml`. Il decrit les endpoi
 Une fois l'application lancee, le meme contrat est disponible en ligne sur `/api/v1/openapi.yaml`.
 Les exports Open Data publics sont disponibles via `/api/v1/open-data/rss` et `/api/v1/open-data/publications/{id}/dublin-core`.
 
+## Documentation de deploiement
+
+- Guide : `docs/deploiement.md`
+- Controle local : `scripts/controle-local.sh`
+- Controle distant : `scripts/controle-deploiement.sh`
+- URL de production : `https://metamind-app.duckdns.org`
+
 ## Securite API
 
 L'authentification utilise un jeton JWT signe. Apres connexion, le frontend envoie le header `Authorization: Bearer <token>` sur les routes protegees : profil, credits, extraction, publications privees et administration.
