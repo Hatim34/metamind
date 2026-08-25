@@ -17,7 +17,7 @@ jobs:
         working-directory: backend
     steps:
       - name: Recuperation du code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Installation de Java
         uses: actions/setup-java@v5
@@ -37,7 +37,7 @@ jobs:
         working-directory: frontend
     steps:
       - name: Recuperation du code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Installation de Node.js
         uses: actions/setup-node@v4
