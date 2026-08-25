@@ -111,6 +111,15 @@ class ApiControllerTests {
 	}
 
 	@Test
+	void openApiDocumentationIsServed() throws Exception {
+		mockMvc.perform(get("/api/v1/openapi.yaml"))
+				.andExpect(status().isOk())
+				.andExpect(result -> org.assertj.core.api.Assertions.assertThat(result.getResponse().getContentAsString())
+						.contains("openapi: 3.0.3")
+						.contains("/api/v1"));
+	}
+
+	@Test
 	void publicationsCanBeListedAndFiltered() throws Exception {
 		mockMvc.perform(get("/api/v1/publications").param("search", "Dublin"))
 				.andExpect(status().isOk())
