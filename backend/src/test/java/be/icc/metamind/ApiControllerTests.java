@@ -151,6 +151,27 @@ class ApiControllerTests {
 	}
 
 	@Test
+	void publicationCreationRejectsInvalidRequest() throws Exception {
+		String body = """
+				{
+				  "title": "",
+				  "author": "A",
+				  "institution": "Institution A",
+				  "year": 1800,
+				  "visibility": null,
+				  "keywords": []
+				}
+				""";
+
+		mockMvc.perform(post("/api/v1/publications")
+						.header("Authorization", bearerToken())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(body))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.message", is("Les donnees envoyees ne sont pas valides.")));
+	}
+
+	@Test
 	void librarianCanLogin() throws Exception {
 		String body = """
 				{

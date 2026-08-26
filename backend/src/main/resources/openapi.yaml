@@ -456,12 +456,13 @@ components:
       type: object
       required: [title, author, year, visibility, keywords]
       properties:
-        title: { type: string, example: Analyse automatique des metadonnees }
-        author: { type: string, example: Sarah Lemaire }
-        year: { type: integer, example: 2026 }
+        title: { type: string, maxLength: 220, example: Analyse automatique des metadonnees }
+        author: { type: string, maxLength: 160, example: Sarah Lemaire }
+        year: { type: integer, minimum: 1900, maximum: 2100, example: 2026 }
         visibility: { type: string, enum: [PUBLIC, INSTITUTION] }
         keywords:
           type: array
+          maxItems: 20
           items:
             type: string
     PublicationStatusRequest:

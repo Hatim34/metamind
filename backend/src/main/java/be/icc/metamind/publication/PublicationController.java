@@ -44,7 +44,7 @@ public class PublicationController {
 
 	@PostMapping
 	@ResponseStatus(HttpStatus.CREATED)
-	public PublicationResponse create(@RequestHeader("Authorization") String authorization, @RequestBody PublicationRequest request) {
+	public PublicationResponse create(@RequestHeader("Authorization") String authorization, @Valid @RequestBody PublicationRequest request) {
 		UserEntity currentUser = accountService.authenticate(authorization);
 		return service.createPublication(request, currentUser);
 	}
