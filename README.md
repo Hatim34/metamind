@@ -19,6 +19,7 @@ Les exports Open Data publics sont disponibles via `/api/v1/open-data/rss` et `/
 
 - Guide : `docs/deploiement.md`
 - Controle local : `scripts/controle-local.sh`
+- Controle API : `scripts/controle-api.sh`
 - Controle distant : `scripts/controle-deploiement.sh`
 - URL de production : `https://metamind-app.duckdns.org`
 
@@ -39,6 +40,8 @@ mvn test
 cd ../frontend
 npm run build
 npm test -- --watch=false --browsers=ChromeHeadless
+cd ..
+sh scripts/controle-api.sh http://localhost:8080/api/v1
 ```
 
 ## Deploiement

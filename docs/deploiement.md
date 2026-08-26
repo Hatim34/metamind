@@ -85,6 +85,12 @@ Controle distant apres publication :
 sh scripts/controle-deploiement.sh https://metamind-app.duckdns.org
 ```
 
+Controle du parcours API REST :
+
+```bash
+sh scripts/controle-api.sh https://metamind-app.duckdns.org/api/v1
+```
+
 Verifications manuelles utiles :
 
 ```bash
