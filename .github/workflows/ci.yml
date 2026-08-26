@@ -52,3 +52,13 @@ jobs:
 
       - name: Build frontend
         run: npm run build -- --progress=false
+
+  deploiement:
+    name: Deploiement
+    runs-on: ubuntu-latest
+    steps:
+      - name: Recuperation du code
+        uses: actions/checkout@v5
+
+      - name: Validation Docker Compose
+        run: docker compose --env-file .env.example config
