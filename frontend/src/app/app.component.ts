@@ -583,6 +583,25 @@ export class AppComponent implements OnInit {
     });
   }
 
+  deletePublication(publication: Publication): void {
+    if (!this.canManagePublication(publication)) {
+      this.message = this.t('statusUpdateFailed');
+      return;
+    }
+
+    this.api.deletePublication(publication.id).subscribe({
+      next: (updatedPublication) => {
+        this.publications = this.publications.map((item) => item.id === updatedPublication.id ? updatedPublication : item);
+        this.message = this.t('publicationDeleted');
+        this.loadStatistics();
+        this.loadPublications(false);
+      },
+      error: () => {
+        this.message = this.t('statusUpdateFailed');
+      }
+    });
+  }
+
   updateProfile(): void {
     if (!this.session) {
       return;

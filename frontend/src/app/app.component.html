@@ -83,7 +83,7 @@
           <button type="button" *ngIf="canPublishPublication(publication)" (click)="updatePublicationStatus(publication, 'PUBLIE')">
             {{ t('publish') }}
           </button>
-          <button type="button" class="danger" *ngIf="canDeletePublication(publication)" (click)="updatePublicationStatus(publication, 'SUPPRIME')">
+          <button type="button" class="danger" *ngIf="canDeletePublication(publication)" (click)="deletePublication(publication)">
             {{ t('deletePublication') }}
           </button>
         </div>

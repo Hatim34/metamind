@@ -135,6 +135,10 @@ export class ApiService {
     return this.http.put<Publication>(`${this.baseUrl}/publications/${publicationId}/status`, request, { headers: this.authHeaders() });
   }
 
+  deletePublication(publicationId: number): Observable<Publication> {
+    return this.http.delete<Publication>(`${this.baseUrl}/publications/${publicationId}`, { headers: this.authHeaders() });
+  }
+
   getInstitutions(): Observable<Institution[]> {
     return this.http.get<Institution[]>(`${this.baseUrl}/institutions`, { headers: this.authHeaders() });
   }

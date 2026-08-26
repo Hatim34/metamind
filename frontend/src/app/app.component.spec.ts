@@ -49,6 +49,7 @@ describe('AppComponent', () => {
       'purchaseCredits',
       'extractMetadata',
       'updatePublicationStatus',
+      'deletePublication',
       'login',
       'register',
       'updateProfile',
@@ -187,13 +188,13 @@ describe('AppComponent', () => {
   });
 
   it('enregistre une suppression logique de publication', () => {
-    api.updatePublicationStatus.and.returnValue(of({ ...publications[0], status: 'SUPPRIME' }));
+    api.deletePublication.and.returnValue(of({ ...publications[0], status: 'SUPPRIME' }));
     component.session = authResponse.user;
     component.publications = publications;
 
-    component.updatePublicationStatus(publications[0], 'SUPPRIME');
+    component.deletePublication(publications[0]);
 
-    expect(api.updatePublicationStatus).toHaveBeenCalledWith(1, { status: 'SUPPRIME' });
+    expect(api.deletePublication).toHaveBeenCalledWith(1);
     expect(component.message).toBe(component.t('publicationDeleted'));
   });
 
