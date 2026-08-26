@@ -63,3 +63,5 @@ docker compose ps
 ```
 
 La variable `METAMIND_DOMAIN` doit rester sur `metamind-app.duckdns.org` pour le deploiement final. Le fichier `.env` contient les secrets de production et ne doit pas etre versionne.
+
+L'extraction de metadonnees utilise le fournisseur local par defaut. Gemini peut etre active en production avec `METAMIND_LLM_PROVIDER=gemini` et une cle `GEMINI_API_KEY` stockee uniquement dans `.env`.

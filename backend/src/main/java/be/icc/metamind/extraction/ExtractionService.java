@@ -1,6 +1,5 @@
 package be.icc.metamind.extraction;
 
-import java.util.List;
 import java.util.Objects;
 
 import be.icc.metamind.api.ApiException;
@@ -20,10 +19,12 @@ import org.springframework.transaction.annotation.Transactional;
 public class ExtractionService {
 	private final PublicationRepository publicationRepository;
 	private final CreditMovementRepository movementRepository;
+	private final MetadataExtractionProvider extractionProvider;
 
-	public ExtractionService(PublicationRepository publicationRepository, CreditMovementRepository movementRepository) {
+	public ExtractionService(PublicationRepository publicationRepository, CreditMovementRepository movementRepository, MetadataExtractionProvider extractionProvider) {
 		this.publicationRepository = publicationRepository;
 		this.movementRepository = movementRepository;
+		this.extractionProvider = extractionProvider;
 	}
 
 	@Transactional
@@ -41,8 +42,8 @@ public class ExtractionService {
 		}
 
 		institution.consumeCredit();
-		List<String> keywords = suggestedKeywords(publication);
-		publication.markExtractionCompleted(String.join(",", keywords));
+		MetadataExtractionData metadata = extractionProvider.extract(publication);
+		publication.markExtractionCompleted(String.join(",", metadata.keywords()));
 		movementRepository.save(new CreditMovementEntity(
 				institution,
 				CreditMovementType.CONSOMMATION,
@@ -54,21 +55,10 @@ public class ExtractionService {
 		return new MetadataExtractionResponse(
 				publication.getId(),
 				publication.getTitle(),
-				publication.getTitle(),
-				publication.getAuthor(),
-				keywords,
+				metadata.title(),
+				metadata.author(),
+				metadata.keywords(),
 				institution.getCreditBalance()
 		);
-	}
-
-	private List<String> suggestedKeywords(PublicationEntity publication) {
-		String title = publication.getTitle().toLowerCase();
-		if (title.contains("metadonnees")) {
-			return List.of("metadonnees", "Dublin Core", "catalogage");
-		}
-		if (title.contains("multilingue")) {
-			return List.of("multilingue", "indexation", "recherche");
-		}
-		return List.of("publication", "validation", "bibliotheque");
 	}
 }

@@ -50,7 +50,12 @@ POSTGRES_DB=metamind
 POSTGRES_USER=metamind
 POSTGRES_PASSWORD=valeur_secrete
 METAMIND_JWT_SECRET=valeur_secrete_longue
+METAMIND_LLM_PROVIDER=local
+GEMINI_API_KEY=
+GEMINI_MODEL=gemini-2.5-flash-lite
 ```
+
+Pour activer Gemini sur le serveur, `METAMIND_LLM_PROVIDER` passe a `gemini` et `GEMINI_API_KEY` recoit une cle API conservee uniquement dans le fichier `.env`.
 
 ## Mise en ligne
 
