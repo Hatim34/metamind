@@ -98,15 +98,15 @@
     <form *ngIf="session; else publicationLoginRequired" (ngSubmit)="createPublication()">
       <label>
         {{ t('titleLabel') }}
-        <input name="publicationTitle" [(ngModel)]="publicationForm.title" />
+        <input name="publicationTitle" [(ngModel)]="publicationForm.title" required maxlength="220" />
       </label>
       <label>
         {{ t('author') }}
-        <input name="publicationAuthor" [(ngModel)]="publicationForm.author" />
+        <input name="publicationAuthor" [(ngModel)]="publicationForm.author" required maxlength="160" />
       </label>
       <label>
         {{ t('year') }}
-        <input name="publicationYear" type="number" [(ngModel)]="publicationForm.year" />
+        <input name="publicationYear" type="number" [(ngModel)]="publicationForm.year" required min="1900" max="2100" />
       </label>
       <label>
         {{ t('visibility') }}
@@ -117,7 +117,7 @@
       </label>
       <label>
         {{ t('keywords') }}
-        <input name="publicationKeywords" [(ngModel)]="publicationForm.keywords" placeholder="Dublin Core, catalogage" />
+        <input name="publicationKeywords" [(ngModel)]="publicationForm.keywords" maxlength="500" placeholder="Dublin Core, catalogage" />
       </label>
       <button class="primary" type="submit" [disabled]="!isPublicationFormValid()">{{ t('addToCatalogue') }}</button>
     </form>
@@ -133,11 +133,11 @@
     <form (ngSubmit)="login()">
       <label>
         {{ t('email') }}
-        <input name="loginEmail" type="email" [(ngModel)]="loginForm.email" />
+        <input name="loginEmail" type="email" [(ngModel)]="loginForm.email" required maxlength="160" />
       </label>
       <label>
         {{ t('password') }}
-        <input name="loginPassword" type="password" [(ngModel)]="loginForm.password" />
+        <input name="loginPassword" type="password" [(ngModel)]="loginForm.password" required />
       </label>
       <button class="primary" type="submit">{{ t('signIn') }}</button>
     </form>
@@ -153,23 +153,23 @@
     <form (ngSubmit)="register()">
       <label>
         {{ t('firstName') }}
-        <input name="firstName" [(ngModel)]="registerForm.firstName" />
+        <input name="firstName" [(ngModel)]="registerForm.firstName" required maxlength="80" />
       </label>
       <label>
         {{ t('lastName') }}
-        <input name="lastName" [(ngModel)]="registerForm.lastName" />
+        <input name="lastName" [(ngModel)]="registerForm.lastName" required maxlength="80" />
       </label>
       <label>
         {{ t('email') }}
-        <input name="registerEmail" type="email" [(ngModel)]="registerForm.email" placeholder="sarah@institution-a.example" />
+        <input name="registerEmail" type="email" [(ngModel)]="registerForm.email" required maxlength="160" placeholder="sarah@institution-a.example" />
       </label>
       <label>
         {{ t('institution') }}
-        <input name="institution" [(ngModel)]="registerForm.institution" placeholder="Institution A" />
+        <input name="institution" [(ngModel)]="registerForm.institution" required maxlength="160" placeholder="Institution A" />
       </label>
       <label>
         {{ t('password') }}
-        <input name="registerPassword" type="password" [(ngModel)]="registerForm.password" />
+        <input name="registerPassword" type="password" [(ngModel)]="registerForm.password" required minlength="8" />
       </label>
       <button class="primary" type="submit" [disabled]="!isRegisterFormValid()">{{ t('createAccount') }}</button>
     </form>
@@ -213,15 +213,15 @@
     <form *ngIf="session && !deletionRequested" class="profile-form" (ngSubmit)="updateProfile()">
       <label>
         {{ t('firstName') }}
-        <input name="profileFirstName" [(ngModel)]="profileForm.firstName" />
+        <input name="profileFirstName" [(ngModel)]="profileForm.firstName" required maxlength="80" />
       </label>
       <label>
         {{ t('lastName') }}
-        <input name="profileLastName" [(ngModel)]="profileForm.lastName" />
+        <input name="profileLastName" [(ngModel)]="profileForm.lastName" required maxlength="80" />
       </label>
       <label>
         {{ t('institution') }}
-        <input name="profileInstitution" [(ngModel)]="profileForm.institution" />
+        <input name="profileInstitution" [(ngModel)]="profileForm.institution" required maxlength="160" />
       </label>
       <button class="primary" type="submit" [disabled]="!profileForm.firstName.trim() || !profileForm.lastName.trim() || !profileForm.institution.trim()">{{ t('saveProfile') }}</button>
     </form>
@@ -274,15 +274,15 @@
     <form *ngIf="isAdmin; else adminRequired" class="admin-form" (ngSubmit)="createInstitution()">
       <label>
         {{ t('code') }}
-        <input name="institutionCode" [(ngModel)]="institutionForm.code" placeholder="INST-C" />
+        <input name="institutionCode" [(ngModel)]="institutionForm.code" required maxlength="40" placeholder="INST-C" />
       </label>
       <label>
         {{ t('name') }}
-        <input name="institutionName" [(ngModel)]="institutionForm.name" placeholder="Institution C" />
+        <input name="institutionName" [(ngModel)]="institutionForm.name" required maxlength="160" placeholder="Institution C" />
       </label>
       <label>
         {{ t('domain') }}
-        <input name="institutionDomain" [(ngModel)]="institutionForm.emailDomain" placeholder="institution-c.example" />
+        <input name="institutionDomain" [(ngModel)]="institutionForm.emailDomain" required maxlength="120" pattern="^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$" placeholder="institution-c.example" />
       </label>
       <button class="primary" type="submit" [disabled]="!isInstitutionFormValid()">{{ t('add') }}</button>
     </form>
