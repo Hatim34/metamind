@@ -130,6 +130,24 @@ paths:
                 $ref: "#/components/schemas/Publication"
         "404":
           description: Publication introuvable
+    delete:
+      tags: [Publications]
+      summary: Supprimer logiquement une publication
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/id"
+      responses:
+        "200":
+          description: Publication marquee comme supprimee
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Publication"
+        "403":
+          description: Permission insuffisante
+        "404":
+          description: Publication introuvable
   /publications/{id}/status:
     put:
       tags: [Publications]

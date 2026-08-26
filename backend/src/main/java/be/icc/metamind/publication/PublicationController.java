@@ -4,6 +4,7 @@ import java.util.List;
 
 import jakarta.validation.Valid;
 
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -53,5 +54,11 @@ public class PublicationController {
 	public PublicationResponse updateStatus(@PathVariable long id, @RequestHeader("Authorization") String authorization, @Valid @RequestBody PublicationStatusRequest request) {
 		UserEntity currentUser = accountService.authenticate(authorization);
 		return service.updateStatus(id, request, currentUser);
+	}
+
+	@DeleteMapping("/{id}")
+	public PublicationResponse delete(@PathVariable long id, @RequestHeader("Authorization") String authorization) {
+		UserEntity currentUser = accountService.authenticate(authorization);
+		return service.deletePublication(id, currentUser);
 	}
 }

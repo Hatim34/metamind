@@ -338,6 +338,34 @@ class ApiControllerTests {
 	}
 
 	@Test
+	void publicationDeletionUsesSoftDeleteStatus() throws Exception {
+		PublicationEntity publication = publicationRepository.findAll().stream()
+				.filter(item -> item.getVisibility() == Visibility.PUBLIC)
+				.findFirst()
+				.orElseThrow();
+
+		mockMvc.perform(delete("/api/v1/publications/" + publication.getId())
+						.header("Authorization", bearerToken()))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.status", is("SUPPRIME")));
+
+		mockMvc.perform(get("/api/v1/publications/" + publication.getId()))
+				.andExpect(status().isForbidden());
+	}
+
+	@Test
+	void publicationDeletionRejectsOtherInstitutionLibrarian() throws Exception {
+		PublicationEntity publication = publicationRepository.findAll().stream()
+				.filter(item -> item.getStatus() == PublicationStatus.A_VALIDER)
+				.findFirst()
+				.orElseThrow();
+
+		mockMvc.perform(delete("/api/v1/publications/" + publication.getId())
+						.header("Authorization", bearerToken("jan@institution-b.example", "558435")))
+				.andExpect(status().isForbidden());
+	}
+
+	@Test
 	void librarianStatisticsAreLimitedToInstitution() throws Exception {
 		mockMvc.perform(get("/api/v1/statistics")
 						.header("Authorization", bearerToken()))

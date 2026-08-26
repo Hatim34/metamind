@@ -73,6 +73,17 @@ public class PublicationService {
 		return PublicationResponse.from(publication);
 	}
 
+	@Transactional
+	public PublicationResponse deletePublication(long id, UserEntity currentUser) {
+		PublicationEntity publication = publicationRepository.findById(id)
+				.orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "La publication demandee est introuvable."));
+		if (!canManage(publication, currentUser)) {
+			throw new ApiException(HttpStatus.FORBIDDEN, "Cette publication ne peut pas etre supprimee avec ce compte.");
+		}
+		publication.updateStatus(PublicationStatus.SUPPRIME);
+		return PublicationResponse.from(publication);
+	}
+
 	private boolean isVisibleFor(PublicationEntity publication, UserEntity currentUser) {
 		if (currentUser != null && currentUser.getRole() == UserRole.ADMINISTRATEUR) {
 			return true;
