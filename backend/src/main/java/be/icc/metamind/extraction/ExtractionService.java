@@ -4,6 +4,9 @@ import java.util.List;
 import java.util.Objects;
 
 import be.icc.metamind.api.ApiException;
+import be.icc.metamind.credit.CreditMovementEntity;
+import be.icc.metamind.credit.CreditMovementRepository;
+import be.icc.metamind.credit.CreditMovementType;
 import be.icc.metamind.institution.InstitutionEntity;
 import be.icc.metamind.publication.PublicationEntity;
 import be.icc.metamind.publication.PublicationRepository;
@@ -16,9 +19,11 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class ExtractionService {
 	private final PublicationRepository publicationRepository;
+	private final CreditMovementRepository movementRepository;
 
-	public ExtractionService(PublicationRepository publicationRepository) {
+	public ExtractionService(PublicationRepository publicationRepository, CreditMovementRepository movementRepository) {
 		this.publicationRepository = publicationRepository;
+		this.movementRepository = movementRepository;
 	}
 
 	@Transactional
@@ -38,6 +43,13 @@ public class ExtractionService {
 		institution.consumeCredit();
 		List<String> keywords = suggestedKeywords(publication);
 		publication.markExtractionCompleted(String.join(",", keywords));
+		movementRepository.save(new CreditMovementEntity(
+				institution,
+				CreditMovementType.CONSOMMATION,
+				-1,
+				institution.getCreditBalance(),
+				"Extraction de metadonnees"
+		));
 
 		return new MetadataExtractionResponse(
 				publication.getId(),

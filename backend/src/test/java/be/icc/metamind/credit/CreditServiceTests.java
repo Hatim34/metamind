@@ -29,6 +29,9 @@ class CreditServiceTests {
 	@Autowired
 	private CreditService creditService;
 
+	@Autowired
+	private CreditMovementRepository movementRepository;
+
 	@Test
 	void creditsAreAttachedToUserInstitution() {
 		UserEntity user = saveUser();
@@ -37,6 +40,15 @@ class CreditServiceTests {
 
 		assertThat(balance.balance()).isEqualTo(25);
 		assertThat(creditService.getBalance(user.getId()).balance()).isEqualTo(25);
+		assertThat(creditService.listMovements(user.getId()))
+				.hasSize(1)
+				.first()
+				.satisfies(movement -> {
+					assertThat(movement.type()).isEqualTo(CreditMovementType.ACHAT);
+					assertThat(movement.amount()).isEqualTo(25);
+					assertThat(movement.balanceAfter()).isEqualTo(25);
+				});
+		assertThat(movementRepository.count()).isEqualTo(1);
 	}
 
 	private UserEntity saveUser() {

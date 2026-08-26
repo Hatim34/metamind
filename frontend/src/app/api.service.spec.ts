@@ -64,6 +64,30 @@ describe('ApiService', () => {
     request.flush({ institutionId: 1, institution: 'Institution A', balance: 25 });
   });
 
+  it('charge l historique des credits via l API', () => {
+    service.setToken('token-test');
+
+    service.getCreditMovements(10).subscribe((response) => {
+      expect(response.length).toBe(1);
+      expect(response[0].type).toBe('ACHAT');
+    });
+
+    const request = httpMock.expectOne('/api/v1/users/10/credits/movements');
+    expect(request.request.method).toBe('GET');
+    expect(request.request.headers.get('Authorization')).toBe('Bearer token-test');
+    request.flush([
+      {
+        id: 1,
+        institution: 'Institution A',
+        type: 'ACHAT',
+        amount: 10,
+        balanceAfter: 30,
+        description: 'Achat de credits',
+        createdAt: '2026-08-25T10:00:00'
+      }
+    ]);
+  });
+
   it('charge les statistiques du tableau de bord', () => {
     service.setToken('token-test');
 

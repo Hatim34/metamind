@@ -241,6 +241,12 @@ label {
   padding-top: 20px;
 }
 
+.credit-history {
+  border-top: 1px solid #dfe5eb;
+  margin-top: 20px;
+  padding-top: 20px;
+}
+
 .admin-form {
   border-bottom: 1px solid #dfe5eb;
   grid-template-columns: repeat(4, minmax(0, 1fr));

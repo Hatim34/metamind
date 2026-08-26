@@ -2,7 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
-import { ApiService, DashboardStatistics, Institution, MetadataExtraction, Publication, PublicationStatus, UserSession } from './api.service';
+import { ApiService, CreditMovement, DashboardStatistics, Institution, MetadataExtraction, Publication, PublicationStatus, UserSession } from './api.service';
 
 type Page = 'catalogue' | 'connexion' | 'inscription' | 'profil' | 'publication' | 'administration';
 type Language = 'fr' | 'nl';
@@ -26,6 +26,13 @@ const translations = {
     status: 'Statut',
     publicStatus: 'Public',
     credits: 'Crédits',
+    creditHistory: 'Historique des crédits',
+    movementDate: 'Date',
+    movementType: 'Type',
+    movementAmount: 'Mouvement',
+    movementBalance: 'Solde après',
+    movementDescription: 'Description',
+    noCreditMovement: 'Aucun mouvement de crédit enregistré.',
     availablePublications: 'Publications disponibles',
     searchPlaceholder: 'Rechercher un titre, auteur ou mot-clé',
     loadingCatalogue: 'Chargement du catalogue...',
@@ -108,6 +115,13 @@ const translations = {
     status: 'Status',
     publicStatus: 'Publiek',
     credits: 'Credits',
+    creditHistory: 'Creditgeschiedenis',
+    movementDate: 'Datum',
+    movementType: 'Type',
+    movementAmount: 'Beweging',
+    movementBalance: 'Saldo na verwerking',
+    movementDescription: 'Beschrijving',
+    noCreditMovement: 'Geen creditbeweging geregistreerd.',
     availablePublications: 'Beschikbare publicaties',
     searchPlaceholder: 'Zoek op titel, auteur of trefwoord',
     loadingCatalogue: 'Catalogus wordt geladen...',
@@ -235,6 +249,7 @@ export class AppComponent implements OnInit {
   publications: Publication[] = [];
   institutions: Institution[] = [];
   creditBalance: number | null = null;
+  creditMovements: CreditMovement[] = [];
   statistics: DashboardStatistics | null = null;
   extractionResult: MetadataExtraction | null = null;
 
@@ -288,6 +303,7 @@ export class AppComponent implements OnInit {
         this.message = '';
         this.page = 'profil';
         this.loadCredits();
+        this.loadCreditMovements();
         this.loadStatistics();
         if (this.isAdmin) {
           this.loadInstitutions();
@@ -316,6 +332,7 @@ export class AppComponent implements OnInit {
         this.message = '';
         this.page = 'profil';
         this.loadCredits();
+        this.loadCreditMovements();
         this.loadStatistics();
       },
       error: () => {
@@ -386,6 +403,22 @@ export class AppComponent implements OnInit {
     });
   }
 
+  loadCreditMovements(): void {
+    if (!this.session) {
+      this.creditMovements = [];
+      return;
+    }
+
+    this.api.getCreditMovements(this.session.id).subscribe({
+      next: (movements) => {
+        this.creditMovements = movements;
+      },
+      error: () => {
+        this.creditMovements = [];
+      }
+    });
+  }
+
   loadStatistics(): void {
     if (!this.session) {
       this.statistics = null;
@@ -411,6 +444,7 @@ export class AppComponent implements OnInit {
     this.api.purchaseCredits(this.session.id, amount).subscribe({
       next: (credits) => {
         this.creditBalance = credits.balance;
+        this.loadCreditMovements();
         this.loadStatistics();
         this.message = '';
       },
@@ -431,6 +465,7 @@ export class AppComponent implements OnInit {
         this.extractionResult = result;
         this.creditBalance = result.creditBalance;
         this.message = '';
+        this.loadCreditMovements();
         this.loadStatistics();
         this.loadPublications();
       },
@@ -553,6 +588,7 @@ export class AppComponent implements OnInit {
     this.api.setToken('');
     this.institutions = [];
     this.creditBalance = null;
+    this.creditMovements = [];
     this.statistics = null;
     this.extractionResult = null;
     this.deletionRequested = false;

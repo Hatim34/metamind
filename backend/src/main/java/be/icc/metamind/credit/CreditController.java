@@ -1,5 +1,7 @@
 package be.icc.metamind.credit;
 
+import java.util.List;
+
 import jakarta.validation.Valid;
 
 import org.springframework.web.bind.annotation.GetMapping;
@@ -33,5 +35,11 @@ public class CreditController {
 	public CreditBalanceResponse purchase(@PathVariable long userId, @RequestHeader("Authorization") String authorization, @Valid @RequestBody CreditPurchaseRequest request) {
 		accountService.authenticateSelfOrAdmin(userId, authorization);
 		return service.purchase(userId, request);
+	}
+
+	@GetMapping("/movements")
+	public List<CreditMovementResponse> movements(@PathVariable long userId, @RequestHeader("Authorization") String authorization) {
+		accountService.authenticateSelfOrAdmin(userId, authorization);
+		return service.listMovements(userId);
 	}
 }

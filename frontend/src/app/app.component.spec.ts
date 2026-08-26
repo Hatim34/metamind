@@ -44,6 +44,7 @@ describe('AppComponent', () => {
       'createInstitution',
       'deactivateInstitution',
       'getCreditBalance',
+      'getCreditMovements',
       'getStatistics',
       'purchaseCredits',
       'extractMetadata',
@@ -55,6 +56,17 @@ describe('AppComponent', () => {
     ]);
     api.getPublications.and.returnValue(of(publications));
     api.getCreditBalance.and.returnValue(of({ institutionId: 1, institution: 'Institution A', balance: 20 }));
+    api.getCreditMovements.and.returnValue(of([
+      {
+        id: 1,
+        institution: 'Institution A',
+        type: 'ACHAT',
+        amount: 20,
+        balanceAfter: 20,
+        description: 'Achat de credits',
+        createdAt: '2026-08-25T10:00:00'
+      }
+    ]));
     api.getStatistics.and.returnValue(of({
       scope: 'Institution A',
       totalPublications: 2,
@@ -96,6 +108,7 @@ describe('AppComponent', () => {
     expect(component.page).toBe('profil');
     expect(component.creditBalance).toBe(20);
     expect(component.statistics?.scope).toBe('Institution A');
+    expect(component.creditMovements.length).toBe(1);
   });
 
   it('charge les statistiques du tableau de bord', () => {
@@ -125,6 +138,7 @@ describe('AppComponent', () => {
     component.purchaseCredits(10);
 
     expect(api.purchaseCredits).toHaveBeenCalledWith(10, 10);
+    expect(api.getCreditMovements).toHaveBeenCalledWith(10);
     expect(component.creditBalance).toBe(30);
   });
 

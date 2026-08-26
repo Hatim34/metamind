@@ -230,6 +230,33 @@
     </p>
     <p class="notice" *ngIf="profileSaved">{{ t('profileUpdated') }}</p>
 
+    <div *ngIf="session" class="credit-history">
+      <h3>{{ t('creditHistory') }}</h3>
+      <p class="notice" *ngIf="creditMovements.length === 0">{{ t('noCreditMovement') }}</p>
+      <div class="table-wrap" *ngIf="creditMovements.length > 0">
+        <table>
+          <thead>
+            <tr>
+              <th>{{ t('movementDate') }}</th>
+              <th>{{ t('movementType') }}</th>
+              <th>{{ t('movementAmount') }}</th>
+              <th>{{ t('movementBalance') }}</th>
+              <th>{{ t('movementDescription') }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let movement of creditMovements">
+              <td>{{ movement.createdAt | date:'dd/MM/yyyy HH:mm' }}</td>
+              <td>{{ movement.type }}</td>
+              <td>{{ movement.amount > 0 ? '+' : '' }}{{ movement.amount }}</td>
+              <td>{{ movement.balanceAfter }}</td>
+              <td>{{ movement.description }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
     <ng-template #noSession>
       <p class="notice">{{ t('loginRequiredProfile') }}</p>
     </ng-template>

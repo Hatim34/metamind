@@ -318,6 +318,23 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/CreditBalance"
+  /users/{userId}/credits/movements:
+    get:
+      tags: [Credits]
+      summary: Consulter l'historique des credits
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/userId"
+      responses:
+        "200":
+          description: Historique des mouvements de credits
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CreditMovement"
   /users/{userId}/credits/purchase:
     post:
       tags: [Credits]
@@ -473,6 +490,16 @@ components:
         institutionId: { type: integer, format: int64 }
         institution: { type: string, example: Institution A }
         balance: { type: integer, example: 12 }
+    CreditMovement:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        institution: { type: string, example: Institution A }
+        type: { type: string, enum: [ACHAT, CONSOMMATION], example: ACHAT }
+        amount: { type: integer, example: 10 }
+        balanceAfter: { type: integer, example: 30 }
+        description: { type: string, example: Achat de credits }
+        createdAt: { type: string, format: date-time }
     CreditPurchaseRequest:
       type: object
       required: [amount]

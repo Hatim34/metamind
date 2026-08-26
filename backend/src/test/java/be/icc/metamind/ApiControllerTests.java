@@ -215,6 +215,12 @@ class ApiControllerTests {
 				.andExpect(jsonPath("$.publicationId", is(publication.getId().intValue())))
 				.andExpect(jsonPath("$.creditBalance", is(2)))
 				.andExpect(jsonPath("$.suggestedKeywords", hasSize(3)));
+
+		mockMvc.perform(get("/api/v1/users/" + user.getId() + "/credits/movements")
+						.header("Authorization", authorization))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$", hasSize(2)))
+				.andExpect(jsonPath("$[0].balanceAfter", is(2)));
 	}
 
 	@Test

@@ -2,6 +2,8 @@ package be.icc.metamind.extraction;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import be.icc.metamind.credit.CreditMovementRepository;
+import be.icc.metamind.credit.CreditMovementType;
 import be.icc.metamind.institution.InstitutionEntity;
 import be.icc.metamind.institution.InstitutionRepository;
 import be.icc.metamind.publication.PublicationEntity;
@@ -36,6 +38,9 @@ class ExtractionServiceTests {
 	@Autowired
 	private ExtractionService extractionService;
 
+	@Autowired
+	private CreditMovementRepository movementRepository;
+
 	@Test
 	void extractionConsumesOneCreditAndUpdatesPublication() {
 		InstitutionEntity institution = institutionRepository.save(new InstitutionEntity("INST-A", "Institution A", "institution-a.example"));
@@ -63,5 +68,13 @@ class ExtractionServiceTests {
 		assertThat(response.creditBalance()).isEqualTo(1);
 		assertThat(response.suggestedKeywords()).contains("Dublin Core");
 		assertThat(publication.getStatus()).isEqualTo(PublicationStatus.A_VALIDER);
+		assertThat(movementRepository.findByInstitutionIdOrderByCreatedAtDesc(institution.getId()))
+				.hasSize(1)
+				.first()
+				.satisfies(movement -> {
+					assertThat(movement.getType()).isEqualTo(CreditMovementType.CONSOMMATION);
+					assertThat(movement.getAmount()).isEqualTo(-1);
+					assertThat(movement.getBalanceAfter()).isEqualTo(1);
+				});
 	}
 }
