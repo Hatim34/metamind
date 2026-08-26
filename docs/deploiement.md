@@ -69,7 +69,7 @@ docker compose up -d --build
 docker compose ps
 ```
 
-Caddy demande automatiquement un certificat TLS Let's Encrypt pour le domaine configure. Le cadenas HTTPS est donc gere par le serveur au moment du deploiement.
+Caddy demande automatiquement un certificat TLS Let's Encrypt pour le domaine configure. Le cadenas HTTPS est donc gere par le serveur au moment du deploiement. Le fichier `Caddyfile` ajoute aussi les en-tetes HTTP de securite : HSTS, anti-sniffing, refus d'affichage en frame, politique de referer et desactivation des permissions navigateur non utilisees.
 
 ## Verification
 
