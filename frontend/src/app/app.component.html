@@ -7,6 +7,7 @@
     <div class="language-switch" [attr.aria-label]="t('language')">
       <button type="button" [class.active]="language === 'fr'" (click)="setLanguage('fr')">FR</button>
       <button type="button" [class.active]="language === 'nl'" (click)="setLanguage('nl')">NL</button>
+      <button type="button" [class.active]="language === 'en'" (click)="setLanguage('en')">EN</button>
     </div>
     <nav aria-label="Navigation principale">
       <button type="button" [class.active]="page === 'catalogue'" (click)="navigate('catalogue')">{{ t('catalogue') }}</button>

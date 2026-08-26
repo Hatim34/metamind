@@ -96,6 +96,11 @@ describe('AppComponent', () => {
     component.setLanguage('nl');
 
     expect(component.t('catalogue')).toBe('Catalogus');
+
+    component.setLanguage('en');
+
+    expect(component.t('catalogue')).toBe('Catalogue');
+    expect(component.t('login')).toBe('Sign in');
   });
 
   it('connecte un bibliothecaire et charge son solde de credits', () => {
