@@ -236,7 +236,10 @@ class ApiControllerTests {
 		mockMvc.perform(delete("/api/v1/users/" + user.getId())
 						.header("Authorization", bearerToken()))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.status", is("DESACTIVE")));
+				.andExpect(jsonPath("$.status", is("DESACTIVE")))
+				.andExpect(jsonPath("$.firstName", is("Compte")))
+				.andExpect(jsonPath("$.lastName", is("Supprime")))
+				.andExpect(jsonPath("$.email", is("compte-supprime-" + user.getId() + "@metamind.local")));
 	}
 
 	@Test

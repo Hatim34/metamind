@@ -101,9 +101,9 @@ public class MetamindService {
 		UserAccount user = findUser(id);
 		UserAccount updated = new UserAccount(
 				user.id(),
-				user.firstName(),
-				user.lastName(),
-				user.email(),
+				"Compte",
+				"Supprime",
+				"compte-supprime-" + user.id() + "@metamind.local",
 				user.role(),
 				user.institution(),
 				UserStatus.DESACTIVE

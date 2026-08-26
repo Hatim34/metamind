@@ -111,7 +111,7 @@ public class AccountService {
 	@Transactional
 	public UserResponse requestAccountDeletion(long id) {
 		UserEntity user = findUser(id);
-		user.deactivate();
+		user.anonymizeAndDeactivate();
 		return UserResponse.from(user);
 	}
 

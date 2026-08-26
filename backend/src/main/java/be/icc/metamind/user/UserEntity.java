@@ -101,4 +101,12 @@ public class UserEntity {
 	public void deactivate() {
 		status = UserStatus.DESACTIVE;
 	}
+
+	public void anonymizeAndDeactivate() {
+		status = UserStatus.DESACTIVE;
+		firstName = "Compte";
+		lastName = "Supprime";
+		email = "compte-supprime-" + id + "@metamind.local";
+		passwordHash = "compte-desactive";
+	}
 }

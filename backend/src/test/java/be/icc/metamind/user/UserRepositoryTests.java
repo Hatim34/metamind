@@ -47,7 +47,7 @@ class UserRepositoryTests {
 		InstitutionEntity institution = institutionRepository.save(new InstitutionEntity("INST-C", "Institution C", "institution-c.example"));
 		UserEntity user = userRepository.save(new UserEntity("Mina", "Laurent", "mina@institution-c.example", "hash", UserRole.BIBLIOTHECAIRE, institution));
 
-		user.deactivate();
+		user.anonymizeAndDeactivate();
 		userRepository.flush();
 
 		assertThat(userRepository.findById(user.getId()))
@@ -55,5 +55,6 @@ class UserRepositoryTests {
 				.get()
 				.extracting(UserEntity::getStatus)
 				.isEqualTo(UserStatus.DESACTIVE);
+		assertThat(user.getEmail()).isEqualTo("compte-supprime-" + user.getId() + "@metamind.local");
 	}
 }
