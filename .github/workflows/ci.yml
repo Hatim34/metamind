@@ -45,7 +45,7 @@ jobs:
           node-version: "24"
 
       - name: Installation des dependances
-        run: npm ci
+        run: npm install
 
       - name: Tests frontend
         run: npm test -- --watch=false --browsers=ChromeHeadless
