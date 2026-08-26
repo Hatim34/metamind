@@ -35,8 +35,8 @@ public record UserResponse(
 
 	private static String displayRole(UserRole role) {
 		return switch (role) {
-			case BIBLIOTHECAIRE -> "Bibliothecaire";
-			case ADMINISTRATEUR -> "Administrateur";
+			case LIBRARIAN -> "Bibliothecaire";
+			case ADMIN -> "Administrateur";
 		};
 	}
 }

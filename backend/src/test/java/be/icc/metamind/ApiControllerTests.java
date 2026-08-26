@@ -10,12 +10,20 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.util.List;
+
+import be.icc.metamind.document.AuthorRepository;
+import be.icc.metamind.document.DocumentAuthorRepository;
+import be.icc.metamind.document.DocumentEntity;
+import be.icc.metamind.document.DocumentKeywordRepository;
+import be.icc.metamind.document.DocumentRepository;
+import be.icc.metamind.document.DocumentStatus;
+import be.icc.metamind.document.DocumentVisibility;
+import be.icc.metamind.document.KeywordRepository;
+import be.icc.metamind.document.MetadataRepository;
 import be.icc.metamind.institution.InstitutionEntity;
 import be.icc.metamind.institution.InstitutionRepository;
-import be.icc.metamind.publication.PublicationEntity;
-import be.icc.metamind.publication.PublicationRepository;
-import be.icc.metamind.publication.PublicationStatus;
-import be.icc.metamind.publication.Visibility;
+import be.icc.metamind.support.TestDocumentFactory;
 import be.icc.metamind.user.PasswordService;
 import be.icc.metamind.user.UserEntity;
 import be.icc.metamind.user.UserRepository;
@@ -44,7 +52,22 @@ class ApiControllerTests {
 	private UserRepository userRepository;
 
 	@Autowired
-	private PublicationRepository publicationRepository;
+	private DocumentRepository documentRepository;
+
+	@Autowired
+	private MetadataRepository metadataRepository;
+
+	@Autowired
+	private AuthorRepository authorRepository;
+
+	@Autowired
+	private KeywordRepository keywordRepository;
+
+	@Autowired
+	private DocumentAuthorRepository documentAuthorRepository;
+
+	@Autowired
+	private DocumentKeywordRepository documentKeywordRepository;
 
 	@Autowired
 	private PasswordService passwordService;
@@ -64,7 +87,7 @@ class ApiControllerTests {
 				"Lemaire",
 				"sarah@institution-a.example",
 				passwordService.hash("558435"),
-				UserRole.BIBLIOTHECAIRE,
+				UserRole.LIBRARIAN,
 				institution
 		));
 		userRepository.save(new UserEntity(
@@ -72,7 +95,7 @@ class ApiControllerTests {
 				"Peeters",
 				"jan@institution-b.example",
 				passwordService.hash("558435"),
-				UserRole.BIBLIOTHECAIRE,
+				UserRole.LIBRARIAN,
 				otherInstitution
 		));
 		userRepository.save(new UserEntity(
@@ -80,27 +103,30 @@ class ApiControllerTests {
 				"Metamind",
 				"admin@metamind.example",
 				passwordService.hash("558435"),
-				UserRole.ADMINISTRATEUR,
+				UserRole.ADMIN,
 				institution
 		));
-		publicationRepository.save(new PublicationEntity(
+		TestDocumentFactory documents = new TestDocumentFactory(documentRepository, metadataRepository, authorRepository, keywordRepository, documentAuthorRepository, documentKeywordRepository);
+		documents.create(
 				"Analyse automatique des metadonnees pour les depots institutionnels",
 				"Sarah Lemaire",
 				2026,
-				PublicationStatus.PUBLIE,
-				Visibility.PUBLIC,
-				"Dublin Core,metadonnees,recherche",
-				institution
-		));
-		publicationRepository.save(new PublicationEntity(
+				DocumentStatus.PUBLIE,
+				DocumentVisibility.PUBLIC,
+				List.of("Dublin Core", "metadonnees", "recherche"),
+				institution,
+				null
+		);
+		documents.create(
 				"Rapport interne reserve a l institution",
 				"Sarah Lemaire",
 				2026,
-				PublicationStatus.A_VALIDER,
-				Visibility.INSTITUTION,
-				"catalogage,validation",
-				institution
-		));
+				DocumentStatus.A_VALIDER,
+				DocumentVisibility.INSTITUTION,
+				List.of("catalogage", "validation"),
+				institution,
+				null
+		);
 	}
 
 	@Test
@@ -283,7 +309,7 @@ class ApiControllerTests {
 	@Test
 	void creditsAndExtractionWorkflowIsSecuredAndConsumesOneCredit() throws Exception {
 		UserEntity user = userRepository.findByEmailIgnoreCase("sarah@institution-a.example").orElseThrow();
-		PublicationEntity publication = publicationRepository.findAll().getFirst();
+		DocumentEntity publication = documentRepository.findAll().getFirst();
 		String authorization = bearerToken();
 
 		mockMvc.perform(post("/api/v1/users/" + user.getId() + "/credits/purchase")
@@ -309,8 +335,8 @@ class ApiControllerTests {
 
 	@Test
 	void institutionOnlyPublicationIsHiddenFromOtherInstitutions() throws Exception {
-		PublicationEntity restrictedPublication = publicationRepository.findAll().stream()
-				.filter(publication -> publication.getVisibility() == Visibility.INSTITUTION)
+		DocumentEntity restrictedPublication = documentRepository.findAll().stream()
+				.filter(publication -> publication.getVisibility() == DocumentVisibility.INSTITUTION)
 				.findFirst()
 				.orElseThrow();
 
@@ -334,8 +360,8 @@ class ApiControllerTests {
 
 	@Test
 	void publicationStatusCanBeUpdatedByInstitutionLibrarian() throws Exception {
-		PublicationEntity publication = publicationRepository.findAll().stream()
-				.filter(item -> item.getStatus() == PublicationStatus.A_VALIDER)
+		DocumentEntity publication = documentRepository.findAll().stream()
+				.filter(item -> item.getStatus() == DocumentStatus.A_VALIDER)
 				.findFirst()
 				.orElseThrow();
 
@@ -349,8 +375,8 @@ class ApiControllerTests {
 
 	@Test
 	void publicationStatusRejectsOtherInstitutionLibrarian() throws Exception {
-		PublicationEntity publication = publicationRepository.findAll().stream()
-				.filter(item -> item.getStatus() == PublicationStatus.A_VALIDER)
+		DocumentEntity publication = documentRepository.findAll().stream()
+				.filter(item -> item.getStatus() == DocumentStatus.A_VALIDER)
 				.findFirst()
 				.orElseThrow();
 
@@ -363,8 +389,8 @@ class ApiControllerTests {
 
 	@Test
 	void publicationStatusRejectsInternalProcessingStatus() throws Exception {
-		PublicationEntity publication = publicationRepository.findAll().stream()
-				.filter(item -> item.getStatus() == PublicationStatus.A_VALIDER)
+		DocumentEntity publication = documentRepository.findAll().stream()
+				.filter(item -> item.getStatus() == DocumentStatus.A_VALIDER)
 				.findFirst()
 				.orElseThrow();
 
@@ -377,8 +403,8 @@ class ApiControllerTests {
 
 	@Test
 	void publicationDeletionUsesSoftDeleteStatus() throws Exception {
-		PublicationEntity publication = publicationRepository.findAll().stream()
-				.filter(item -> item.getVisibility() == Visibility.PUBLIC)
+		DocumentEntity publication = documentRepository.findAll().stream()
+				.filter(item -> item.getVisibility() == DocumentVisibility.PUBLIC)
 				.findFirst()
 				.orElseThrow();
 
@@ -393,8 +419,8 @@ class ApiControllerTests {
 
 	@Test
 	void publicationDeletionRejectsOtherInstitutionLibrarian() throws Exception {
-		PublicationEntity publication = publicationRepository.findAll().stream()
-				.filter(item -> item.getStatus() == PublicationStatus.A_VALIDER)
+		DocumentEntity publication = documentRepository.findAll().stream()
+				.filter(item -> item.getStatus() == DocumentStatus.A_VALIDER)
 				.findFirst()
 				.orElseThrow();
 
@@ -418,15 +444,16 @@ class ApiControllerTests {
 	@Test
 	void adminStatisticsAreGlobal() throws Exception {
 		InstitutionEntity otherInstitution = institutionRepository.findByCodeIgnoreCase("INST-B").orElseThrow();
-		publicationRepository.save(new PublicationEntity(
+		new TestDocumentFactory(documentRepository, metadataRepository, authorRepository, keywordRepository, documentAuthorRepository, documentKeywordRepository).create(
 				"Corpus institutionnel reserve",
 				"Jan Peeters",
 				2026,
-				PublicationStatus.PUBLIE,
-				Visibility.INSTITUTION,
-				"corpus,recherche",
-				otherInstitution
-		));
+				DocumentStatus.PUBLIE,
+				DocumentVisibility.INSTITUTION,
+				List.of("corpus", "recherche"),
+				otherInstitution,
+				null
+		);
 
 		mockMvc.perform(get("/api/v1/statistics")
 						.header("Authorization", bearerToken("admin@metamind.example", "558435")))

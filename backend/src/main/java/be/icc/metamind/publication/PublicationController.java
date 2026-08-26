@@ -21,7 +21,7 @@ import be.icc.metamind.user.AccountService;
 import be.icc.metamind.user.UserEntity;
 
 @RestController
-@RequestMapping("/api/v1/publications")
+@RequestMapping({"/api/v1/publications", "/api/v1/documents"})
 public class PublicationController {
 	private final PublicationService service;
 	private final AccountService accountService;

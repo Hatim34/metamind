@@ -1,16 +1,24 @@
 package be.icc.metamind.opendata;
 
+import java.util.List;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import be.icc.metamind.document.AuthorRepository;
+import be.icc.metamind.document.DocumentAuthorRepository;
+import be.icc.metamind.document.DocumentEntity;
+import be.icc.metamind.document.DocumentKeywordRepository;
+import be.icc.metamind.document.DocumentRepository;
+import be.icc.metamind.document.DocumentStatus;
+import be.icc.metamind.document.DocumentVisibility;
+import be.icc.metamind.document.KeywordRepository;
+import be.icc.metamind.document.MetadataRepository;
 import be.icc.metamind.institution.InstitutionEntity;
 import be.icc.metamind.institution.InstitutionRepository;
-import be.icc.metamind.publication.PublicationEntity;
-import be.icc.metamind.publication.PublicationRepository;
-import be.icc.metamind.publication.PublicationStatus;
-import be.icc.metamind.publication.Visibility;
+import be.icc.metamind.support.TestDocumentFactory;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -31,32 +39,50 @@ class OpenDataControllerTests {
 	private InstitutionRepository institutionRepository;
 
 	@Autowired
-	private PublicationRepository publicationRepository;
+	private DocumentRepository documentRepository;
 
-	private PublicationEntity publicPublication;
-	private PublicationEntity restrictedPublication;
+	@Autowired
+	private MetadataRepository metadataRepository;
+
+	@Autowired
+	private AuthorRepository authorRepository;
+
+	@Autowired
+	private KeywordRepository keywordRepository;
+
+	@Autowired
+	private DocumentAuthorRepository documentAuthorRepository;
+
+	@Autowired
+	private DocumentKeywordRepository documentKeywordRepository;
+
+	private DocumentEntity publicPublication;
+	private DocumentEntity restrictedPublication;
 
 	@BeforeEach
 	void setUp() {
 		InstitutionEntity institution = institutionRepository.save(new InstitutionEntity("INST-A", "Institution A", "institution-a.example"));
-		publicPublication = publicationRepository.save(new PublicationEntity(
+		TestDocumentFactory documents = new TestDocumentFactory(documentRepository, metadataRepository, authorRepository, keywordRepository, documentAuthorRepository, documentKeywordRepository);
+		publicPublication = documents.create(
 				"Analyse automatique des metadonnees",
 				"Sarah Lemaire",
 				2026,
-				PublicationStatus.PUBLIE,
-				Visibility.PUBLIC,
-				"Dublin Core,metadonnees",
-				institution
-		));
-		restrictedPublication = publicationRepository.save(new PublicationEntity(
+				DocumentStatus.PUBLIE,
+				DocumentVisibility.PUBLIC,
+				List.of("Dublin Core", "metadonnees"),
+				institution,
+				null
+		);
+		restrictedPublication = documents.create(
 				"Rapport interne reserve",
 				"Sarah Lemaire",
 				2026,
-				PublicationStatus.A_VALIDER,
-				Visibility.INSTITUTION,
-				"catalogage",
-				institution
-		));
+				DocumentStatus.A_VALIDER,
+				DocumentVisibility.INSTITUTION,
+				List.of("catalogage"),
+				institution,
+				null
+		);
 	}
 
 	@Test

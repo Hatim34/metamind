@@ -58,7 +58,7 @@ class CreditServiceTests {
 				"Lemaire",
 				"sarah@institution-a.example",
 				passwordService.hash("558435"),
-				UserRole.BIBLIOTHECAIRE,
+				UserRole.LIBRARIAN,
 				institution
 		));
 	}

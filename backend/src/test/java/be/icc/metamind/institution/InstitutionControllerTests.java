@@ -47,7 +47,7 @@ class InstitutionControllerTests {
 					"Benali",
 					"admin@metamind.example",
 					passwordService.hash("558435"),
-					UserRole.ADMINISTRATEUR,
+					UserRole.ADMIN,
 					platform
 			));
 		}

@@ -25,8 +25,8 @@ public class InstitutionService {
 
 	@Transactional
 	public InstitutionResponse create(InstitutionRequest request) {
-		if (repository.findByCodeIgnoreCase(request.code()).isPresent()) {
-			throw new ApiException(HttpStatus.CONFLICT, "Une institution existe deja avec ce code.");
+		if (repository.findByNameIgnoreCase(request.name()).isPresent()) {
+			throw new ApiException(HttpStatus.CONFLICT, "Une institution existe deja avec ce nom.");
 		}
 
 		if (repository.existsByEmailDomainIgnoreCase(request.emailDomain())) {

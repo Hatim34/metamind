@@ -12,6 +12,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 import jakarta.persistence.UniqueConstraint;
 
 @Entity
@@ -24,16 +25,16 @@ public class UserEntity {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 
-	@Column(name = "first_name", nullable = false, length = 80)
+	@Column(name = "prenom", length = 100)
 	private String firstName;
 
-	@Column(name = "last_name", nullable = false, length = 80)
+	@Column(name = "nom", length = 100)
 	private String lastName;
 
-	@Column(nullable = false, length = 160)
+	@Column(nullable = false, length = 255)
 	private String email;
 
-	@Column(name = "password_hash", nullable = false, length = 255)
+	@Column(name = "mot_de_passe_hash", nullable = false, length = 255)
 	private String passwordHash;
 
 	@Enumerated(EnumType.STRING)
@@ -47,6 +48,9 @@ public class UserEntity {
 	@ManyToOne(fetch = FetchType.LAZY, optional = false)
 	@JoinColumn(name = "institution_id", nullable = false)
 	private InstitutionEntity institution;
+
+	@Transient
+	private String displayName;
 
 	protected UserEntity() {
 	}

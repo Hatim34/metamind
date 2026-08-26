@@ -10,7 +10,7 @@ import be.icc.metamind.user.AccountService;
 import be.icc.metamind.user.UserEntity;
 
 @RestController
-@RequestMapping("/api/v1/publications/{publicationId}/extraction")
+@RequestMapping({"/api/v1/publications/{publicationId}/extraction", "/api/v1/documents/{publicationId}/extraction"})
 public class ExtractionController {
 	private final ExtractionService service;
 	private final AccountService accountService;

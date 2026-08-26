@@ -2,6 +2,7 @@ package be.icc.metamind.credit;
 
 import java.time.LocalDateTime;
 
+import be.icc.metamind.document.EnrichmentEntity;
 import be.icc.metamind.institution.InstitutionEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -18,8 +19,8 @@ import jakarta.persistence.Table;
 
 @Entity
 @Table(
-		name = "credit_movements",
-		indexes = @Index(name = "idx_credit_movements_institution_date", columnList = "institution_id, created_at")
+		name = "mouvements_credits",
+		indexes = @Index(name = "idx_mouvements_credits_institution_date", columnList = "institution_id, date_mouvement")
 )
 public class CreditMovementEntity {
 	@Id
@@ -34,16 +35,20 @@ public class CreditMovementEntity {
 	@Column(nullable = false, length = 30)
 	private CreditMovementType type;
 
-	@Column(nullable = false)
+	@Column(name = "quantite", nullable = false)
 	private int amount;
 
-	@Column(name = "balance_after", nullable = false)
+	@jakarta.persistence.Transient
 	private int balanceAfter;
 
-	@Column(nullable = false, length = 220)
+	@jakarta.persistence.Transient
 	private String description;
 
-	@Column(name = "created_at", nullable = false)
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "enrichissement_id")
+	private EnrichmentEntity enrichment;
+
+	@Column(name = "date_mouvement", nullable = false)
 	private LocalDateTime createdAt = LocalDateTime.now();
 
 	protected CreditMovementEntity() {
@@ -55,6 +60,15 @@ public class CreditMovementEntity {
 		this.amount = amount;
 		this.balanceAfter = balanceAfter;
 		this.description = description;
+	}
+
+	public CreditMovementEntity(InstitutionEntity institution, CreditMovementType type, int amount, EnrichmentEntity enrichment) {
+		this.institution = institution;
+		this.type = type;
+		this.amount = amount;
+		this.enrichment = enrichment;
+		this.balanceAfter = institution.getCreditBalance();
+		this.description = type == CreditMovementType.ACHAT ? "Achat de credits" : "Extraction de metadonnees";
 	}
 
 	public Long getId() {
@@ -78,7 +92,7 @@ public class CreditMovementEntity {
 	}
 
 	public String getDescription() {
-		return description;
+		return description == null ? "" : description;
 	}
 
 	public LocalDateTime getCreatedAt() {

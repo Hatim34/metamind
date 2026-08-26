@@ -1,10 +1,26 @@
 package be.icc.metamind.publication;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
 import be.icc.metamind.api.ApiException;
+import be.icc.metamind.document.AuthorEntity;
+import be.icc.metamind.document.AuthorRepository;
+import be.icc.metamind.document.DocumentAuthorEntity;
+import be.icc.metamind.document.DocumentAuthorRepository;
+import be.icc.metamind.document.DocumentEntity;
+import be.icc.metamind.document.DocumentKeywordEntity;
+import be.icc.metamind.document.DocumentKeywordRepository;
+import be.icc.metamind.document.DocumentRepository;
+import be.icc.metamind.document.DocumentStatus;
+import be.icc.metamind.document.DocumentVisibility;
+import be.icc.metamind.document.KeywordEntity;
+import be.icc.metamind.document.KeywordRepository;
+import be.icc.metamind.document.MetadataEntity;
+import be.icc.metamind.document.MetadataRepository;
+import be.icc.metamind.document.MetadataStatus;
 import be.icc.metamind.user.UserEntity;
 import be.icc.metamind.user.UserRole;
 
@@ -14,89 +30,119 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class PublicationService {
-	private final PublicationRepository publicationRepository;
+	private final DocumentRepository documentRepository;
+	private final MetadataRepository metadataRepository;
+	private final AuthorRepository authorRepository;
+	private final KeywordRepository keywordRepository;
+	private final DocumentAuthorRepository documentAuthorRepository;
+	private final DocumentKeywordRepository documentKeywordRepository;
 
-	public PublicationService(PublicationRepository publicationRepository) {
-		this.publicationRepository = publicationRepository;
+	public PublicationService(
+			DocumentRepository documentRepository,
+			MetadataRepository metadataRepository,
+			AuthorRepository authorRepository,
+			KeywordRepository keywordRepository,
+			DocumentAuthorRepository documentAuthorRepository,
+			DocumentKeywordRepository documentKeywordRepository
+	) {
+		this.documentRepository = documentRepository;
+		this.metadataRepository = metadataRepository;
+		this.authorRepository = authorRepository;
+		this.keywordRepository = keywordRepository;
+		this.documentAuthorRepository = documentAuthorRepository;
+		this.documentKeywordRepository = documentKeywordRepository;
 	}
 
 	@Transactional(readOnly = true)
 	public List<PublicationResponse> findPublications(String search, UserEntity currentUser) {
 		String value = Optional.ofNullable(search).orElse("").trim();
-		List<PublicationEntity> publications = value.isBlank()
-				? publicationRepository.findAll()
-				: publicationRepository.findByTitleContainingIgnoreCaseOrAuthorContainingIgnoreCaseOrKeywordsTextContainingIgnoreCase(value, value, value);
+		List<DocumentEntity> documents = value.isBlank()
+				? documentRepository.findAll()
+				: documentRepository.search(value);
 
-		return publications.stream()
-				.filter(publication -> isVisibleFor(publication, currentUser))
-				.map(PublicationResponse::from)
+		return documents.stream()
+				.filter(document -> isVisibleFor(document, currentUser))
+				.map(this::toResponse)
 				.toList();
 	}
 
 	@Transactional(readOnly = true)
 	public PublicationResponse findPublication(long id, UserEntity currentUser) {
-		PublicationEntity publication = publicationRepository.findById(id)
+		DocumentEntity document = documentRepository.findById(id)
 				.orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "La publication demandee est introuvable."));
-		if (!isVisibleFor(publication, currentUser)) {
+		if (!isVisibleFor(document, currentUser)) {
 			throw new ApiException(HttpStatus.FORBIDDEN, "Cette publication n'est pas accessible avec ce compte.");
 		}
-		return PublicationResponse.from(publication);
+		return toResponse(document);
 	}
 
 	@Transactional
 	public PublicationResponse createPublication(PublicationRequest request, UserEntity currentUser) {
 		validate(request);
 
-		PublicationEntity publication = publicationRepository.save(new PublicationEntity(
+		DocumentEntity document = documentRepository.save(new DocumentEntity(
+				fileNameFromTitle(request.title()),
+				null,
+				0L,
+				"TXT",
 				request.title().trim(),
-				request.author().trim(),
-				request.year(),
-				PublicationStatus.A_VALIDER,
-				request.visibility(),
-				normalizeKeywords(request.keywords()),
-				currentUser.getInstitution()
+				DocumentStatus.A_VALIDER,
+				toDocumentVisibility(request.visibility()),
+				currentUser.getInstitution(),
+				currentUser
 		));
-		return PublicationResponse.from(publication);
+		metadataRepository.save(new MetadataEntity(
+				document,
+				request.title().trim(),
+				null,
+				LocalDate.of(request.year(), 1, 1),
+				null,
+				MetadataStatus.EN_ATTENTE
+		));
+		AuthorEntity author = findOrCreateAuthor(request.author().trim());
+		documentAuthorRepository.save(new DocumentAuthorEntity(document, author, 1));
+		findOrCreateKeywords(request.keywords()).forEach(keyword -> documentKeywordRepository.save(new DocumentKeywordEntity(document, keyword)));
+		return toResponse(document);
 	}
 
 	@Transactional
 	public PublicationResponse updateStatus(long id, PublicationStatusRequest request, UserEntity currentUser) {
-		PublicationEntity publication = publicationRepository.findById(id)
+		DocumentEntity document = documentRepository.findById(id)
 				.orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "La publication demandee est introuvable."));
-		if (!canManage(publication, currentUser)) {
+		if (!canManage(document, currentUser)) {
 			throw new ApiException(HttpStatus.FORBIDDEN, "Cette publication ne peut pas etre modifiee avec ce compte.");
 		}
 		if (request.status() == PublicationStatus.EN_ATTENTE || request.status() == PublicationStatus.EXTRACTION) {
 			throw new ApiException(HttpStatus.BAD_REQUEST, "Ce statut est reserve au traitement interne.");
 		}
-		publication.updateStatus(request.status());
-		return PublicationResponse.from(publication);
+		document.updateStatus(toDocumentStatus(request.status()));
+		return toResponse(document);
 	}
 
 	@Transactional
 	public PublicationResponse deletePublication(long id, UserEntity currentUser) {
-		PublicationEntity publication = publicationRepository.findById(id)
+		DocumentEntity document = documentRepository.findById(id)
 				.orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "La publication demandee est introuvable."));
-		if (!canManage(publication, currentUser)) {
+		if (!canManage(document, currentUser)) {
 			throw new ApiException(HttpStatus.FORBIDDEN, "Cette publication ne peut pas etre supprimee avec ce compte.");
 		}
-		publication.updateStatus(PublicationStatus.SUPPRIME);
-		return PublicationResponse.from(publication);
+		document.updateStatus(DocumentStatus.SUPPRIME);
+		return toResponse(document);
 	}
 
-	private boolean isVisibleFor(PublicationEntity publication, UserEntity currentUser) {
-		if (currentUser != null && currentUser.getRole() == UserRole.ADMINISTRATEUR) {
+	private boolean isVisibleFor(DocumentEntity document, UserEntity currentUser) {
+		if (currentUser != null && currentUser.getRole() == UserRole.ADMIN) {
 			return true;
 		}
-		if (currentUser != null && publication.getInstitution().getId().equals(currentUser.getInstitution().getId())) {
+		if (currentUser != null && document.getInstitution().getId().equals(currentUser.getInstitution().getId())) {
 			return true;
 		}
-		return publication.getStatus() == PublicationStatus.PUBLIE && publication.getVisibility() == Visibility.PUBLIC;
+		return document.getStatus() == DocumentStatus.PUBLIE && document.getVisibility() == DocumentVisibility.PUBLIC;
 	}
 
-	private boolean canManage(PublicationEntity publication, UserEntity currentUser) {
-		return currentUser.getRole() == UserRole.ADMINISTRATEUR
-				|| publication.getInstitution().getId().equals(currentUser.getInstitution().getId());
+	private boolean canManage(DocumentEntity document, UserEntity currentUser) {
+		return currentUser.getRole() == UserRole.ADMIN
+				|| document.getInstitution().getId().equals(currentUser.getInstitution().getId());
 	}
 
 	private void validate(PublicationRequest request) {
@@ -123,5 +169,46 @@ public class PublicationService {
 				.map(String::trim)
 				.filter(keyword -> !keyword.isBlank())
 				.collect(Collectors.joining(","));
+	}
+
+	private PublicationResponse toResponse(DocumentEntity document) {
+		MetadataEntity metadata = metadataRepository.findByDocumentId(document.getId()).orElse(null);
+		String author = documentAuthorRepository.findByDocument_IdOrderByAuthorOrderAsc(document.getId())
+				.stream()
+				.map(documentAuthor -> documentAuthor.getAuthor().getFullName())
+				.collect(Collectors.joining(", "));
+		List<String> keywords = documentKeywordRepository.findByDocument_Id(document.getId())
+				.stream()
+				.map(documentKeyword -> documentKeyword.getKeyword().getLibelle())
+				.toList();
+		return PublicationResponse.from(document, metadata, author, keywords);
+	}
+
+	private AuthorEntity findOrCreateAuthor(String fullName) {
+		return authorRepository.findByFullNameIgnoreCase(fullName)
+				.orElseGet(() -> authorRepository.save(new AuthorEntity(fullName, null)));
+	}
+
+	private List<KeywordEntity> findOrCreateKeywords(List<String> keywords) {
+		return Optional.ofNullable(keywords).orElse(List.of()).stream()
+				.map(String::trim)
+				.filter(keyword -> !keyword.isBlank())
+				.distinct()
+				.map(keyword -> keywordRepository.findByLibelleIgnoreCase(keyword)
+						.orElseGet(() -> keywordRepository.save(new KeywordEntity(keyword))))
+				.toList();
+	}
+
+	private String fileNameFromTitle(String title) {
+		String normalized = title.trim().toLowerCase().replaceAll("[^a-z0-9]+", "-").replaceAll("(^-|-$)", "");
+		return normalized.isBlank() ? "document.txt" : normalized + ".txt";
+	}
+
+	private DocumentStatus toDocumentStatus(PublicationStatus status) {
+		return DocumentStatus.valueOf(status.name());
+	}
+
+	private DocumentVisibility toDocumentVisibility(Visibility visibility) {
+		return DocumentVisibility.valueOf(visibility.name());
 	}
 }

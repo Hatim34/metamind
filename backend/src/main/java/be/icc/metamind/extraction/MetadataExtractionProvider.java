@@ -1,7 +1,7 @@
 package be.icc.metamind.extraction;
 
-import be.icc.metamind.publication.PublicationEntity;
+import be.icc.metamind.document.DocumentEntity;
 
 public interface MetadataExtractionProvider {
-	MetadataExtractionData extract(PublicationEntity publication);
+	MetadataExtractionData extract(DocumentEntity document);
 }

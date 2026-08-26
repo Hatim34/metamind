@@ -2,10 +2,10 @@ package be.icc.metamind.extraction;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import be.icc.metamind.document.DocumentEntity;
+import be.icc.metamind.document.DocumentStatus;
+import be.icc.metamind.document.DocumentVisibility;
 import be.icc.metamind.institution.InstitutionEntity;
-import be.icc.metamind.publication.PublicationEntity;
-import be.icc.metamind.publication.PublicationStatus;
-import be.icc.metamind.publication.Visibility;
 
 import org.junit.jupiter.api.Test;
 
@@ -18,7 +18,7 @@ class LocalMetadataExtractionProviderTests {
 		MetadataExtractionData metadata = provider.extract(publication("Analyse automatique des metadonnees"));
 
 		assertThat(metadata.title()).isEqualTo("Analyse automatique des metadonnees");
-		assertThat(metadata.author()).isEqualTo("Sarah Lemaire");
+		assertThat(metadata.author()).isEqualTo("Auteur non renseigne");
 		assertThat(metadata.keywords()).containsExactly("metadonnees", "Dublin Core", "catalogage");
 	}
 
@@ -36,15 +36,17 @@ class LocalMetadataExtractionProviderTests {
 		assertThat(metadata.keywords()).containsExactly("publication", "validation", "bibliotheque");
 	}
 
-	private PublicationEntity publication(String title) {
-		return new PublicationEntity(
+	private DocumentEntity publication(String title) {
+		return new DocumentEntity(
+				title + ".txt",
+				null,
+				0L,
+				"TXT",
 				title,
-				"Sarah Lemaire",
-				2026,
-				PublicationStatus.EN_ATTENTE,
-				Visibility.PUBLIC,
-				"",
-				institution
+				DocumentStatus.EN_ATTENTE,
+				DocumentVisibility.PUBLIC,
+				institution,
+				null
 		);
 	}
 }

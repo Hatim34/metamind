@@ -6,10 +6,10 @@ import static org.springframework.test.web.client.match.MockRestRequestMatchers.
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
 
 import be.icc.metamind.api.ApiException;
+import be.icc.metamind.document.DocumentEntity;
+import be.icc.metamind.document.DocumentStatus;
+import be.icc.metamind.document.DocumentVisibility;
 import be.icc.metamind.institution.InstitutionEntity;
-import be.icc.metamind.publication.PublicationEntity;
-import be.icc.metamind.publication.PublicationStatus;
-import be.icc.metamind.publication.Visibility;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
@@ -70,15 +70,17 @@ class GeminiMetadataExtractionProviderTests {
 				.hasMessageContaining("Gemini");
 	}
 
-	private PublicationEntity publication() {
-		return new PublicationEntity(
+	private DocumentEntity publication() {
+		return new DocumentEntity(
+				"analyse-automatique-des-metadonnees.txt",
+				null,
+				0L,
+				"TXT",
 				"Analyse automatique des metadonnees",
-				"Sarah Lemaire",
-				2026,
-				PublicationStatus.EN_ATTENTE,
-				Visibility.PUBLIC,
-				"catalogage",
-				institution
+				DocumentStatus.EN_ATTENTE,
+				DocumentVisibility.PUBLIC,
+				institution,
+				null
 		);
 	}
 }

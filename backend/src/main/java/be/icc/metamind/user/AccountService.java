@@ -64,7 +64,7 @@ public class AccountService {
 				request.lastName(),
 				email,
 				passwordService.hash(request.password()),
-				UserRole.BIBLIOTHECAIRE,
+				UserRole.LIBRARIAN,
 				institution
 		);
 
@@ -84,7 +84,7 @@ public class AccountService {
 	@Transactional(readOnly = true)
 	public UserEntity authenticateSelfOrAdmin(long id, String authorizationHeader) {
 		UserEntity currentUser = authenticate(authorizationHeader);
-		if (currentUser.getRole() == UserRole.ADMINISTRATEUR || currentUser.getId() == id) {
+		if (currentUser.getRole() == UserRole.ADMIN || currentUser.getId() == id) {
 			return currentUser;
 		}
 		throw new ApiException(HttpStatus.FORBIDDEN, "Cette action n'est pas autorisee pour ce compte.");
@@ -93,7 +93,7 @@ public class AccountService {
 	@Transactional(readOnly = true)
 	public UserEntity authenticateAdmin(String authorizationHeader) {
 		UserEntity currentUser = authenticate(authorizationHeader);
-		if (currentUser.getRole() == UserRole.ADMINISTRATEUR) {
+		if (currentUser.getRole() == UserRole.ADMIN) {
 			return currentUser;
 		}
 		throw new ApiException(HttpStatus.FORBIDDEN, "Cette action est reservee a l'administrateur.");
@@ -127,8 +127,8 @@ public class AccountService {
 	}
 
 	private InstitutionEntity findInstitution(String value) {
-		return institutionRepository.findByCodeIgnoreCase(value)
-				.or(() -> institutionRepository.findByNameIgnoreCase(value))
+		return institutionRepository.findByNameIgnoreCase(value)
+				.or(() -> institutionRepository.findByEmailDomainIgnoreCase(value))
 				.orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "L'institution demandee est introuvable."));
 	}
 

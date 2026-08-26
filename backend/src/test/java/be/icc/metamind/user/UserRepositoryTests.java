@@ -22,7 +22,7 @@ class UserRepositoryTests {
 	@Test
 	void savesAndFindsUserByEmail() {
 		InstitutionEntity institution = institutionRepository.save(new InstitutionEntity("INST-A", "Institution A", "institution-a.example"));
-		UserEntity user = new UserEntity("Sarah", "Lemaire", "sarah@institution-a.example", "hash", UserRole.BIBLIOTHECAIRE, institution);
+		UserEntity user = new UserEntity("Sarah", "Lemaire", "sarah@institution-a.example", "hash", UserRole.LIBRARIAN, institution);
 
 		userRepository.save(user);
 
@@ -36,7 +36,7 @@ class UserRepositoryTests {
 	@Test
 	void checksExistingEmail() {
 		InstitutionEntity institution = institutionRepository.save(new InstitutionEntity("INST-B", "Institution B", "institution-b.example"));
-		userRepository.save(new UserEntity("Jan", "Peeters", "jan@institution-b.example", "hash", UserRole.BIBLIOTHECAIRE, institution));
+		userRepository.save(new UserEntity("Jan", "Peeters", "jan@institution-b.example", "hash", UserRole.LIBRARIAN, institution));
 
 		assertThat(userRepository.existsByEmailIgnoreCase("JAN@INSTITUTION-B.EXAMPLE")).isTrue();
 		assertThat(userRepository.existsByEmailIgnoreCase("autre@institution-b.example")).isFalse();
@@ -45,7 +45,7 @@ class UserRepositoryTests {
 	@Test
 	void supportsLogicalDeactivation() {
 		InstitutionEntity institution = institutionRepository.save(new InstitutionEntity("INST-C", "Institution C", "institution-c.example"));
-		UserEntity user = userRepository.save(new UserEntity("Mina", "Laurent", "mina@institution-c.example", "hash", UserRole.BIBLIOTHECAIRE, institution));
+		UserEntity user = userRepository.save(new UserEntity("Mina", "Laurent", "mina@institution-c.example", "hash", UserRole.LIBRARIAN, institution));
 
 		user.anonymizeAndDeactivate();
 		userRepository.flush();

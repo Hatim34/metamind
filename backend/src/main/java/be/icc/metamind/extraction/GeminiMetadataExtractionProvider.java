@@ -3,7 +3,7 @@ package be.icc.metamind.extraction;
 import java.util.List;
 
 import be.icc.metamind.api.ApiException;
-import be.icc.metamind.publication.PublicationEntity;
+import be.icc.metamind.document.DocumentEntity;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -34,7 +34,7 @@ public class GeminiMetadataExtractionProvider implements MetadataExtractionProvi
 	}
 
 	@Override
-	public MetadataExtractionData extract(PublicationEntity publication) {
+	public MetadataExtractionData extract(DocumentEntity document) {
 		if (apiKey.isBlank()) {
 			throw new ApiException(HttpStatus.SERVICE_UNAVAILABLE, "La cle Gemini n'est pas configuree.");
 		}
@@ -43,10 +43,8 @@ public class GeminiMetadataExtractionProvider implements MetadataExtractionProvi
 				Extrais des metadonnees Dublin Core depuis cette publication.
 				Reponds uniquement en JSON avec les champs title, author et keywords.
 				Titre existant : %s
-				Auteur existant : %s
-				Annee : %d
-				Mots-cles existants : %s
-				""".formatted(publication.getTitle(), publication.getAuthor(), publication.getYear(), publication.getKeywordsText());
+				Texte extrait : %s
+				""".formatted(document.getFileName(), document.getExtractedText());
 
 		GeminiRequest request = new GeminiRequest(List.of(new GeminiContent(List.of(new GeminiPart(prompt)))));
 
@@ -56,10 +54,10 @@ public class GeminiMetadataExtractionProvider implements MetadataExtractionProvi
 				.retrieve()
 				.body(JsonNode.class);
 
-		return parseResponse(publication, response);
+		return parseResponse(document, response);
 	}
 
-	private MetadataExtractionData parseResponse(PublicationEntity publication, JsonNode response) {
+	private MetadataExtractionData parseResponse(DocumentEntity document, JsonNode response) {
 		String text = response.path("candidates")
 				.path(0)
 				.path("content")
@@ -76,8 +74,8 @@ public class GeminiMetadataExtractionProvider implements MetadataExtractionProvi
 			String cleanedText = text.replace("```json", "").replace("```", "").trim();
 			JsonNode metadata = objectMapper.readTree(cleanedText);
 			return new MetadataExtractionData(
-					metadata.path("title").asText(publication.getTitle()),
-					metadata.path("author").asText(publication.getAuthor()),
+					metadata.path("title").asText(document.getFileName()),
+					metadata.path("author").asText("Auteur non renseigne"),
 					keywords(metadata.path("keywords"))
 			);
 		} catch (Exception exception) {
