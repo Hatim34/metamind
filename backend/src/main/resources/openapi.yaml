@@ -428,7 +428,7 @@ components:
       type: object
       required: [email, password]
       properties:
-        email: { type: string, format: email, example: sarah@institution-a.example }
+        email: { type: string, format: email, example: sarah@institution-a.example, description: "L'email doit appartenir au domaine de l'institution choisie." }
         password: { type: string, format: password, example: "558435" }
     RegisterRequest:
       type: object

@@ -51,15 +51,18 @@ public class AccountService {
 
 	@Transactional
 	public AuthResponse register(RegisterRequest request) {
-		if (userRepository.existsByEmailIgnoreCase(request.email())) {
+		String email = normalizeEmail(request.email());
+		if (userRepository.existsByEmailIgnoreCase(email)) {
 			throw new ApiException(HttpStatus.CONFLICT, "Un compte existe deja avec cet email.");
 		}
 
 		InstitutionEntity institution = findInstitution(request.institution());
+		validateActiveInstitution(institution);
+		validateEmailDomain(email, institution);
 		UserEntity user = new UserEntity(
 				request.firstName(),
 				request.lastName(),
-				request.email().toLowerCase(),
+				email,
 				passwordService.hash(request.password()),
 				UserRole.BIBLIOTHECAIRE,
 				institution
@@ -104,7 +107,10 @@ public class AccountService {
 	@Transactional
 	public UserResponse updateProfile(long id, UpdateProfileRequest request) {
 		UserEntity user = findUser(id);
-		user.updateProfile(request.firstName(), request.lastName(), findInstitution(request.institution()));
+		InstitutionEntity institution = findInstitution(request.institution());
+		validateActiveInstitution(institution);
+		validateEmailDomain(user.getEmail(), institution);
+		user.updateProfile(request.firstName(), request.lastName(), institution);
 		return UserResponse.from(user);
 	}
 
@@ -124,5 +130,22 @@ public class AccountService {
 		return institutionRepository.findByCodeIgnoreCase(value)
 				.or(() -> institutionRepository.findByNameIgnoreCase(value))
 				.orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "L'institution demandee est introuvable."));
+	}
+
+	private String normalizeEmail(String email) {
+		return email.trim().toLowerCase();
+	}
+
+	private void validateActiveInstitution(InstitutionEntity institution) {
+		if (!institution.isActive()) {
+			throw new ApiException(HttpStatus.BAD_REQUEST, "L'institution demandee est inactive.");
+		}
+	}
+
+	private void validateEmailDomain(String email, InstitutionEntity institution) {
+		String expectedDomain = institution.getEmailDomain().trim().toLowerCase();
+		if (!email.endsWith("@" + expectedDomain)) {
+			throw new ApiException(HttpStatus.BAD_REQUEST, "L'email ne correspond pas au domaine de l'institution.");
+		}
 	}
 }

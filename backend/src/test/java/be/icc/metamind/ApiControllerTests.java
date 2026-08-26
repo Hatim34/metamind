@@ -211,6 +211,25 @@ class ApiControllerTests {
 	}
 
 	@Test
+	void registerRejectsEmailFromAnotherInstitutionDomain() throws Exception {
+		String body = """
+				{
+				  "firstName": "Mina",
+				  "lastName": "Laurent",
+				  "email": "mina@institution-b.example",
+				  "institution": "Institution A",
+				  "password": "55843500"
+				}
+				""";
+
+		mockMvc.perform(post("/api/v1/auth/register")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(body))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.message", is("L'email ne correspond pas au domaine de l'institution.")));
+	}
+
+	@Test
 	void profileCanBeUpdated() throws Exception {
 		UserEntity user = userRepository.findByEmailIgnoreCase("sarah@institution-a.example").orElseThrow();
 		String body = """
@@ -227,6 +246,25 @@ class ApiControllerTests {
 						.content(body))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.institution", is("Institution A")));
+	}
+
+	@Test
+	void profileUpdateRejectsInstitutionWithDifferentEmailDomain() throws Exception {
+		UserEntity user = userRepository.findByEmailIgnoreCase("sarah@institution-a.example").orElseThrow();
+		String body = """
+				{
+				  "firstName": "Sarah",
+				  "lastName": "Lemaire",
+				  "institution": "Institution B"
+				}
+				""";
+
+		mockMvc.perform(put("/api/v1/users/" + user.getId() + "/profile")
+						.header("Authorization", bearerToken())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(body))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.message", is("L'email ne correspond pas au domaine de l'institution.")));
 	}
 
 	@Test
