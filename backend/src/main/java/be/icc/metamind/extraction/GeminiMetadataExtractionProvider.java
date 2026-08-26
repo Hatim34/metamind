@@ -2,9 +2,6 @@ package be.icc.metamind.extraction;
 
 import java.util.List;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import be.icc.metamind.api.ApiException;
 import be.icc.metamind.publication.PublicationEntity;
 
@@ -13,6 +10,8 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 @Component
 @ConditionalOnProperty(name = "metamind.llm.provider", havingValue = "gemini")
