@@ -420,7 +420,7 @@ components:
         lastName: { type: string, example: Lemaire }
         email: { type: string, format: email, example: sarah@institution-a.example }
         institution: { type: string, example: Institution A }
-        password: { type: string, format: password, example: "MotDePasse123" }
+        password: { type: string, format: password, example: "558435" }
     User:
       type: object
       properties:
