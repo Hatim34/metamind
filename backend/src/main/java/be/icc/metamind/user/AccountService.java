@@ -3,6 +3,7 @@ package be.icc.metamind.user;
 import be.icc.metamind.api.ApiException;
 import be.icc.metamind.auth.AuthResponse;
 import be.icc.metamind.auth.JwtService;
+import be.icc.metamind.auth.LoginAttemptService;
 import be.icc.metamind.auth.LoginRequest;
 import be.icc.metamind.auth.RegisterRequest;
 import be.icc.metamind.institution.InstitutionEntity;
@@ -18,21 +19,33 @@ public class AccountService {
 	private final InstitutionRepository institutionRepository;
 	private final PasswordService passwordService;
 	private final JwtService jwtService;
+	private final LoginAttemptService loginAttemptService;
 
-	public AccountService(UserRepository userRepository, InstitutionRepository institutionRepository, PasswordService passwordService, JwtService jwtService) {
+	public AccountService(UserRepository userRepository, InstitutionRepository institutionRepository, PasswordService passwordService, JwtService jwtService, LoginAttemptService loginAttemptService) {
 		this.userRepository = userRepository;
 		this.institutionRepository = institutionRepository;
 		this.passwordService = passwordService;
 		this.jwtService = jwtService;
+		this.loginAttemptService = loginAttemptService;
 	}
 
 	@Transactional(readOnly = true)
 	public AuthResponse login(LoginRequest request) {
-		UserEntity user = userRepository.findByEmailIgnoreCase(request.email())
-				.filter(account -> passwordService.matches(request.password(), account.getPasswordHash()))
-				.filter(account -> account.getStatus() == UserStatus.ACTIF)
-				.orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "Les identifiants sont incorrects."));
+		loginAttemptService.assertAllowed(request.email());
+		UserEntity user;
+		try {
+			user = userRepository.findByEmailIgnoreCase(request.email())
+					.filter(account -> passwordService.matches(request.password(), account.getPasswordHash()))
+					.filter(account -> account.getStatus() == UserStatus.ACTIF)
+					.orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "Les identifiants sont incorrects."));
+		} catch (ApiException exception) {
+			if (exception.getStatus() == HttpStatus.UNAUTHORIZED) {
+				loginAttemptService.recordFailure(request.email());
+			}
+			throw exception;
+		}
 
+		loginAttemptService.reset(request.email());
 		return new AuthResponse(jwtService.createToken(user), UserResponse.from(user));
 	}
 

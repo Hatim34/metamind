@@ -189,6 +189,28 @@ class ApiControllerTests {
 	}
 
 	@Test
+	void repeatedInvalidLoginAttemptsAreBlocked() throws Exception {
+		String body = """
+				{
+				  "email": "compte-bloque@institution-a.example",
+				  "password": "558435000"
+				}
+				""";
+
+		for (int attempt = 0; attempt < 5; attempt++) {
+			mockMvc.perform(post("/api/v1/auth/login")
+							.contentType(MediaType.APPLICATION_JSON)
+							.content(body))
+					.andExpect(status().isUnauthorized());
+		}
+
+		mockMvc.perform(post("/api/v1/auth/login")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(body))
+				.andExpect(status().isTooManyRequests());
+	}
+
+	@Test
 	void profileCanBeUpdated() throws Exception {
 		UserEntity user = userRepository.findByEmailIgnoreCase("sarah@institution-a.example").orElseThrow();
 		String body = """
