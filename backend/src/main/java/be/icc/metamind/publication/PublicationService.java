@@ -15,6 +15,8 @@ import be.icc.metamind.document.DocumentKeywordEntity;
 import be.icc.metamind.document.DocumentKeywordRepository;
 import be.icc.metamind.document.DocumentRepository;
 import be.icc.metamind.document.DocumentStatus;
+import be.icc.metamind.document.DocumentUploadService;
+import be.icc.metamind.document.DocumentUploadService.ImportedDocument;
 import be.icc.metamind.document.DocumentVisibility;
 import be.icc.metamind.document.KeywordEntity;
 import be.icc.metamind.document.KeywordRepository;
@@ -27,6 +29,7 @@ import be.icc.metamind.user.UserRole;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 @Service
 public class PublicationService {
@@ -36,6 +39,7 @@ public class PublicationService {
 	private final KeywordRepository keywordRepository;
 	private final DocumentAuthorRepository documentAuthorRepository;
 	private final DocumentKeywordRepository documentKeywordRepository;
+	private final DocumentUploadService documentUploadService;
 
 	public PublicationService(
 			DocumentRepository documentRepository,
@@ -43,7 +47,8 @@ public class PublicationService {
 			AuthorRepository authorRepository,
 			KeywordRepository keywordRepository,
 			DocumentAuthorRepository documentAuthorRepository,
-			DocumentKeywordRepository documentKeywordRepository
+			DocumentKeywordRepository documentKeywordRepository,
+			DocumentUploadService documentUploadService
 	) {
 		this.documentRepository = documentRepository;
 		this.metadataRepository = metadataRepository;
@@ -51,6 +56,7 @@ public class PublicationService {
 		this.keywordRepository = keywordRepository;
 		this.documentAuthorRepository = documentAuthorRepository;
 		this.documentKeywordRepository = documentKeywordRepository;
+		this.documentUploadService = documentUploadService;
 	}
 
 	@Transactional(readOnly = true)
@@ -102,6 +108,31 @@ public class PublicationService {
 		AuthorEntity author = findOrCreateAuthor(request.author().trim());
 		documentAuthorRepository.save(new DocumentAuthorEntity(document, author, 1));
 		findOrCreateKeywords(request.keywords()).forEach(keyword -> documentKeywordRepository.save(new DocumentKeywordEntity(document, keyword)));
+		return toResponse(document);
+	}
+
+	@Transactional
+	public PublicationResponse importDocument(MultipartFile file, Visibility visibility, UserEntity currentUser) {
+		ImportedDocument imported = documentUploadService.importFile(file);
+		DocumentEntity document = documentRepository.save(new DocumentEntity(
+				imported.fileName(),
+				imported.filePath(),
+				imported.fileSize(),
+				imported.mediaType(),
+				imported.extractedText(),
+				DocumentStatus.EN_ATTENTE,
+				toDocumentVisibility(visibility == null ? Visibility.INSTITUTION : visibility),
+				currentUser.getInstitution(),
+				currentUser
+		));
+		metadataRepository.save(new MetadataEntity(
+				document,
+				titleFromFileName(imported.fileName()),
+				null,
+				null,
+				null,
+				MetadataStatus.EN_ATTENTE
+		));
 		return toResponse(document);
 	}
 
@@ -202,6 +233,14 @@ public class PublicationService {
 	private String fileNameFromTitle(String title) {
 		String normalized = title.trim().toLowerCase().replaceAll("[^a-z0-9]+", "-").replaceAll("(^-|-$)", "");
 		return normalized.isBlank() ? "document.txt" : normalized + ".txt";
+	}
+
+	private String titleFromFileName(String fileName) {
+		String cleanName = fileName == null ? "Document importe" : fileName;
+		int index = cleanName.lastIndexOf('.');
+		String withoutExtension = index < 0 ? cleanName : cleanName.substring(0, index);
+		String normalized = withoutExtension.replace('-', ' ').replace('_', ' ').replaceAll("\\s+", " ").trim();
+		return normalized.isBlank() ? "Document importe" : normalized;
 	}
 
 	private DocumentStatus toDocumentStatus(PublicationStatus status) {

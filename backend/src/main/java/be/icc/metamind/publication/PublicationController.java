@@ -16,6 +16,8 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.web.multipart.MultipartFile;
 
 import be.icc.metamind.user.AccountService;
 import be.icc.metamind.user.UserEntity;
@@ -48,6 +50,18 @@ public class PublicationController {
 	public PublicationResponse create(@RequestHeader("Authorization") String authorization, @Valid @RequestBody PublicationRequest request) {
 		UserEntity currentUser = accountService.authenticate(authorization);
 		return service.createPublication(request, currentUser);
+	}
+
+	@PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+	@ResponseStatus(HttpStatus.CREATED)
+	public PublicationResponse importDocument(
+			@RequestHeader("Authorization") String authorization,
+			@RequestParam(value = "fichier", required = false) MultipartFile fichier,
+			@RequestParam(value = "file", required = false) MultipartFile file,
+			@RequestParam(value = "visibilite", required = false) Visibility visibility
+	) {
+		UserEntity currentUser = accountService.authenticate(authorization);
+		return service.importDocument(fichier == null ? file : fichier, visibility, currentUser);
 	}
 
 	@PutMapping("/{id}/status")

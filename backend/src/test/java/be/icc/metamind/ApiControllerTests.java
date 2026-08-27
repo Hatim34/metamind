@@ -5,12 +5,14 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.startsWith;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.util.List;
+import java.nio.charset.StandardCharsets;
 
 import be.icc.metamind.document.AuthorRepository;
 import be.icc.metamind.document.DocumentAuthorRepository;
@@ -35,10 +37,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
-@SpringBootTest(properties = "spring.jpa.hibernate.ddl-auto=create-drop")
+@SpringBootTest(properties = {
+		"spring.jpa.hibernate.ddl-auto=create-drop",
+		"metamind.storage.documents-dir=target/test-storage/documents"
+})
 @AutoConfigureMockMvc
 @Transactional
 class ApiControllerTests {
@@ -174,6 +180,49 @@ class ApiControllerTests {
 				.andExpect(jsonPath("$.title", is("Controle qualite des metadonnees importees")))
 				.andExpect(jsonPath("$.status", is("A_VALIDER")))
 				.andExpect(jsonPath("$.visibility", is("INSTITUTION")));
+	}
+
+	@Test
+	void documentCanBeImportedFromTextFile() throws Exception {
+		MockMultipartFile file = new MockMultipartFile(
+				"fichier",
+				"article-metadonnees.txt",
+				MediaType.TEXT_PLAIN_VALUE,
+				"Article scientifique sur les metadonnees Dublin Core.".getBytes(StandardCharsets.UTF_8)
+		);
+
+		mockMvc.perform(multipart("/api/v1/documents")
+						.file(file)
+						.header("Authorization", bearerToken()))
+				.andExpect(status().isCreated())
+				.andExpect(jsonPath("$.title", is("article metadonnees")))
+				.andExpect(jsonPath("$.institution", is("Institution A")))
+				.andExpect(jsonPath("$.status", is("EN_ATTENTE")))
+				.andExpect(jsonPath("$.visibility", is("INSTITUTION")));
+
+		DocumentEntity document = documentRepository.findAll().stream()
+				.filter(item -> "article-metadonnees.txt".equals(item.getFileName()))
+				.findFirst()
+				.orElseThrow();
+		org.assertj.core.api.Assertions.assertThat(document.getExtractedText()).contains("Dublin Core");
+		org.assertj.core.api.Assertions.assertThat(document.getInstitution().getName()).isEqualTo("Institution A");
+		org.assertj.core.api.Assertions.assertThat(document.getImportedBy().getEmail()).isEqualTo("sarah@institution-a.example");
+	}
+
+	@Test
+	void documentImportRejectsUnsupportedFormat() throws Exception {
+		MockMultipartFile file = new MockMultipartFile(
+				"fichier",
+				"archive.exe",
+				"application/octet-stream",
+				"contenu".getBytes(StandardCharsets.UTF_8)
+		);
+
+		mockMvc.perform(multipart("/api/v1/documents")
+						.file(file)
+						.header("Authorization", bearerToken()))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.message", is("Le format du fichier doit etre PDF, DOCX ou TXT.")));
 	}
 
 	@Test

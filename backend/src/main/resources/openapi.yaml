@@ -1,548 +1,540 @@
 openapi: 3.0.3
+
 info:
   title: Metamind API
-  version: 0.2.0
-  description: API REST de Metamind pour la gestion de publications institutionnelles, de comptes utilisateurs, de credits et d'extraction de metadonnees.
+  version: 1.0.0
+  description: >
+    API REST de Metamind, plateforme de depot institutionnel avec extraction
+    automatique de metadonnees par intelligence artificielle (Google Gemini).
+    Les bibliothecaires importent des publications, l'IA propose des metadonnees,
+    le bibliothecaire valide, les chercheurs consultent un catalogue public.
+    Authentification par jeton JWT. Roles : LIBRARIAN, ADMIN.
+    Ce document OpenAPI sert de source a l'interface Swagger UI.
+  contact:
+    name: ASSAL Hatim - TFE Bachelier Informatique, ICC 2025-2026
+  license:
+    name: Usage academique (TFE)
+
 servers:
   - url: https://metamind-app.duckdns.org/api/v1
-    description: Serveur de production prevu
-  - url: http://localhost:8080/api/v1
-    description: Serveur local
+    description: Serveur de production (prevu, HTTPS via certificat Let's Encrypt)
+
 tags:
-  - name: Health
-  - name: Documentation
   - name: Auth
-  - name: Publications
-  - name: Open Data
-  - name: Institutions
-  - name: Users
-  - name: Credits
+    description: Inscription, connexion, gestion du jeton
+  - name: Documents
+    description: Import et gestion des documents
   - name: Extraction
-  - name: Statistics
+    description: Lancement de l'extraction des metadonnees par IA
+  - name: Metadonnees
+    description: Consultation et validation des metadonnees
+  - name: Recherche
+    description: Recherche publique et Open Data
+  - name: Credits
+    description: Solde, achat de packs de credits (Stripe)
+  - name: Statistiques
+    description: Indicateurs d'usage
+  - name: Administration
+    description: Gestion des utilisateurs, institutions, configuration (ADMIN)
+
+security:
+  - bearerAuth: []
+
 paths:
-  /health:
-    get:
-      tags: [Health]
-      summary: Verifier l'etat de l'API
-      responses:
-        "200":
-          description: API disponible
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/HealthResponse"
-  /openapi.yaml:
-    get:
-      tags: [Documentation]
-      summary: Consulter le contrat OpenAPI
-      responses:
-        "200":
-          description: Contrat OpenAPI au format YAML
-          content:
-            application/yaml:
-              schema:
-                type: string
-  /auth/login:
-    post:
-      tags: [Auth]
-      summary: Connecter un utilisateur
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/LoginRequest"
-      responses:
-        "200":
-          description: Connexion reussie
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/AuthResponse"
-        "401":
-          description: Identifiants invalides
+
   /auth/register:
     post:
       tags: [Auth]
       summary: Inscrire un bibliothecaire
+      security: []
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/RegisterRequest"
+              type: object
+              required: [email, mot_de_passe, nom, prenom, institution_id]
+              properties:
+                email: { type: string, format: email, example: sarah@institution-a.example }
+                mot_de_passe: { type: string, format: password, minLength: 8 }
+                nom: { type: string, example: Mertens }
+                prenom: { type: string, example: Sarah }
+                institution_id: { type: integer, example: 1 }
       responses:
-        "200":
-          description: Inscription reussie
+        '201': { description: Compte cree (statut EN_ATTENTE, a valider par un admin) }
+        '409': { description: Email deja utilise, $ref: '#/components/responses/Error' }
+        '422': { description: Donnees invalides, $ref: '#/components/responses/Error' }
+
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Se connecter et obtenir un jeton JWT
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, mot_de_passe]
+              properties:
+                email: { type: string, format: email, example: sarah@institution-a.example }
+                mot_de_passe: { type: string, format: password }
+      responses:
+        '200':
+          description: Connexion reussie
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/AuthResponse"
-  /publications:
+                type: object
+                properties:
+                  token: { type: string, description: Jeton JWT (Bearer) }
+                  expires_in: { type: integer, example: 3600 }
+                  utilisateur: { $ref: '#/components/schemas/User' }
+        '401': { description: Identifiants invalides, $ref: '#/components/responses/Error' }
+
+  /documents:
     get:
-      tags: [Publications]
-      summary: Lister les publications du catalogue
+      tags: [Documents]
+      summary: Lister les documents de son institution
       parameters:
-        - name: search
+        - $ref: '#/components/parameters/page'
+        - $ref: '#/components/parameters/size'
+        - $ref: '#/components/parameters/sort'
+        - $ref: '#/components/parameters/q'
+        - name: statut
           in: query
-          required: false
-          schema:
-            type: string
+          schema: { type: string, enum: [EN_ATTENTE, EXTRACTION, A_VALIDER, PUBLIE, SUPPRIME] }
       responses:
-        "200":
-          description: Liste des publications
+        '200':
+          description: Page de documents
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Page'
+                  - type: object
+                    properties:
+                      contenu:
+                        type: array
+                        items: { $ref: '#/components/schemas/Document' }
+        '401': { $ref: '#/components/responses/Error' }
+    post:
+      tags: [Documents]
+      summary: Importer un document (fichier PDF/DOCX/TXT)
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [fichier]
+              properties:
+                fichier: { type: string, format: binary }
+                visibilite: { type: string, enum: [PUBLIC, INSTITUTION], default: INSTITUTION }
+      responses:
+        '201':
+          description: Document cree (statut EN_ATTENTE)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Document' }
+        '413': { description: Fichier trop volumineux, $ref: '#/components/responses/Error' }
+
+  /documents/{id}:
+    get:
+      tags: [Documents]
+      summary: Consulter un document
+      parameters: [ { $ref: '#/components/parameters/id' } ]
+      responses:
+        '200':
+          description: Document
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Document' }
+        '404': { $ref: '#/components/responses/Error' }
+    delete:
+      tags: [Documents]
+      summary: Supprimer un document (suppression logique, statut SUPPRIME)
+      parameters: [ { $ref: '#/components/parameters/id' } ]
+      responses:
+        '204': { description: Document supprime (statut SUPPRIME, ligne conservee) }
+        '404': { $ref: '#/components/responses/Error' }
+
+  /documents/{id}/extraction:
+    post:
+      tags: [Extraction]
+      summary: Lancer l'extraction des metadonnees par IA (consomme 1 credit)
+      parameters: [ { $ref: '#/components/parameters/id' } ]
+      responses:
+        '202':
+          description: Extraction lancee (traitement asynchrone)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  enrichissement_id: { type: integer }
+                  statut: { type: string, enum: [EN_FILE, EN_COURS, TERMINE, ECHEC], example: EN_FILE }
+        '402': { description: Solde de credits insuffisant, $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
+
+  /documents/{id}/metadata:
+    get:
+      tags: [Metadonnees]
+      summary: Consulter les metadonnees (et les suggestions de l'IA)
+      parameters: [ { $ref: '#/components/parameters/id' } ]
+      responses:
+        '200':
+          description: Metadonnees du document
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Metadata' }
+    put:
+      tags: [Metadonnees]
+      summary: Valider ou corriger les metadonnees
+      parameters: [ { $ref: '#/components/parameters/id' } ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/Metadata' }
+      responses:
+        '200': { description: Metadonnees validees (statut VALIDE), $ref: '#/components/responses/Error' }
+        '422': { $ref: '#/components/responses/Error' }
+
+  /search:
+    get:
+      tags: [Recherche]
+      summary: Recherche plein texte dans le catalogue public
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/q'
+        - $ref: '#/components/parameters/page'
+        - $ref: '#/components/parameters/size'
+        - name: langue
+          in: query
+          schema: { type: string, example: fr }
+        - name: type
+          in: query
+          schema: { type: string, example: article }
+      responses:
+        '200':
+          description: Resultats publics
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Page'
+                  - type: object
+                    properties:
+                      contenu:
+                        type: array
+                        items: { $ref: '#/components/schemas/Document' }
+            application/rss+xml:
+              schema: { type: string, description: Flux RSS des dernieres publications }
+
+  /credits:
+    get:
+      tags: [Credits]
+      summary: Consulter le solde de credits de son institution
+      responses:
+        '200':
+          description: Solde courant
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CreditBalance' }
+
+  /credits/packs:
+    get:
+      tags: [Credits]
+      summary: Lister les packs de credits disponibles
+      security: []
+      responses:
+        '200':
+          description: Catalogue des packs
           content:
             application/json:
               schema:
                 type: array
-                items:
-                  $ref: "#/components/schemas/Publication"
+                items: { $ref: '#/components/schemas/PackCredits' }
     post:
-      tags: [Publications]
-      summary: Creer une publication
-      security:
-        - bearerAuth: []
+      tags: [Credits]
+      summary: Acheter un pack de credits (redirige vers Stripe Checkout)
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/CreatePublicationRequest"
+              type: object
+              required: [pack_id, cgv_acceptees]
+              properties:
+                pack_id: { type: integer, example: 2 }
+                cgv_acceptees: { type: boolean, example: true, description: Acceptation des CGV et renonciation au droit de retractation }
       responses:
-        "201":
-          description: Publication creee
+        '200':
+          description: Session de paiement creee
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Publication"
-  /publications/{id}:
+                type: object
+                properties:
+                  checkout_url: { type: string, example: https://checkout.stripe.com/c/pay/... }
+                  reference: { type: string, example: cs_a1b2c3d4e5f6a7b8c9d0e1f2 }
+        '400': { description: CGV non acceptees, $ref: '#/components/responses/Error' }
+
+  /webhooks/stripe:
+    post:
+      tags: [Credits]
+      summary: Reception des evenements Stripe (paiement confirme)
+      security: []
+      description: Point d'entree appele par Stripe. Signature verifiee (en-tete Stripe-Signature).
+      responses:
+        '200': { description: Evenement traite }
+        '400': { description: Signature invalide, $ref: '#/components/responses/Error' }
+
+  /stats:
     get:
-      tags: [Publications]
-      summary: Consulter une publication
-      parameters:
-        - $ref: "#/components/parameters/id"
+      tags: [Statistiques]
+      summary: Indicateurs d'usage (taux d'acceptation des suggestions, etc.)
       responses:
-        "200":
-          description: Publication trouvee
+        '200':
+          description: Statistiques
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Publication"
-        "404":
-          description: Publication introuvable
-    delete:
-      tags: [Publications]
-      summary: Supprimer logiquement une publication
-      security:
-        - bearerAuth: []
+                type: object
+                properties:
+                  documents_publies: { type: integer, example: 55 }
+                  taux_acceptation_suggestions: { type: number, format: float, example: 0.78 }
+                  extractions_totales: { type: integer, example: 144 }
+
+  /admin/users:
+    get:
+      tags: [Administration]
+      summary: Lister tous les utilisateurs (ADMIN)
       parameters:
-        - $ref: "#/components/parameters/id"
+        - $ref: '#/components/parameters/page'
+        - $ref: '#/components/parameters/size'
+        - name: institutionId
+          in: query
+          description: Filtrer par institution (ADMIN uniquement)
+          schema: { type: integer }
       responses:
-        "200":
-          description: Publication marquee comme supprimee
+        '200':
+          description: Page d'utilisateurs
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Publication"
-        "403":
-          description: Permission insuffisante
-        "404":
-          description: Publication introuvable
-  /publications/{id}/status:
-    put:
-      tags: [Publications]
-      summary: Modifier le statut d'une publication
-      security:
-        - bearerAuth: []
-      parameters:
-        - $ref: "#/components/parameters/id"
+                allOf:
+                  - $ref: '#/components/schemas/Page'
+                  - type: object
+                    properties:
+                      contenu:
+                        type: array
+                        items: { $ref: '#/components/schemas/User' }
+        '403': { $ref: '#/components/responses/Error' }
+
+  /admin/users/{id}:
+    patch:
+      tags: [Administration]
+      summary: Activer, desactiver ou changer le role d'un utilisateur (ADMIN)
+      parameters: [ { $ref: '#/components/parameters/id' } ]
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/PublicationStatusRequest"
+              type: object
+              properties:
+                statut: { type: string, enum: [EN_ATTENTE, ACTIF, DESACTIVE] }
+                role: { type: string, enum: [LIBRARIAN, ADMIN] }
       responses:
-        "200":
-          description: Statut modifie
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Publication"
-        "400":
-          description: Statut invalide pour une modification manuelle
-        "403":
-          description: Publication rattachee a une autre institution
-  /publications/{publicationId}/extraction:
-    post:
-      tags: [Extraction]
-      summary: Lancer une extraction de metadonnees
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: publicationId
-          in: path
-          required: true
-          schema:
-            type: integer
-            format: int64
-      responses:
-        "200":
-          description: Metadonnees suggerees
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/MetadataExtraction"
-        "402":
-          description: Solde de credits insuffisant
-  /open-data/rss:
+        '200': { description: Utilisateur mis a jour }
+        '403': { $ref: '#/components/responses/Error' }
+
+  /admin/institutions:
     get:
-      tags: [Open Data]
-      summary: Exposer les publications publiques au format RSS
+      tags: [Administration]
+      summary: Lister les institutions (ADMIN)
       responses:
-        "200":
-          description: Flux RSS public
-          content:
-            application/rss+xml:
-              schema:
-                type: string
-                example: "<?xml version=\"1.0\" encoding=\"UTF-8\"?><rss version=\"2.0\"><channel></channel></rss>"
-  /open-data/publications/{id}/dublin-core:
-    get:
-      tags: [Open Data]
-      summary: Exporter une publication publique au format Dublin Core
-      parameters:
-        - $ref: "#/components/parameters/id"
-      responses:
-        "200":
-          description: Metadonnees Dublin Core
-          content:
-            application/xml:
-              schema:
-                type: string
-                example: "<?xml version=\"1.0\" encoding=\"UTF-8\"?><metadata xmlns:dc=\"http://purl.org/dc/elements/1.1/\"></metadata>"
-        "404":
-          description: Publication publique introuvable
-  /institutions:
-    get:
-      tags: [Institutions]
-      summary: Lister les institutions
-      security:
-        - bearerAuth: []
-      responses:
-        "200":
+        '200':
           description: Liste des institutions
           content:
             application/json:
               schema:
                 type: array
-                items:
-                  $ref: "#/components/schemas/Institution"
-    post:
-      tags: [Institutions]
-      summary: Creer une institution
-      security:
-        - bearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/CreateInstitutionRequest"
-      responses:
-        "201":
-          description: Institution creee
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Institution"
-  /institutions/{id}:
-    delete:
-      tags: [Institutions]
-      summary: Desactiver une institution
-      security:
-        - bearerAuth: []
-      parameters:
-        - $ref: "#/components/parameters/id"
-      responses:
-        "200":
-          description: Institution desactivee
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Institution"
-  /users/{id}/profile:
+                items: { $ref: '#/components/schemas/Institution' }
+
+  /admin/config:
     get:
-      tags: [Users]
-      summary: Consulter son profil
-      security:
-        - bearerAuth: []
-      parameters:
-        - $ref: "#/components/parameters/id"
+      tags: [Administration]
+      summary: Lire la configuration de la plateforme (ADMIN)
       responses:
-        "200":
-          description: Profil utilisateur
+        '200':
+          description: Cles de configuration
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/User"
-    put:
-      tags: [Users]
-      summary: Modifier son profil
-      security:
-        - bearerAuth: []
-      parameters:
-        - $ref: "#/components/parameters/id"
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/UpdateProfileRequest"
-      responses:
-        "200":
-          description: Profil modifie
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/User"
-  /users/{id}:
-    delete:
-      tags: [Users]
-      summary: Demander la suppression logique du compte
-      security:
-        - bearerAuth: []
-      parameters:
-        - $ref: "#/components/parameters/id"
-      responses:
-        "200":
-          description: Compte desactive
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/User"
-  /users/{userId}/credits:
+                type: object
+                additionalProperties: { type: string }
+                example:
+                  modele_llm: gemini-2.5-flash
+                  taille_max_upload_mo: "128"
+                  prix_credit_eur: "0.50"
+
+  /admin/logs:
     get:
-      tags: [Credits]
-      summary: Consulter le solde de credits
-      security:
-        - bearerAuth: []
+      tags: [Administration]
+      summary: Consulter le journal d'audit (ADMIN)
       parameters:
-        - $ref: "#/components/parameters/userId"
+        - $ref: '#/components/parameters/page'
+        - $ref: '#/components/parameters/size'
       responses:
-        "200":
-          description: Solde de credits
+        '200':
+          description: Page de journaux
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/CreditBalance"
-  /users/{userId}/credits/movements:
-    get:
-      tags: [Credits]
-      summary: Consulter l'historique des credits
-      security:
-        - bearerAuth: []
-      parameters:
-        - $ref: "#/components/parameters/userId"
-      responses:
-        "200":
-          description: Historique des mouvements de credits
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/CreditMovement"
-  /users/{userId}/credits/purchase:
-    post:
-      tags: [Credits]
-      summary: Acheter des credits
-      security:
-        - bearerAuth: []
-      parameters:
-        - $ref: "#/components/parameters/userId"
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/CreditPurchaseRequest"
-      responses:
-        "200":
-          description: Solde mis a jour
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/CreditBalance"
-  /statistics:
-    get:
-      tags: [Statistics]
-      summary: Consulter les statistiques du tableau de bord
-      description: Les statistiques sont globales pour un administrateur et limitees a l'institution du bibliothecaire.
-      security:
-        - bearerAuth: []
-      responses:
-        "200":
-          description: Statistiques disponibles
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Statistics"
-        "401":
-          description: Jeton JWT absent ou invalide
+                allOf:
+                  - $ref: '#/components/schemas/Page'
+                  - type: object
+                    properties:
+                      contenu:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id: { type: integer }
+                            action: { type: string, example: EXTRACTION }
+                            type_entite: { type: string, example: document }
+                            date_creation: { type: string, format: date-time }
+
 components:
+
   securitySchemes:
     bearerAuth:
       type: http
       scheme: bearer
       bearerFormat: JWT
+      description: Jeton JWT obtenu via /auth/login, envoye dans l'en-tete Authorization.
+
   parameters:
     id:
       name: id
       in: path
       required: true
-      schema:
-        type: integer
-        format: int64
-    userId:
-      name: userId
-      in: path
-      required: true
-      schema:
-        type: integer
-        format: int64
+      schema: { type: integer }
+    page:
+      name: page
+      in: query
+      description: Numero de page (0 pour la premiere)
+      schema: { type: integer, default: 0, minimum: 0 }
+    size:
+      name: size
+      in: query
+      description: Nombre d'elements par page
+      schema: { type: integer, default: 20, minimum: 1, maximum: 100 }
+    sort:
+      name: sort
+      in: query
+      description: Champ de tri, suffixe par ,asc ou ,desc
+      schema: { type: string, example: "date_creation,desc" }
+    q:
+      name: q
+      in: query
+      description: Terme de recherche plein texte
+      schema: { type: string, example: intelligence artificielle }
+
+  responses:
+    Error:
+      description: Reponse d'erreur normalisee
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
+
   schemas:
-    HealthResponse:
+
+    Document:
       type: object
       properties:
-        status: { type: string, example: UP }
-        service: { type: string, example: metamind-backend }
-        timestamp: { type: string, format: date-time }
-    AuthResponse:
+        id: { type: integer, example: 1 }
+        nom_fichier: { type: string, example: doc_0001.pdf }
+        statut: { type: string, enum: [EN_ATTENTE, EXTRACTION, A_VALIDER, PUBLIE, SUPPRIME], example: PUBLIE }
+        visibilite: { type: string, enum: [PUBLIC, INSTITUTION], example: PUBLIC }
+        institution_id: { type: integer, example: 1 }
+        date_creation: { type: string, format: date-time }
+
+    Metadata:
       type: object
       properties:
-        token: { type: string }
-        user:
-          $ref: "#/components/schemas/User"
-    LoginRequest:
-      type: object
-      required: [email, password]
-      properties:
-        email: { type: string, format: email, example: sarah@institution-a.example, description: "L'email doit appartenir au domaine de l'institution choisie." }
-        password: { type: string, format: password, example: "558435" }
-    RegisterRequest:
-      type: object
-      required: [firstName, lastName, email, institution, password]
-      properties:
-        firstName: { type: string, example: Sarah }
-        lastName: { type: string, example: Lemaire }
-        email: { type: string, format: email, example: sarah@institution-a.example }
-        institution: { type: string, example: Institution A }
-        password: { type: string, format: password, example: "558435" }
+        id: { type: integer }
+        document_id: { type: integer, example: 1 }
+        titre: { type: string, example: Etude de la corrosion des aciers inoxydables }
+        resume: { type: string }
+        date_publication: { type: string, format: date, example: "2023-05-12" }
+        classification: { type: string, example: Chimie }
+        langue: { type: string, example: fr }
+        type_document: { type: string, example: article }
+        statut: { type: string, enum: [EN_ATTENTE, VALIDE, REJETE], example: VALIDE }
+        auteurs:
+          type: array
+          items:
+            type: object
+            properties:
+              nom_complet: { type: string, example: Sarah Mertens }
+              orcid: { type: string, example: "0000-0002-1825-0097" }
+        mots_cles:
+          type: array
+          items: { type: string, example: electrochimie }
+
     User:
       type: object
       properties:
-        id: { type: integer, format: int64 }
-        firstName: { type: string }
-        lastName: { type: string }
-        email: { type: string, format: email }
-        role: { type: string, example: Bibliothecaire }
-        institution: { type: string, example: Institution A }
-        status: { type: string, enum: [ACTIF, DESACTIVE] }
-    UpdateProfileRequest:
-      type: object
-      required: [firstName, lastName, institution]
-      properties:
-        firstName: { type: string }
-        lastName: { type: string }
-        institution: { type: string }
-    Publication:
-      type: object
-      properties:
-        id: { type: integer, format: int64 }
-        title: { type: string }
-        author: { type: string }
-        institution: { type: string }
-        year: { type: integer }
-        status: { type: string, enum: [EN_ATTENTE, EXTRACTION, A_VALIDER, PUBLIE, SUPPRIME] }
-        visibility: { type: string, enum: [PUBLIC, INSTITUTION] }
-        keywords:
-          type: array
-          items:
-            type: string
-    CreatePublicationRequest:
-      type: object
-      required: [title, author, year, visibility, keywords]
-      properties:
-        title: { type: string, maxLength: 220, example: Analyse automatique des metadonnees }
-        author: { type: string, maxLength: 160, example: Sarah Lemaire }
-        year: { type: integer, minimum: 1900, maximum: 2100, example: 2026 }
-        visibility: { type: string, enum: [PUBLIC, INSTITUTION] }
-        keywords:
-          type: array
-          maxItems: 20
-          items:
-            type: string
-    PublicationStatusRequest:
-      type: object
-      required: [status]
-      properties:
-        status: { type: string, enum: [A_VALIDER, PUBLIE, SUPPRIME], example: PUBLIE }
+        id: { type: integer, example: 4 }
+        email: { type: string, format: email, example: sarah@institution-a.example }
+        nom: { type: string, example: Mertens }
+        prenom: { type: string, example: Sarah }
+        role: { type: string, enum: [LIBRARIAN, ADMIN], example: LIBRARIAN }
+        statut: { type: string, enum: [EN_ATTENTE, ACTIF, DESACTIVE], example: ACTIF }
+        institution_id: { type: integer, example: 1 }
+
     Institution:
       type: object
       properties:
-        id: { type: integer, format: int64 }
-        code: { type: string, example: INST-A }
-        name: { type: string, example: Institution A }
-        emailDomain: { type: string, example: institution-a.example }
-        active: { type: boolean }
-    CreateInstitutionRequest:
-      type: object
-      required: [code, name, emailDomain]
-      properties:
-        code: { type: string, example: INST-A }
-        name: { type: string, example: Institution A }
-        emailDomain: { type: string, example: institution-a.example }
+        id: { type: integer, example: 1 }
+        nom: { type: string, example: Institution A }
+        domaine_email: { type: string, example: institution-a.example }
+        solde_credits: { type: integer, example: 320 }
+
     CreditBalance:
       type: object
       properties:
-        institutionId: { type: integer, format: int64 }
-        institution: { type: string, example: Institution A }
-        balance: { type: integer, example: 12 }
-    CreditMovement:
+        institution_id: { type: integer, example: 1 }
+        solde_credits: { type: integer, example: 320 }
+
+    PackCredits:
       type: object
       properties:
-        id: { type: integer, format: int64 }
-        institution: { type: string, example: Institution A }
-        type: { type: string, enum: [ACHAT, CONSOMMATION], example: ACHAT }
-        amount: { type: integer, example: 10 }
-        balanceAfter: { type: integer, example: 30 }
-        description: { type: string, example: Achat de credits }
-        createdAt: { type: string, format: date-time }
-    CreditPurchaseRequest:
+        id: { type: integer, example: 2 }
+        quantite: { type: integer, example: 500 }
+        montant_paye: { type: number, format: float, example: 200.00 }
+        statut: { type: string, enum: [EN_ATTENTE, PAYE, ECHEC], example: PAYE }
+
+    Page:
       type: object
-      required: [amount]
+      description: Enveloppe de pagination commune aux listes
       properties:
-        amount: { type: integer, minimum: 1, example: 20 }
-    MetadataExtraction:
-      type: object
-      properties:
-        publicationId: { type: integer, format: int64 }
-        title: { type: string }
-        suggestedTitle: { type: string }
-        suggestedAuthor: { type: string }
-        suggestedKeywords:
-          type: array
-          items:
-            type: string
-        creditBalance: { type: integer }
-    Statistics:
+        contenu: { type: array, items: {} }
+        page: { type: integer, example: 0 }
+        size: { type: integer, example: 20 }
+        total_elements: { type: integer, example: 100 }
+        total_pages: { type: integer, example: 5 }
+
+    ErrorResponse:
       type: object
       properties:
-        scope: { type: string, example: Institution A }
-        totalPublications: { type: integer, example: 120 }
-        publishedPublications: { type: integer, example: 90 }
-        pendingValidationPublications: { type: integer, example: 12 }
-        publicPublications: { type: integer, example: 80 }
-        institutionOnlyPublications: { type: integer, example: 40 }
-        creditBalance: { type: integer, example: 25 }
+        timestamp: { type: string, format: date-time }
+        status: { type: integer, example: 404 }
+        erreur: { type: string, example: Not Found }
+        message: { type: string, example: Document introuvable }
+        chemin: { type: string, example: /api/v1/documents/9999 }

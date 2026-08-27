@@ -9,6 +9,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -58,6 +59,17 @@ public class GlobalExceptionHandler {
 				HttpStatus.UNAUTHORIZED.value(),
 				HttpStatus.UNAUTHORIZED.getReasonPhrase(),
 				"Le jeton d'authentification est manquant.",
+				List.of()
+		));
+	}
+
+	@ExceptionHandler(MaxUploadSizeExceededException.class)
+	public ResponseEntity<ApiErrorResponse> handleMaxUploadSize(MaxUploadSizeExceededException exception) {
+		return ResponseEntity.badRequest().body(new ApiErrorResponse(
+				Instant.now(),
+				HttpStatus.BAD_REQUEST.value(),
+				HttpStatus.BAD_REQUEST.getReasonPhrase(),
+				"Le fichier depasse la taille maximale de 128 MB.",
 				List.of()
 		));
 	}
