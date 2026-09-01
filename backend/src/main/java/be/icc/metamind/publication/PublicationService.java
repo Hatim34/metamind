@@ -82,6 +82,22 @@ public class PublicationService {
 		return toResponse(document);
 	}
 
+	@Transactional(readOnly = true)
+	public List<PublicationResponse> findPublicSearch(String search, String author) {
+		String value = Optional.ofNullable(search).orElse("").trim();
+		String authorFilter = Optional.ofNullable(author).orElse("").trim().toLowerCase();
+		List<DocumentEntity> documents = value.isBlank()
+				? documentRepository.findAll()
+				: documentRepository.search(value);
+
+		return documents.stream()
+				.filter(document -> document.getStatus() == DocumentStatus.PUBLIE)
+				.filter(document -> document.getVisibility() == DocumentVisibility.PUBLIC)
+				.map(this::toResponse)
+				.filter(publication -> authorFilter.isBlank() || publication.author().toLowerCase().contains(authorFilter))
+				.toList();
+	}
+
 	@Transactional
 	public PublicationResponse createPublication(PublicationRequest request, UserEntity currentUser) {
 		validate(request);

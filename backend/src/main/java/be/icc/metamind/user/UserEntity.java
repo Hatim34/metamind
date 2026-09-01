@@ -102,6 +102,15 @@ public class UserEntity {
 		this.institution = institution;
 	}
 
+	public void updateAdministration(UserRole role, UserStatus status) {
+		if (role != null) {
+			this.role = role;
+		}
+		if (status != null) {
+			this.status = status;
+		}
+	}
+
 	public void deactivate() {
 		status = UserStatus.DESACTIVE;
 	}

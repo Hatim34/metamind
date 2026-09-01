@@ -36,4 +36,20 @@ public class ConfigurationEntity {
 		this.valeur = valeur;
 		this.modifiedBy = modifiedBy;
 	}
+
+	public String getCle() {
+		return cle;
+	}
+
+	public String getValeur() {
+		return valeur;
+	}
+
+	public UserEntity getModifiedBy() {
+		return modifiedBy;
+	}
+
+	public LocalDateTime getModifiedAt() {
+		return modifiedAt;
+	}
 }

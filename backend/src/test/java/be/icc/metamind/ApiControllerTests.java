@@ -7,6 +7,7 @@ import static org.hamcrest.Matchers.startsWith;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -408,6 +409,58 @@ class ApiControllerTests {
 						.content(body))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.balance", is(30)));
+	}
+
+	@Test
+	void publicSearchReturnsOnlyPublishedPublicDocuments() throws Exception {
+		mockMvc.perform(get("/api/v1/search").param("q", "institution"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$", hasSize(1)))
+				.andExpect(jsonPath("$[0].title", is("Analyse automatique des metadonnees pour les depots institutionnels")))
+				.andExpect(jsonPath("$[0].visibility", is("PUBLIC")));
+	}
+
+	@Test
+	void administratorCanListUsersAndFilterByInstitution() throws Exception {
+		InstitutionEntity institution = institutionRepository.findByNameIgnoreCase("Institution B").orElseThrow();
+
+		mockMvc.perform(get("/api/v1/admin/users")
+						.param("institutionId", institution.getId().toString())
+						.header("Authorization", adminBearerToken()))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$", hasSize(1)))
+				.andExpect(jsonPath("$[0].email", is("jan@institution-b.example")));
+	}
+
+	@Test
+	void administratorCanUpdateUserStatus() throws Exception {
+		UserEntity user = userRepository.findByEmailIgnoreCase("jan@institution-b.example").orElseThrow();
+		String body = """
+				{
+				  "statut": "DESACTIVE",
+				  "role": "LIBRARIAN"
+				}
+				""";
+
+		mockMvc.perform(patch("/api/v1/admin/users/" + user.getId())
+						.header("Authorization", adminBearerToken())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(body))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.status", is("DESACTIVE")));
+	}
+
+	@Test
+	void administratorCanReadConfigurationAndLogs() throws Exception {
+		mockMvc.perform(get("/api/v1/admin/config")
+						.header("Authorization", adminBearerToken()))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.prix_credit_eur", is("0.50")))
+				.andExpect(jsonPath("$.taille_max_upload_mo", is("128")));
+
+		mockMvc.perform(get("/api/v1/admin/logs")
+						.header("Authorization", adminBearerToken()))
+				.andExpect(status().isOk());
 	}
 
 	@Test

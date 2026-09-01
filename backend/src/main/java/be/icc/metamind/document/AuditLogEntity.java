@@ -60,4 +60,36 @@ public class AuditLogEntity {
 		this.details = details;
 		this.ipAddress = ipAddress;
 	}
+
+	public Long getId() {
+		return id;
+	}
+
+	public UserEntity getUser() {
+		return user;
+	}
+
+	public String getAction() {
+		return action;
+	}
+
+	public String getEntityType() {
+		return entityType;
+	}
+
+	public Long getEntityId() {
+		return entityId;
+	}
+
+	public String getDetails() {
+		return details;
+	}
+
+	public String getIpAddress() {
+		return ipAddress;
+	}
+
+	public LocalDateTime getCreatedAt() {
+		return createdAt;
+	}
 }
