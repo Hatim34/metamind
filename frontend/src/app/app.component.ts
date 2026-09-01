@@ -2,7 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
-import { ApiService, CreditMovement, DashboardStatistics, Institution, MetadataExtraction, Publication, PublicationStatus, UserSession } from './api.service';
+import { ApiService, AuditLog, CreditMovement, CreditPackOption, DashboardStatistics, Institution, MetadataExtraction, Publication, PublicationStatus, UserSession } from './api.service';
 
 type Page = 'catalogue' | 'connexion' | 'inscription' | 'profil' | 'publication' | 'administration';
 type Language = 'fr' | 'nl' | 'en';
@@ -60,6 +60,15 @@ const translations = {
     userAccount: 'Compte utilisateur',
     role: 'Rôle',
     buyCredits: 'Acheter 10 crédits',
+    availablePacks: 'Packs disponibles',
+    checkoutStarted: 'Paiement confirme, le solde est mis a jour.',
+    importFile: 'Importer un document',
+    selectedFile: 'Fichier sélectionné',
+    sendFile: 'Importer le fichier',
+    adminUsers: 'Utilisateurs',
+    configuration: 'Configuration',
+    auditLogs: 'Journal d audit',
+    deactivateAccount: 'Désactiver',
     requestDeletion: 'Demander la suppression du compte',
     logout: 'Se déconnecter',
     saveProfile: 'Enregistrer le profil',
@@ -149,6 +158,15 @@ const translations = {
     userAccount: 'Gebruikersaccount',
     role: 'Rol',
     buyCredits: '10 credits kopen',
+    availablePacks: 'Beschikbare pakketten',
+    checkoutStarted: 'Betaling bevestigd, het saldo is bijgewerkt.',
+    importFile: 'Document importeren',
+    selectedFile: 'Geselecteerd bestand',
+    sendFile: 'Bestand importeren',
+    adminUsers: 'Gebruikers',
+    configuration: 'Configuratie',
+    auditLogs: 'Auditlogboek',
+    deactivateAccount: 'Deactiveren',
     requestDeletion: 'Verwijdering van de account aanvragen',
     logout: 'Afmelden',
     saveProfile: 'Profiel opslaan',
@@ -238,6 +256,15 @@ const translations = {
     userAccount: 'User account',
     role: 'Role',
     buyCredits: 'Buy 10 credits',
+    availablePacks: 'Available packs',
+    checkoutStarted: 'Payment confirmed, the balance is updated.',
+    importFile: 'Import a document',
+    selectedFile: 'Selected file',
+    sendFile: 'Import file',
+    adminUsers: 'Users',
+    configuration: 'Configuration',
+    auditLogs: 'Audit log',
+    deactivateAccount: 'Deactivate',
     requestDeletion: 'Request account deletion',
     logout: 'Sign out',
     saveProfile: 'Save profile',
@@ -321,6 +348,11 @@ export class AppComponent implements OnInit {
     keywords: ''
   };
 
+  importForm = {
+    file: null as File | null,
+    visibility: 'INSTITUTION' as 'PUBLIC' | 'INSTITUTION'
+  };
+
   profileForm = {
     firstName: '',
     lastName: '',
@@ -337,6 +369,10 @@ export class AppComponent implements OnInit {
   token = '';
   publications: Publication[] = [];
   institutions: Institution[] = [];
+  adminUsers: UserSession[] = [];
+  adminConfig: Record<string, string> = {};
+  auditLogs: AuditLog[] = [];
+  creditPacks: CreditPackOption[] = [];
   creditBalance: number | null = null;
   creditMovements: CreditMovement[] = [];
   statistics: DashboardStatistics | null = null;
@@ -346,12 +382,14 @@ export class AppComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadPublications();
+    this.loadCreditPacks();
   }
 
   navigate(page: Page): void {
     this.page = page;
     if (page === 'administration') {
       this.loadInstitutions();
+      this.loadAdminData();
     }
   }
 
@@ -396,6 +434,7 @@ export class AppComponent implements OnInit {
         this.loadStatistics();
         if (this.isAdmin) {
           this.loadInstitutions();
+          this.loadAdminData();
         }
       },
       error: () => {
@@ -476,15 +515,39 @@ export class AppComponent implements OnInit {
     });
   }
 
+  onFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    this.importForm.file = input.files?.[0] ?? null;
+  }
+
+  importDocument(): void {
+    if (!this.session || !this.importForm.file) {
+      this.message = this.t('invalidForm');
+      return;
+    }
+
+    this.api.importDocument(this.importForm.file, this.importForm.visibility).subscribe({
+      next: () => {
+        this.importForm = { file: null, visibility: 'INSTITUTION' };
+        this.page = 'catalogue';
+        this.loadPublications();
+      },
+      error: () => {
+        this.message = this.t('createPublicationFailed');
+      }
+    });
+  }
+
   loadCredits(): void {
     if (!this.session) {
       this.creditBalance = null;
       return;
     }
 
-    this.api.getCreditBalance(this.session.id).subscribe({
-      next: (credits) => {
-        this.creditBalance = credits.balance;
+    this.api.getCreditAccount().subscribe({
+      next: (account) => {
+        this.creditBalance = account.balance.balance;
+        this.creditMovements = account.movements;
       },
       error: () => {
         this.creditBalance = null;
@@ -508,6 +571,17 @@ export class AppComponent implements OnInit {
     });
   }
 
+  loadCreditPacks(): void {
+    this.api.getCreditPacks().subscribe({
+      next: (packs) => {
+        this.creditPacks = packs;
+      },
+      error: () => {
+        this.creditPacks = [];
+      }
+    });
+  }
+
   loadStatistics(): void {
     if (!this.session) {
       this.statistics = null;
@@ -525,17 +599,24 @@ export class AppComponent implements OnInit {
     });
   }
 
-  purchaseCredits(amount: number): void {
+  purchaseCredits(packId: number): void {
     if (!this.session) {
       return;
     }
 
-    this.api.purchaseCredits(this.session.id, amount).subscribe({
-      next: (credits) => {
-        this.creditBalance = credits.balance;
-        this.loadCreditMovements();
-        this.loadStatistics();
-        this.message = '';
+    this.api.startCreditCheckout(packId).subscribe({
+      next: (checkout) => {
+        this.api.confirmCreditPayment(checkout.reference).subscribe({
+          next: (credits) => {
+            this.creditBalance = credits.balance;
+            this.loadCreditMovements();
+            this.loadStatistics();
+            this.message = this.t('checkoutStarted');
+          },
+          error: () => {
+            this.message = this.t('purchaseFailed');
+          }
+        });
       },
       error: () => {
         this.message = this.t('purchaseFailed');
@@ -695,6 +776,9 @@ export class AppComponent implements OnInit {
     this.token = '';
     this.api.setToken('');
     this.institutions = [];
+    this.adminUsers = [];
+    this.adminConfig = {};
+    this.auditLogs = [];
     this.creditBalance = null;
     this.creditMovements = [];
     this.statistics = null;
@@ -706,6 +790,50 @@ export class AppComponent implements OnInit {
 
   get isAdmin(): boolean {
     return this.session?.role === 'Administrateur';
+  }
+
+  loadAdminData(): void {
+    if (!this.isAdmin) {
+      return;
+    }
+
+    this.api.getAdminUsers().subscribe({
+      next: (users) => {
+        this.adminUsers = users;
+      },
+      error: () => {
+        this.adminUsers = [];
+      }
+    });
+    this.api.getAdminConfig().subscribe({
+      next: (config) => {
+        this.adminConfig = config;
+      },
+      error: () => {
+        this.adminConfig = {};
+      }
+    });
+    this.api.getAdminLogs().subscribe({
+      next: (logs) => {
+        this.auditLogs = logs;
+      },
+      error: () => {
+        this.auditLogs = [];
+      }
+    });
+  }
+
+  deactivateUser(user: UserSession): void {
+    if (!this.isAdmin) {
+      return;
+    }
+
+    this.api.updateAdminUser(user.id, { role: user.role === 'Administrateur' ? 'ADMIN' : 'LIBRARIAN', statut: 'DESACTIVE' }).subscribe({
+      next: () => this.loadAdminData(),
+      error: () => {
+        this.message = this.t('statusUpdateFailed');
+      }
+    });
   }
 
   canManagePublication(publication: Publication): boolean {

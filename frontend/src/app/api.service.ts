@@ -22,7 +22,7 @@ export interface UserSession {
   email: string;
   role: string;
   institution: string;
-  status: 'ACTIF' | 'DESACTIVE';
+  status: 'EN_ATTENTE' | 'ACTIF' | 'DESACTIVE';
 }
 
 export interface Institution {
@@ -47,6 +47,24 @@ export interface CreditMovement {
   balanceAfter: number;
   description: string;
   createdAt: string;
+}
+
+export interface CreditAccount {
+  balance: CreditBalance;
+  movements: CreditMovement[];
+}
+
+export interface CreditPackOption {
+  id: number;
+  credits: number;
+  amount: number;
+  currency: string;
+  label: string;
+}
+
+export interface CreditCheckout {
+  checkout_url: string;
+  reference: string;
 }
 
 export interface DashboardStatistics {
@@ -111,6 +129,20 @@ export interface UpdatePublicationStatusRequest {
   status: Extract<PublicationStatus, 'A_VALIDER' | 'PUBLIE' | 'SUPPRIME'>;
 }
 
+export interface AdminUserUpdateRequest {
+  role?: 'LIBRARIAN' | 'ADMIN';
+  statut?: 'EN_ATTENTE' | 'ACTIF' | 'DESACTIVE';
+}
+
+export interface AuditLog {
+  id: number;
+  action: string;
+  type_entite: string;
+  entite_id: number | null;
+  details: string;
+  date_creation: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class ApiService {
   private readonly baseUrl = this.resolveBaseUrl();
@@ -131,6 +163,13 @@ export class ApiService {
     return this.http.post<Publication>(`${this.baseUrl}/publications`, request, { headers: this.authHeaders() });
   }
 
+  importDocument(file: File, visibility: 'PUBLIC' | 'INSTITUTION'): Observable<Publication> {
+    const data = new FormData();
+    data.append('fichier', file);
+    data.append('visibilite', visibility);
+    return this.http.post<Publication>(`${this.baseUrl}/documents`, data, { headers: this.authHeaders() });
+  }
+
   updatePublicationStatus(publicationId: number, request: UpdatePublicationStatusRequest): Observable<Publication> {
     return this.http.put<Publication>(`${this.baseUrl}/publications/${publicationId}/status`, request, { headers: this.authHeaders() });
   }
@@ -149,6 +188,22 @@ export class ApiService {
 
   deactivateInstitution(institutionId: number): Observable<Institution> {
     return this.http.delete<Institution>(`${this.baseUrl}/institutions/${institutionId}`, { headers: this.authHeaders() });
+  }
+
+  getCreditAccount(): Observable<CreditAccount> {
+    return this.http.get<CreditAccount>(`${this.baseUrl}/credits`, { headers: this.authHeaders() });
+  }
+
+  getCreditPacks(): Observable<CreditPackOption[]> {
+    return this.http.get<CreditPackOption[]>(`${this.baseUrl}/credits/packs`);
+  }
+
+  startCreditCheckout(packId: number): Observable<CreditCheckout> {
+    return this.http.post<CreditCheckout>(`${this.baseUrl}/credits`, { pack_id: packId, cgv_acceptees: true }, { headers: this.authHeaders() });
+  }
+
+  confirmCreditPayment(reference: string): Observable<CreditBalance> {
+    return this.http.post<CreditBalance>(`${this.baseUrl}/webhooks/stripe`, { reference, type: 'checkout.session.completed' });
   }
 
   getCreditBalance(userId: number): Observable<CreditBalance> {
@@ -185,6 +240,23 @@ export class ApiService {
 
   requestAccountDeletion(userId: number): Observable<UserSession> {
     return this.http.delete<UserSession>(`${this.baseUrl}/users/${userId}`, { headers: this.authHeaders() });
+  }
+
+  getAdminUsers(institutionId?: number): Observable<UserSession[]> {
+    const params = institutionId ? new HttpParams().set('institutionId', institutionId) : undefined;
+    return this.http.get<UserSession[]>(`${this.baseUrl}/admin/users`, { params, headers: this.authHeaders() });
+  }
+
+  updateAdminUser(userId: number, request: AdminUserUpdateRequest): Observable<UserSession> {
+    return this.http.patch<UserSession>(`${this.baseUrl}/admin/users/${userId}`, request, { headers: this.authHeaders() });
+  }
+
+  getAdminConfig(): Observable<Record<string, string>> {
+    return this.http.get<Record<string, string>>(`${this.baseUrl}/admin/config`, { headers: this.authHeaders() });
+  }
+
+  getAdminLogs(): Observable<AuditLog[]> {
+    return this.http.get<AuditLog[]>(`${this.baseUrl}/admin/logs`, { headers: this.authHeaders() });
   }
 
   private authHeaders(): HttpHeaders {

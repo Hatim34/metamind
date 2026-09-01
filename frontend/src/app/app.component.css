@@ -241,10 +241,32 @@ label {
   padding-top: 20px;
 }
 
+.import-form,
 .credit-history {
   border-top: 1px solid #dfe5eb;
   margin-top: 20px;
   padding-top: 20px;
+}
+
+.pack-grid {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+}
+
+.pack-grid button {
+  display: grid;
+  gap: 4px;
+  justify-items: start;
+}
+
+.pack-grid strong {
+  font-size: 20px;
+}
+
+.pack-grid span {
+  color: #617081;
+  font-size: 13px;
 }
 
 .admin-form {
@@ -255,6 +277,7 @@ label {
 }
 
 .table-wrap {
+  margin-top: 22px;
   overflow-x: auto;
 }
 
@@ -282,6 +305,52 @@ th {
   color: #344253;
   margin-top: 18px;
   padding: 14px 16px;
+}
+
+.admin-columns {
+  display: grid;
+  gap: 18px;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  margin-top: 24px;
+}
+
+.admin-columns section {
+  border: 1px solid #dfe5eb;
+  border-radius: 8px;
+  padding: 18px;
+}
+
+dl,
+ul {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+}
+
+dl div {
+  display: grid;
+  gap: 4px;
+}
+
+dt {
+  color: #617081;
+  font-size: 13px;
+}
+
+dd {
+  margin: 0;
+}
+
+li {
+  display: grid;
+  gap: 4px;
+  list-style: none;
+}
+
+li span {
+  color: #617081;
+  font-size: 13px;
 }
 
 @media (max-width: 760px) {
@@ -317,5 +386,9 @@ th {
   .publication-actions {
     justify-content: flex-start;
     min-width: 0;
+  }
+
+  .admin-columns {
+    grid-template-columns: 1fr;
   }
 }

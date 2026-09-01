@@ -40,9 +40,14 @@ describe('AppComponent', () => {
       'setToken',
       'getPublications',
       'createPublication',
+      'importDocument',
       'getInstitutions',
       'createInstitution',
       'deactivateInstitution',
+      'getCreditAccount',
+      'getCreditPacks',
+      'startCreditCheckout',
+      'confirmCreditPayment',
       'getCreditBalance',
       'getCreditMovements',
       'getStatistics',
@@ -53,9 +58,20 @@ describe('AppComponent', () => {
       'login',
       'register',
       'updateProfile',
-      'requestAccountDeletion'
+      'requestAccountDeletion',
+      'getAdminUsers',
+      'updateAdminUser',
+      'getAdminConfig',
+      'getAdminLogs'
     ]);
     api.getPublications.and.returnValue(of(publications));
+    api.getCreditPacks.and.returnValue(of([
+      { id: 2, credits: 100, amount: 50, currency: 'EUR', label: 'Pack standard' }
+    ]));
+    api.getCreditAccount.and.returnValue(of({
+      balance: { institutionId: 1, institution: 'Institution A', balance: 20 },
+      movements: []
+    }));
     api.getCreditBalance.and.returnValue(of({ institutionId: 1, institution: 'Institution A', balance: 20 }));
     api.getCreditMovements.and.returnValue(of([
       {
@@ -77,6 +93,9 @@ describe('AppComponent', () => {
       institutionOnlyPublications: 1,
       creditBalance: 20
     }));
+    api.getAdminUsers.and.returnValue(of([]));
+    api.getAdminConfig.and.returnValue(of({ prix_credit_eur: '0.50' }));
+    api.getAdminLogs.and.returnValue(of([]));
 
     await TestBed.configureTestingModule({
       imports: [AppComponent],
@@ -129,7 +148,8 @@ describe('AppComponent', () => {
 
   it('met a jour le solde apres un achat de credits', () => {
     const balance: CreditBalance = { institutionId: 1, institution: 'Institution A', balance: 30 };
-    api.purchaseCredits.and.returnValue(of(balance));
+    api.startCreditCheckout.and.returnValue(of({ checkout_url: '/paiement/confirmation', reference: 'pay_123' }));
+    api.confirmCreditPayment.and.returnValue(of(balance));
     api.getStatistics.and.returnValue(of({
       scope: 'Institution A',
       totalPublications: 2,
@@ -141,9 +161,10 @@ describe('AppComponent', () => {
     }));
     component.session = authResponse.user;
 
-    component.purchaseCredits(10);
+    component.purchaseCredits(2);
 
-    expect(api.purchaseCredits).toHaveBeenCalledWith(10, 10);
+    expect(api.startCreditCheckout).toHaveBeenCalledWith(2);
+    expect(api.confirmCreditPayment).toHaveBeenCalledWith('pay_123');
     expect(api.getCreditMovements).toHaveBeenCalledWith(10);
     expect(component.creditBalance).toBe(30);
   });

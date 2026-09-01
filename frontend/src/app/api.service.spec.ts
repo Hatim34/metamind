@@ -53,15 +53,26 @@ describe('ApiService', () => {
   it('achete des credits via l API', () => {
     service.setToken('token-test');
 
-    service.purchaseCredits(10, 25).subscribe((response) => {
-      expect(response.balance).toBe(25);
+    service.startCreditCheckout(2).subscribe((response) => {
+      expect(response.reference).toBe('pay_123');
     });
 
-    const request = httpMock.expectOne('/api/v1/users/10/credits/purchase');
+    const request = httpMock.expectOne('/api/v1/credits');
     expect(request.request.method).toBe('POST');
-    expect(request.request.body).toEqual({ amount: 25 });
+    expect(request.request.body).toEqual({ pack_id: 2, cgv_acceptees: true });
     expect(request.request.headers.get('Authorization')).toBe('Bearer token-test');
-    request.flush({ institutionId: 1, institution: 'Institution A', balance: 25 });
+    request.flush({ checkout_url: '/paiement/confirmation', reference: 'pay_123' });
+  });
+
+  it('confirme un paiement de credits', () => {
+    service.confirmCreditPayment('pay_123').subscribe((response) => {
+      expect(response.balance).toBe(100);
+    });
+
+    const request = httpMock.expectOne('/api/v1/webhooks/stripe');
+    expect(request.request.method).toBe('POST');
+    expect(request.request.body).toEqual({ reference: 'pay_123', type: 'checkout.session.completed' });
+    request.flush({ institutionId: 1, institution: 'Institution A', balance: 100 });
   });
 
   it('charge l historique des credits via l API', () => {
