@@ -1,7 +1,11 @@
 package be.icc.metamind.credit;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import be.icc.metamind.api.ApiException;
+import be.icc.metamind.document.CreditPackRepository;
+import be.icc.metamind.document.CreditPackStatus;
 import be.icc.metamind.institution.InstitutionEntity;
 import be.icc.metamind.institution.InstitutionRepository;
 import be.icc.metamind.user.PasswordService;
@@ -32,6 +36,9 @@ class CreditServiceTests {
 	@Autowired
 	private CreditMovementRepository movementRepository;
 
+	@Autowired
+	private CreditPackRepository packRepository;
+
 	@Test
 	void creditsAreAttachedToUserInstitution() {
 		UserEntity user = saveUser();
@@ -49,6 +56,45 @@ class CreditServiceTests {
 					assertThat(movement.balanceAfter()).isEqualTo(25);
 				});
 		assertThat(movementRepository.count()).isEqualTo(1);
+	}
+
+	@Test
+	void checkoutWaitsForPaymentConfirmationBeforeCreditingInstitution() {
+		UserEntity user = saveUser();
+
+		CreditCheckoutResponse checkout = creditService.startCheckout(user, new CreditCheckoutRequest(2, true));
+
+		assertThat(checkout.reference()).startsWith("pay_");
+		assertThat(checkout.checkoutUrl()).contains(checkout.reference());
+		assertThat(creditService.getBalance(user.getId()).balance()).isZero();
+		assertThat(movementRepository.count()).isZero();
+
+		CreditBalanceResponse confirmed = creditService.confirmStripePayment(new StripeWebhookRequest(checkout.reference(), "checkout.session.completed"));
+
+		assertThat(confirmed.balance()).isEqualTo(100);
+		assertThat(movementRepository.count()).isEqualTo(1);
+		assertThat(packRepository.findByPaymentReference(checkout.reference()).orElseThrow().getStatus()).isEqualTo(CreditPackStatus.PAYE);
+	}
+
+	@Test
+	void webhookConfirmationIsIdempotent() {
+		UserEntity user = saveUser();
+		CreditCheckoutResponse checkout = creditService.startCheckout(user, new CreditCheckoutRequest(3, true));
+
+		creditService.confirmStripePayment(new StripeWebhookRequest(checkout.reference(), "checkout.session.completed"));
+		creditService.confirmStripePayment(new StripeWebhookRequest(checkout.reference(), "checkout.session.completed"));
+
+		assertThat(creditService.getBalance(user.getId()).balance()).isEqualTo(500);
+		assertThat(movementRepository.count()).isEqualTo(1);
+	}
+
+	@Test
+	void unknownPackIsRejected() {
+		UserEntity user = saveUser();
+
+		assertThatThrownBy(() -> creditService.startCheckout(user, new CreditCheckoutRequest(99, true)))
+				.isInstanceOf(ApiException.class)
+				.hasMessage("Le pack de credits est introuvable.");
 	}
 
 	private UserEntity saveUser() {

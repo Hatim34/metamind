@@ -57,4 +57,44 @@ public class CreditPackEntity {
 		this.paymentReference = paymentReference;
 		this.status = status;
 	}
+
+	public Long getId() {
+		return id;
+	}
+
+	public InstitutionEntity getInstitution() {
+		return institution;
+	}
+
+	public int getQuantite() {
+		return quantite;
+	}
+
+	public BigDecimal getPaidAmount() {
+		return paidAmount;
+	}
+
+	public String getPaymentReference() {
+		return paymentReference;
+	}
+
+	public CreditPackStatus getStatus() {
+		return status;
+	}
+
+	public LocalDateTime getPurchasedAt() {
+		return purchasedAt;
+	}
+
+	public boolean isPaid() {
+		return status == CreditPackStatus.PAYE;
+	}
+
+	public void markPaid() {
+		status = CreditPackStatus.PAYE;
+	}
+
+	public void markFailed() {
+		status = CreditPackStatus.ECHEC;
+	}
 }

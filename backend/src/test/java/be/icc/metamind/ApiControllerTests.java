@@ -26,6 +26,7 @@ import be.icc.metamind.document.KeywordRepository;
 import be.icc.metamind.document.MetadataEntity;
 import be.icc.metamind.document.MetadataRepository;
 import be.icc.metamind.document.MetadataStatus;
+import be.icc.metamind.credit.CreditMovementRepository;
 import be.icc.metamind.institution.InstitutionEntity;
 import be.icc.metamind.institution.InstitutionRepository;
 import be.icc.metamind.support.TestDocumentFactory;
@@ -80,6 +81,9 @@ class ApiControllerTests {
 
 	@Autowired
 	private PasswordService passwordService;
+
+	@Autowired
+	private CreditMovementRepository creditMovementRepository;
 
 	@BeforeEach
 	void setUp() {
@@ -359,6 +363,54 @@ class ApiControllerTests {
 	}
 
 	@Test
+	void creditCheckoutRequiresPaymentConfirmation() throws Exception {
+		String body = """
+				{
+				  "pack_id": 2,
+				  "cgv_acceptees": true
+				}
+				""";
+
+		String response = mockMvc.perform(post("/api/v1/credits")
+						.header("Authorization", bearerToken())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(body))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.checkout_url", startsWith("https://metamind-app.duckdns.org/paiement/confirmation")))
+				.andExpect(jsonPath("$.reference", startsWith("pay_")))
+				.andReturn()
+				.getResponse()
+				.getContentAsString();
+
+		String reference = response.replaceFirst(".*\\\"reference\\\"\\s*:\\s*\\\"([^\\\"]+)\\\".*", "$1");
+		assertThat(creditMovementRepository.count()).isZero();
+
+		mockMvc.perform(post("/api/v1/webhooks/stripe")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{\"reference\":\"" + reference + "\",\"type\":\"checkout.session.completed\"}"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.balance", is(100)));
+	}
+
+	@Test
+	void administratorCanAdjustInstitutionCredits() throws Exception {
+		InstitutionEntity institution = institutionRepository.findByNameIgnoreCase("Institution A").orElseThrow();
+		String body = """
+				{
+				  "amount": 30,
+				  "reason": "Correction administrative"
+				}
+				""";
+
+		mockMvc.perform(post("/api/v1/admin/institutions/" + institution.getId() + "/credits/adjustments")
+						.header("Authorization", adminBearerToken())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(body))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.balance", is(30)));
+	}
+
+	@Test
 	void creditsAndExtractionWorkflowIsSecuredAndConsumesOneCredit() throws Exception {
 		UserEntity user = userRepository.findByEmailIgnoreCase("sarah@institution-a.example").orElseThrow();
 		DocumentEntity publication = documentRepository.findAll().getFirst();
@@ -606,6 +658,10 @@ class ApiControllerTests {
 
 	private String bearerToken() throws Exception {
 		return bearerToken("sarah@institution-a.example", "558435");
+	}
+
+	private String adminBearerToken() throws Exception {
+		return bearerToken("admin@metamind.example", "558435");
 	}
 
 	private String bearerToken(String email, String password) throws Exception {
