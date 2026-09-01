@@ -19,6 +19,8 @@ class LocalMetadataExtractionProviderTests {
 
 		assertThat(metadata.title()).isEqualTo("Analyse automatique des metadonnees");
 		assertThat(metadata.author()).isEqualTo("Auteur non renseigne");
+		assertThat(metadata.summary()).contains("Analyse automatique des metadonnees");
+		assertThat(metadata.classification()).isEqualTo("Sciences de l'information");
 		assertThat(metadata.keywords()).containsExactly("metadonnees", "Dublin Core", "catalogage");
 	}
 

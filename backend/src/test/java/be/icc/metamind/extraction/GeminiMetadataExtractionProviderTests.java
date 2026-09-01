@@ -37,7 +37,7 @@ class GeminiMetadataExtractionProviderTests {
 				      "content": {
 				        "parts": [
 				          {
-				            "text": "{\\"title\\":\\"Titre enrichi\\",\\"author\\":\\"Mina Laurent\\",\\"keywords\\":[\\"Dublin Core\\",\\"catalogage\\"]}"
+				            "text": "{\\"title\\":\\"Titre enrichi\\",\\"author\\":\\"Mina Laurent\\",\\"summary\\":\\"Resume structure\\",\\"classification\\":\\"Sciences de l'information\\",\\"keywords\\":[\\"Dublin Core\\",\\"catalogage\\"]}"
 				          }
 				        ]
 				      }
@@ -52,6 +52,8 @@ class GeminiMetadataExtractionProviderTests {
 
 		assertThat(metadata.title()).isEqualTo("Titre enrichi");
 		assertThat(metadata.author()).isEqualTo("Mina Laurent");
+		assertThat(metadata.summary()).isEqualTo("Resume structure");
+		assertThat(metadata.classification()).isEqualTo("Sciences de l'information");
 		assertThat(metadata.keywords()).containsExactly("Dublin Core", "catalogage");
 		server.verify();
 	}

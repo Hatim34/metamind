@@ -132,4 +132,12 @@ public class MetadataEntity {
 		this.status = MetadataStatus.EN_ATTENTE;
 		this.generatedAt = LocalDateTime.now();
 	}
+
+	public void markGenerated(String titre, String resume, String classification) {
+		this.titre = titre;
+		this.resume = resume;
+		this.classification = classification;
+		this.status = MetadataStatus.EN_ATTENTE;
+		this.generatedAt = LocalDateTime.now();
+	}
 }

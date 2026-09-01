@@ -126,6 +126,10 @@ public class DocumentEntity {
 		this.searchVector = searchText;
 	}
 
+	public void markExtractionFailed() {
+		this.status = DocumentStatus.EN_ATTENTE;
+	}
+
 	public void updateStatus(DocumentStatus status) {
 		this.status = status;
 	}

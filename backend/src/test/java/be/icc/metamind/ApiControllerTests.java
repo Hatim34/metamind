@@ -370,7 +370,8 @@ class ApiControllerTests {
 
 		mockMvc.perform(post("/api/v1/publications/" + publication.getId() + "/extraction")
 						.header("Authorization", authorization))
-				.andExpect(status().isOk())
+				.andExpect(status().isAccepted())
+				.andExpect(jsonPath("$.status", is("TERMINE")))
 				.andExpect(jsonPath("$.publicationId", is(publication.getId().intValue())))
 				.andExpect(jsonPath("$.creditBalance", is(2)))
 				.andExpect(jsonPath("$.suggestedKeywords", hasSize(3)));

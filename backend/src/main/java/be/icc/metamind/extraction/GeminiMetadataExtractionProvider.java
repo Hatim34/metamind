@@ -41,7 +41,7 @@ public class GeminiMetadataExtractionProvider implements MetadataExtractionProvi
 
 		String prompt = """
 				Extrais des metadonnees Dublin Core depuis cette publication.
-				Reponds uniquement en JSON avec les champs title, author et keywords.
+				Reponds uniquement en JSON avec les champs title, author, summary, classification et keywords.
 				Titre existant : %s
 				Texte extrait : %s
 				""".formatted(document.getFileName(), document.getExtractedText());
@@ -76,11 +76,18 @@ public class GeminiMetadataExtractionProvider implements MetadataExtractionProvi
 			return new MetadataExtractionData(
 					metadata.path("title").asText(document.getFileName()),
 					metadata.path("author").asText("Auteur non renseigne"),
+					metadata.path("summary").asText("Resume a valider par le bibliothecaire."),
+					metadata.path("classification").asText("Publication scientifique"),
 					keywords(metadata.path("keywords"))
 			);
 		} catch (Exception exception) {
 			throw new ApiException(HttpStatus.BAD_GATEWAY, "La reponse Gemini n'est pas exploitable.");
 		}
+	}
+
+	@Override
+	public String modelName() {
+		return model;
 	}
 
 	private List<String> keywords(JsonNode node) {
