@@ -140,4 +140,14 @@ public class MetadataEntity {
 		this.status = MetadataStatus.EN_ATTENTE;
 		this.generatedAt = LocalDateTime.now();
 	}
+
+	public void validate(String titre, String resume, LocalDate publicationDate, String classification, UserEntity validatedBy) {
+		this.titre = titre;
+		this.resume = resume;
+		this.publicationDate = publicationDate;
+		this.classification = classification;
+		this.status = MetadataStatus.VALIDE;
+		this.validatedBy = validatedBy;
+		this.validatedAt = LocalDateTime.now();
+	}
 }

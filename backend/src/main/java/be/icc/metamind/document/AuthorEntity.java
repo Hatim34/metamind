@@ -39,4 +39,10 @@ public class AuthorEntity {
 	public String getOrcid() {
 		return orcid;
 	}
+
+	public void updateOrcid(String orcid) {
+		if (orcid != null && !orcid.isBlank()) {
+			this.orcid = orcid;
+		}
+	}
 }

@@ -133,4 +133,10 @@ public class DocumentEntity {
 	public void updateStatus(DocumentStatus status) {
 		this.status = status;
 	}
+
+	public void publish(DocumentVisibility visibility, String searchText) {
+		this.status = DocumentStatus.PUBLIE;
+		this.visibility = visibility;
+		this.searchVector = searchText;
+	}
 }

@@ -6,4 +6,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface DocumentKeywordRepository extends JpaRepository<DocumentKeywordEntity, DocumentKeywordId> {
 	List<DocumentKeywordEntity> findByDocument_Id(Long documentId);
+
+	void deleteByDocument_Id(Long documentId);
 }

@@ -1,5 +1,6 @@
 package be.icc.metamind;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.startsWith;
@@ -22,7 +23,9 @@ import be.icc.metamind.document.DocumentRepository;
 import be.icc.metamind.document.DocumentStatus;
 import be.icc.metamind.document.DocumentVisibility;
 import be.icc.metamind.document.KeywordRepository;
+import be.icc.metamind.document.MetadataEntity;
 import be.icc.metamind.document.MetadataRepository;
+import be.icc.metamind.document.MetadataStatus;
 import be.icc.metamind.institution.InstitutionEntity;
 import be.icc.metamind.institution.InstitutionRepository;
 import be.icc.metamind.support.TestDocumentFactory;
@@ -449,6 +452,85 @@ class ApiControllerTests {
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("{\"status\":\"EXTRACTION\"}"))
 				.andExpect(status().isBadRequest());
+	}
+
+	@Test
+	void documentMetadataCanBeReadByInstitutionLibrarian() throws Exception {
+		DocumentEntity publication = documentRepository.findAll().stream()
+				.filter(item -> item.getStatus() == DocumentStatus.A_VALIDER)
+				.findFirst()
+				.orElseThrow();
+
+		mockMvc.perform(get("/api/v1/documents/" + publication.getId() + "/metadata")
+						.header("Authorization", bearerToken()))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.document_id", is(publication.getId().intValue())))
+				.andExpect(jsonPath("$.titre", is("Rapport interne reserve a l institution")))
+				.andExpect(jsonPath("$.visibilite", is("INSTITUTION")))
+				.andExpect(jsonPath("$.statut", is("EN_ATTENTE")));
+	}
+
+	@Test
+	void documentMetadataValidationPublishesDocument() throws Exception {
+		DocumentEntity publication = documentRepository.findAll().stream()
+				.filter(item -> item.getStatus() == DocumentStatus.A_VALIDER)
+				.findFirst()
+				.orElseThrow();
+		String body = """
+				{
+				  "titre": "Rapport valide sur le catalogage",
+				  "resume": "Resume corrige par le bibliothecaire.",
+				  "date_publication": "2026-04-15",
+				  "classification": "Sciences de l'information",
+				  "visibilite": "PUBLIC",
+				  "auteurs": [
+				    { "nom_complet": "Sarah Lemaire", "orcid": "0000-0002-1825-0097" },
+				    { "nom_complet": "Mina Laurent" }
+				  ],
+				  "mots_cles": ["catalogage", "Dublin Core", "validation"]
+				}
+				""";
+
+		mockMvc.perform(put("/api/v1/documents/" + publication.getId() + "/metadata")
+						.header("Authorization", bearerToken())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(body))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.titre", is("Rapport valide sur le catalogage")))
+				.andExpect(jsonPath("$.visibilite", is("PUBLIC")))
+				.andExpect(jsonPath("$.statut", is("VALIDE")))
+				.andExpect(jsonPath("$.auteurs", hasSize(2)))
+				.andExpect(jsonPath("$.mots_cles", hasSize(3)));
+
+		MetadataEntity metadata = metadataRepository.findByDocumentId(publication.getId()).orElseThrow();
+		assertThat(metadata.getStatus()).isEqualTo(MetadataStatus.VALIDE);
+		assertThat(metadata.getValidatedBy().getEmail()).isEqualTo("sarah@institution-a.example");
+		assertThat(metadata.getValidatedAt()).isNotNull();
+		assertThat(publication.getStatus()).isEqualTo(DocumentStatus.PUBLIE);
+		assertThat(publication.getVisibility()).isEqualTo(DocumentVisibility.PUBLIC);
+	}
+
+	@Test
+	void documentMetadataValidationRejectsOtherInstitutionLibrarian() throws Exception {
+		DocumentEntity publication = documentRepository.findAll().stream()
+				.filter(item -> item.getStatus() == DocumentStatus.A_VALIDER)
+				.findFirst()
+				.orElseThrow();
+		String body = """
+				{
+				  "titre": "Tentative externe",
+				  "resume": "Controle institutionnel.",
+				  "visibilite": "PUBLIC",
+				  "auteurs": [{ "nom_complet": "Jan Peeters" }],
+				  "mots_cles": ["controle"]
+				}
+				""";
+
+		mockMvc.perform(put("/api/v1/documents/" + publication.getId() + "/metadata")
+						.header("Authorization", bearerToken("jan@institution-b.example", "558435"))
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(body))
+				.andExpect(status().isForbidden());
 	}
 
 	@Test
