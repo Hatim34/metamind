@@ -11,6 +11,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.forwardedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.util.List;
@@ -157,6 +158,19 @@ class ApiControllerTests {
 				.andExpect(result -> org.assertj.core.api.Assertions.assertThat(result.getResponse().getContentAsString())
 						.contains("openapi: 3.0.3")
 						.contains("/api/v1"));
+	}
+
+	@Test
+	void spaRoutesAreForwardedToIndex() throws Exception {
+		mockMvc.perform(get("/dashboard"))
+				.andExpect(status().isOk())
+				.andExpect(forwardedUrl("/index.html"));
+	}
+
+	@Test
+	void spaFallbackDoesNotInterceptApiRoutes() throws Exception {
+		mockMvc.perform(get("/api/v1/route-inconnue"))
+				.andExpect(status().isNotFound());
 	}
 
 	@Test
