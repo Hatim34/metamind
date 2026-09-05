@@ -119,7 +119,7 @@ public class UserEntity {
 		status = UserStatus.DESACTIVE;
 		firstName = "Compte";
 		lastName = "Supprime";
-		email = "compte-supprime-" + id + "@metamind.local";
+		email = "compte-supprime-" + id + "@metamind.example";
 		passwordHash = "compte-desactive";
 	}
 }

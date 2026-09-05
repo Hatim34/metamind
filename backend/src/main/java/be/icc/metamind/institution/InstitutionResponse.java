@@ -1,11 +1,22 @@
 package be.icc.metamind.institution;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 public record InstitutionResponse(
 		long id,
 		String code,
+
+		@JsonProperty("nom")
 		String name,
+
+		@JsonProperty("domaine_email")
 		String emailDomain,
-		boolean active
+
+		@JsonProperty("actif")
+		boolean active,
+
+		@JsonProperty("solde_credits")
+		int creditBalance
 ) {
 	public static InstitutionResponse from(InstitutionEntity institution) {
 		return new InstitutionResponse(
@@ -13,7 +24,8 @@ public record InstitutionResponse(
 				institution.getCode(),
 				institution.getName(),
 				institution.getEmailDomain(),
-				institution.isActive()
+				institution.isActive(),
+				institution.getCreditBalance()
 		);
 	}
 }

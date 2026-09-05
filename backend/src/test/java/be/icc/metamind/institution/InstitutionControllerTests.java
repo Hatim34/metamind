@@ -69,7 +69,7 @@ class InstitutionControllerTests {
 						.content(body))
 				.andExpect(status().isCreated())
 				.andExpect(jsonPath("$.code", is("INST-A")))
-				.andExpect(jsonPath("$.active", is(true)));
+				.andExpect(jsonPath("$.actif", is(true)));
 
 		mockMvc.perform(get("/api/v1/institutions")
 						.header("Authorization", bearerToken()))
@@ -105,9 +105,9 @@ class InstitutionControllerTests {
 		InstitutionEntity institution = repository.save(new InstitutionEntity("INST-C", "Institution C", "institution-c.example"));
 
 		mockMvc.perform(delete("/api/v1/institutions/" + institution.getId())
-						.header("Authorization", bearerToken()))
+				.header("Authorization", bearerToken()))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.active", is(false)));
+				.andExpect(jsonPath("$.actif", is(false)));
 	}
 
 	private String bearerToken() throws Exception {

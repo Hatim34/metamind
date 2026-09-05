@@ -896,7 +896,7 @@ export class AppComponent implements OnInit {
   }
 
   get isAdmin(): boolean {
-    return this.session?.role === 'Administrateur';
+    return this.session?.role === 'ADMIN';
   }
 
   loadAdminData(): void {
@@ -935,7 +935,7 @@ export class AppComponent implements OnInit {
       return;
     }
 
-    this.api.updateAdminUser(user.id, { role: user.role === 'Administrateur' ? 'ADMIN' : 'LIBRARIAN', statut: 'DESACTIVE' }).subscribe({
+    this.api.updateAdminUser(user.id, { role: user.role === 'ADMIN' ? 'ADMIN' : 'LIBRARIAN', statut: 'DESACTIVE' }).subscribe({
       next: () => this.loadAdminData(),
       error: () => {
         this.message = this.t('statusUpdateFailed');

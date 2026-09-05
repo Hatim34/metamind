@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/v1/statistics")
+@RequestMapping({"/api/v1/stats", "/api/v1/statistics"})
 public class StatisticsController {
 	private final StatisticsService service;
 	private final AccountService accountService;

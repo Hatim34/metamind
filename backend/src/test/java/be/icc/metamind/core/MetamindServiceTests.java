@@ -93,6 +93,6 @@ class MetamindServiceTests {
 		UserResponse response = service.requestAccountDeletion(1L);
 
 		assertThat(response.status()).isEqualTo(UserStatus.DESACTIVE);
-		assertThat(response.email()).isEqualTo("compte-supprime-1@metamind.local");
+		assertThat(response.email()).isEqualTo("compte-supprime-1@metamind.example");
 	}
 }

@@ -31,7 +31,7 @@ tags:
   - name: Recherche
     description: Recherche publique et Open Data
   - name: Credits
-    description: Solde, achat de packs de credits (Stripe)
+    description: Solde, packs de credits et paiement du MVP
   - name: Statistiques
     description: Indicateurs d'usage
   - name: Administration
@@ -61,7 +61,7 @@ paths:
                 prenom: { type: string, example: Sarah }
                 institution_id: { type: integer, example: 1 }
       responses:
-        '201': { description: Compte cree (statut EN_ATTENTE, a valider par un admin) }
+        '200': { description: Compte cree }
         '409': { description: Email deja utilise, $ref: '#/components/responses/Error' }
         '422': { description: Donnees invalides, $ref: '#/components/responses/Error' }
 
@@ -243,6 +243,35 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/CreditBalance' }
+    post:
+      tags: [Credits]
+      summary: Demarrer l'achat d'un pack de credits
+      description: >
+        Dans le MVP, ce endpoint cree une reference de paiement et une URL de
+        confirmation locale. L'integration Stripe Checkout reelle reste prevue
+        pour la mise en production, avec cle secrete et verification de signature
+        stockees uniquement dans les variables d'environnement.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [pack_id, cgv_acceptees]
+              properties:
+                pack_id: { type: integer, example: 2 }
+                cgv_acceptees: { type: boolean, example: true, description: Acceptation des CGV et renonciation au droit de retractation }
+      responses:
+        '200':
+          description: Reference de paiement creee
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  checkout_url: { type: string, example: https://metamind-app.duckdns.org/paiement/confirmation?reference=pay_abc123 }
+                  reference: { type: string, example: pay_abc123 }
+        '400': { description: CGV non acceptees, $ref: '#/components/responses/Error' }
 
   /credits/packs:
     get:
@@ -257,40 +286,20 @@ paths:
               schema:
                 type: array
                 items: { $ref: '#/components/schemas/PackCredits' }
-    post:
-      tags: [Credits]
-      summary: Acheter un pack de credits (redirige vers Stripe Checkout)
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [pack_id, cgv_acceptees]
-              properties:
-                pack_id: { type: integer, example: 2 }
-                cgv_acceptees: { type: boolean, example: true, description: Acceptation des CGV et renonciation au droit de retractation }
-      responses:
-        '200':
-          description: Session de paiement creee
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  checkout_url: { type: string, example: https://checkout.stripe.com/c/pay/... }
-                  reference: { type: string, example: cs_a1b2c3d4e5f6a7b8c9d0e1f2 }
-        '400': { description: CGV non acceptees, $ref: '#/components/responses/Error' }
 
   /webhooks/stripe:
     post:
       tags: [Credits]
-      summary: Reception des evenements Stripe (paiement confirme)
+      summary: Confirmer un paiement de credits dans le MVP
       security: []
-      description: Point d'entree appele par Stripe. Signature verifiee (en-tete Stripe-Signature).
+      description: >
+        Endpoint de confirmation simule pour le MVP. Il ne verifie pas encore
+        l'en-tete Stripe-Signature et ne doit pas etre presente comme une
+        integration Stripe production. La version production devra verifier la
+        signature du webhook avec le secret stocke en variable d'environnement.
       responses:
         '200': { description: Evenement traite }
-        '400': { description: Signature invalide, $ref: '#/components/responses/Error' }
+        '400': { description: Reference invalide, $ref: '#/components/responses/Error' }
 
   /stats:
     get:
@@ -304,9 +313,13 @@ paths:
               schema:
                 type: object
                 properties:
-                  documents_publies: { type: integer, example: 55 }
-                  taux_acceptation_suggestions: { type: number, format: float, example: 0.78 }
-                  extractions_totales: { type: integer, example: 144 }
+                  scope: { type: string, example: Institution A }
+                  total_publications: { type: integer, example: 80 }
+                  publications_publiees: { type: integer, example: 55 }
+                  publications_a_valider: { type: integer, example: 12 }
+                  publications_publiques: { type: integer, example: 45 }
+                  publications_institution: { type: integer, example: 35 }
+                  solde_credits: { type: integer, example: 120 }
 
   /admin/users:
     get:
@@ -458,11 +471,15 @@ components:
       type: object
       properties:
         id: { type: integer, example: 1 }
-        nom_fichier: { type: string, example: doc_0001.pdf }
+        titre: { type: string, example: Etude de la corrosion des aciers inoxydables }
+        auteur: { type: string, example: Sarah Mertens }
+        institution: { type: string, example: Institution A }
+        annee: { type: integer, example: 2026 }
         statut: { type: string, enum: [EN_ATTENTE, EXTRACTION, A_VALIDER, PUBLIE, SUPPRIME], example: PUBLIE }
         visibilite: { type: string, enum: [PUBLIC, INSTITUTION], example: PUBLIC }
-        institution_id: { type: integer, example: 1 }
-        date_creation: { type: string, format: date-time }
+        mots_cles:
+          type: array
+          items: { type: string, example: Dublin Core }
 
     Metadata:
       type: object
@@ -476,6 +493,9 @@ components:
         langue: { type: string, example: fr }
         type_document: { type: string, example: article }
         statut: { type: string, enum: [EN_ATTENTE, VALIDE, REJETE], example: VALIDE }
+        visibilite: { type: string, enum: [PUBLIC, INSTITUTION], example: PUBLIC }
+        date_validation: { type: string, format: date-time }
+        validee_par: { type: integer, nullable: true }
         auteurs:
           type: array
           items:
@@ -497,19 +517,23 @@ components:
         role: { type: string, enum: [LIBRARIAN, ADMIN], example: LIBRARIAN }
         statut: { type: string, enum: [EN_ATTENTE, ACTIF, DESACTIVE], example: ACTIF }
         institution_id: { type: integer, example: 1 }
+        institution: { type: string, example: Institution A }
 
     Institution:
       type: object
       properties:
         id: { type: integer, example: 1 }
+        code: { type: string, example: INST-A }
         nom: { type: string, example: Institution A }
         domaine_email: { type: string, example: institution-a.example }
+        actif: { type: boolean, example: true }
         solde_credits: { type: integer, example: 320 }
 
     CreditBalance:
       type: object
       properties:
         institution_id: { type: integer, example: 1 }
+        institution: { type: string, example: Institution A }
         solde_credits: { type: integer, example: 320 }
 
     PackCredits:
@@ -518,7 +542,8 @@ components:
         id: { type: integer, example: 2 }
         quantite: { type: integer, example: 500 }
         montant_paye: { type: number, format: float, example: 200.00 }
-        statut: { type: string, enum: [EN_ATTENTE, PAYE, ECHEC], example: PAYE }
+        devise: { type: string, example: EUR }
+        libelle: { type: string, example: Pack 500 credits }
 
     Page:
       type: object

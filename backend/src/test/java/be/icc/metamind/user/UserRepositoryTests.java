@@ -55,6 +55,6 @@ class UserRepositoryTests {
 				.get()
 				.extracting(UserEntity::getStatus)
 				.isEqualTo(UserStatus.DESACTIVE);
-		assertThat(user.getEmail()).isEqualTo("compte-supprime-" + user.getId() + "@metamind.local");
+		assertThat(user.getEmail()).isEqualTo("compte-supprime-" + user.getId() + "@metamind.example");
 	}
 }

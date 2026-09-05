@@ -164,7 +164,7 @@ class ApiControllerTests {
 		mockMvc.perform(get("/api/v1/publications").param("search", "Dublin"))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$", hasSize(1)))
-				.andExpect(jsonPath("$[0].status", is("PUBLIE")));
+				.andExpect(jsonPath("$[0].statut", is("PUBLIE")));
 	}
 
 	@Test
@@ -185,9 +185,9 @@ class ApiControllerTests {
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(body))
 				.andExpect(status().isCreated())
-				.andExpect(jsonPath("$.title", is("Controle qualite des metadonnees importees")))
-				.andExpect(jsonPath("$.status", is("A_VALIDER")))
-				.andExpect(jsonPath("$.visibility", is("INSTITUTION")));
+				.andExpect(jsonPath("$.titre", is("Controle qualite des metadonnees importees")))
+				.andExpect(jsonPath("$.statut", is("A_VALIDER")))
+				.andExpect(jsonPath("$.visibilite", is("INSTITUTION")));
 	}
 
 	@Test
@@ -203,10 +203,10 @@ class ApiControllerTests {
 						.file(file)
 						.header("Authorization", bearerToken()))
 				.andExpect(status().isCreated())
-				.andExpect(jsonPath("$.title", is("article metadonnees")))
+				.andExpect(jsonPath("$.titre", is("article metadonnees")))
 				.andExpect(jsonPath("$.institution", is("Institution A")))
-				.andExpect(jsonPath("$.status", is("EN_ATTENTE")))
-				.andExpect(jsonPath("$.visibility", is("INSTITUTION")));
+				.andExpect(jsonPath("$.statut", is("EN_ATTENTE")))
+				.andExpect(jsonPath("$.visibilite", is("INSTITUTION")));
 
 		DocumentEntity document = documentRepository.findAll().stream()
 				.filter(item -> "article-metadonnees.txt".equals(item.getFileName()))
@@ -268,7 +268,8 @@ class ApiControllerTests {
 						.content(body))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.token", startsWith("eyJ")))
-				.andExpect(jsonPath("$.user.role", is("Bibliothecaire")));
+				.andExpect(jsonPath("$.expires_in", is(3600)))
+				.andExpect(jsonPath("$.utilisateur.role", is("LIBRARIAN")));
 	}
 
 	@Test
@@ -355,12 +356,12 @@ class ApiControllerTests {
 		UserEntity user = userRepository.findByEmailIgnoreCase("sarah@institution-a.example").orElseThrow();
 
 		mockMvc.perform(delete("/api/v1/users/" + user.getId())
-						.header("Authorization", bearerToken()))
+				.header("Authorization", bearerToken()))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.status", is("DESACTIVE")))
-				.andExpect(jsonPath("$.firstName", is("Compte")))
-				.andExpect(jsonPath("$.lastName", is("Supprime")))
-				.andExpect(jsonPath("$.email", is("compte-supprime-" + user.getId() + "@metamind.local")));
+				.andExpect(jsonPath("$.statut", is("DESACTIVE")))
+				.andExpect(jsonPath("$.prenom", is("Compte")))
+				.andExpect(jsonPath("$.nom", is("Supprime")))
+				.andExpect(jsonPath("$.email", is("compte-supprime-" + user.getId() + "@metamind.example")));
 	}
 
 	@Test
@@ -390,7 +391,7 @@ class ApiControllerTests {
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("{\"reference\":\"" + reference + "\",\"type\":\"checkout.session.completed\"}"))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.balance", is(100)));
+				.andExpect(jsonPath("$.solde_credits", is(100)));
 	}
 
 	@Test
@@ -408,7 +409,7 @@ class ApiControllerTests {
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(body))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.balance", is(30)));
+				.andExpect(jsonPath("$.solde_credits", is(30)));
 	}
 
 	@Test
@@ -419,8 +420,8 @@ class ApiControllerTests {
 				.andExpect(jsonPath("$.page", is(0)))
 				.andExpect(jsonPath("$.size", is(20)))
 				.andExpect(jsonPath("$.total_elements", is(1)))
-				.andExpect(jsonPath("$.contenu[0].title", is("Analyse automatique des metadonnees pour les depots institutionnels")))
-				.andExpect(jsonPath("$.contenu[0].visibility", is("PUBLIC")));
+				.andExpect(jsonPath("$.contenu[0].titre", is("Analyse automatique des metadonnees pour les depots institutionnels")))
+				.andExpect(jsonPath("$.contenu[0].visibilite", is("PUBLIC")));
 	}
 
 	@Test
@@ -451,7 +452,7 @@ class ApiControllerTests {
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(body))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.status", is("DESACTIVE")));
+				.andExpect(jsonPath("$.statut", is("DESACTIVE")));
 	}
 
 	@Test
@@ -478,21 +479,21 @@ class ApiControllerTests {
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("{\"amount\":3}"))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.balance", is(3)));
+				.andExpect(jsonPath("$.solde_credits", is(3)));
 
 		mockMvc.perform(post("/api/v1/publications/" + publication.getId() + "/extraction")
 						.header("Authorization", authorization))
 				.andExpect(status().isAccepted())
-				.andExpect(jsonPath("$.status", is("TERMINE")))
-				.andExpect(jsonPath("$.publicationId", is(publication.getId().intValue())))
-				.andExpect(jsonPath("$.creditBalance", is(2)))
-				.andExpect(jsonPath("$.suggestedKeywords", hasSize(3)));
+				.andExpect(jsonPath("$.statut", is("TERMINE")))
+				.andExpect(jsonPath("$.publication_id", is(publication.getId().intValue())))
+				.andExpect(jsonPath("$.solde_credits", is(2)))
+				.andExpect(jsonPath("$.mots_cles_suggeres", hasSize(3)));
 
 		mockMvc.perform(get("/api/v1/users/" + user.getId() + "/credits/movements")
 						.header("Authorization", authorization))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$", hasSize(2)))
-				.andExpect(jsonPath("$[0].balanceAfter", is(2)));
+				.andExpect(jsonPath("$[0].solde_apres", is(2)));
 	}
 
 	@Test
@@ -510,14 +511,14 @@ class ApiControllerTests {
 				.andExpect(status().isForbidden());
 
 		mockMvc.perform(get("/api/v1/publications/" + restrictedPublication.getId())
-						.header("Authorization", bearerToken("sarah@institution-a.example", "558435")))
+				.header("Authorization", bearerToken("sarah@institution-a.example", "558435")))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.visibility", is("INSTITUTION")));
+				.andExpect(jsonPath("$.visibilite", is("INSTITUTION")));
 
 		mockMvc.perform(get("/api/v1/publications/" + restrictedPublication.getId())
-						.header("Authorization", bearerToken("admin@metamind.example", "558435")))
+				.header("Authorization", bearerToken("admin@metamind.example", "558435")))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.visibility", is("INSTITUTION")));
+				.andExpect(jsonPath("$.visibilite", is("INSTITUTION")));
 	}
 
 	@Test
@@ -529,10 +530,10 @@ class ApiControllerTests {
 
 		mockMvc.perform(put("/api/v1/publications/" + publication.getId() + "/status")
 						.header("Authorization", bearerToken())
-						.contentType(MediaType.APPLICATION_JSON)
-						.content("{\"status\":\"PUBLIE\"}"))
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("{\"status\":\"PUBLIE\"}"))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.status", is("PUBLIE")));
+				.andExpect(jsonPath("$.statut", is("PUBLIE")));
 	}
 
 	@Test
@@ -650,9 +651,9 @@ class ApiControllerTests {
 				.orElseThrow();
 
 		mockMvc.perform(delete("/api/v1/publications/" + publication.getId())
-						.header("Authorization", bearerToken()))
+				.header("Authorization", bearerToken()))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.status", is("SUPPRIME")));
+				.andExpect(jsonPath("$.statut", is("SUPPRIME")));
 
 		mockMvc.perform(get("/api/v1/publications/" + publication.getId()))
 				.andExpect(status().isForbidden());
@@ -672,14 +673,14 @@ class ApiControllerTests {
 
 	@Test
 	void librarianStatisticsAreLimitedToInstitution() throws Exception {
-		mockMvc.perform(get("/api/v1/statistics")
+		mockMvc.perform(get("/api/v1/stats")
 						.header("Authorization", bearerToken()))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.scope", is("Institution A")))
-				.andExpect(jsonPath("$.totalPublications", is(2)))
-				.andExpect(jsonPath("$.publishedPublications", is(1)))
-				.andExpect(jsonPath("$.pendingValidationPublications", is(1)))
-				.andExpect(jsonPath("$.institutionOnlyPublications", is(1)));
+				.andExpect(jsonPath("$.total_publications", is(2)))
+				.andExpect(jsonPath("$.publications_publiees", is(1)))
+				.andExpect(jsonPath("$.publications_a_valider", is(1)))
+				.andExpect(jsonPath("$.publications_institution", is(1)));
 	}
 
 	@Test
@@ -696,13 +697,13 @@ class ApiControllerTests {
 				null
 		);
 
-		mockMvc.perform(get("/api/v1/statistics")
+		mockMvc.perform(get("/api/v1/stats")
 						.header("Authorization", bearerToken("admin@metamind.example", "558435")))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.scope", is("GLOBAL")))
-				.andExpect(jsonPath("$.totalPublications", is(3)))
-				.andExpect(jsonPath("$.publishedPublications", is(2)))
-				.andExpect(jsonPath("$.institutionOnlyPublications", is(2)));
+				.andExpect(jsonPath("$.total_publications", is(3)))
+				.andExpect(jsonPath("$.publications_publiees", is(2)))
+				.andExpect(jsonPath("$.publications_institution", is(2)));
 	}
 
 	@Test

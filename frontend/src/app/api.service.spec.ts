@@ -47,7 +47,7 @@ describe('ApiService', () => {
     const request = httpMock.expectOne('/api/v1/users/10/credits');
     expect(request.request.method).toBe('GET');
     expect(request.request.headers.get('Authorization')).toBe('Bearer token-test');
-    request.flush({ institutionId: 1, institution: 'Institution A', balance: 20 });
+    request.flush({ institution_id: 1, institution: 'Institution A', solde_credits: 20 });
   });
 
   it('achete des credits via l API', () => {
@@ -72,7 +72,7 @@ describe('ApiService', () => {
     const request = httpMock.expectOne('/api/v1/webhooks/stripe');
     expect(request.request.method).toBe('POST');
     expect(request.request.body).toEqual({ reference: 'pay_123', type: 'checkout.session.completed' });
-    request.flush({ institutionId: 1, institution: 'Institution A', balance: 100 });
+    request.flush({ institution_id: 1, institution: 'Institution A', solde_credits: 100 });
   });
 
   it('charge l historique des credits via l API', () => {
@@ -91,10 +91,10 @@ describe('ApiService', () => {
         id: 1,
         institution: 'Institution A',
         type: 'ACHAT',
-        amount: 10,
-        balanceAfter: 30,
+        montant: 10,
+        solde_apres: 30,
         description: 'Achat de credits',
-        createdAt: '2026-08-25T10:00:00'
+        date_creation: '2026-08-25T10:00:00'
       }
     ]);
   });
@@ -107,17 +107,17 @@ describe('ApiService', () => {
       expect(response.totalPublications).toBe(2);
     });
 
-    const request = httpMock.expectOne('/api/v1/statistics');
+    const request = httpMock.expectOne('/api/v1/stats');
     expect(request.request.method).toBe('GET');
     expect(request.request.headers.get('Authorization')).toBe('Bearer token-test');
     request.flush({
       scope: 'Institution A',
-      totalPublications: 2,
-      publishedPublications: 1,
-      pendingValidationPublications: 1,
-      publicPublications: 1,
-      institutionOnlyPublications: 1,
-      creditBalance: 20
+      total_publications: 2,
+      publications_publiees: 1,
+      publications_a_valider: 1,
+      publications_publiques: 1,
+      publications_institution: 1,
+      solde_credits: 20
     });
   });
 
@@ -132,12 +132,12 @@ describe('ApiService', () => {
     expect(request.request.method).toBe('POST');
     expect(request.request.headers.get('Authorization')).toBe('Bearer token-test');
     request.flush({
-      publicationId: 5,
-      title: 'Analyse automatique des metadonnees',
-      suggestedTitle: 'Analyse automatique des metadonnees',
-      suggestedAuthor: 'Sarah Lemaire',
-      suggestedKeywords: ['Dublin Core'],
-      creditBalance: 19
+      publication_id: 5,
+      titre: 'Analyse automatique des metadonnees',
+      titre_suggere: 'Analyse automatique des metadonnees',
+      auteur_suggere: 'Sarah Lemaire',
+      mots_cles_suggeres: ['Dublin Core'],
+      solde_credits: 19
     });
   });
 
@@ -216,13 +216,13 @@ describe('ApiService', () => {
     expect(request.request.headers.get('Authorization')).toBe('Bearer token-test');
     request.flush({
       id: 5,
-      title: 'Analyse automatique des metadonnees',
-      author: 'Sarah Lemaire',
+      titre: 'Analyse automatique des metadonnees',
+      auteur: 'Sarah Lemaire',
       institution: 'Institution A',
-      year: 2026,
-      status: 'PUBLIE',
-      visibility: 'PUBLIC',
-      keywords: ['Dublin Core']
+      annee: 2026,
+      statut: 'PUBLIE',
+      visibilite: 'PUBLIC',
+      mots_cles: ['Dublin Core']
     });
   });
 
@@ -240,12 +240,12 @@ describe('ApiService', () => {
     request.flush({
       contenu: [{
         id: 10,
-        firstName: 'Sarah',
-        lastName: 'Lemaire',
+        prenom: 'Sarah',
+        nom: 'Lemaire',
         email: 'sarah@institution-a.example',
-        role: 'Bibliothecaire',
+        role: 'LIBRARIAN',
         institution: 'Institution A',
-        status: 'ACTIF'
+        statut: 'ACTIF'
       }],
       page: 0,
       size: 20,

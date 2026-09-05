@@ -195,46 +195,56 @@ export class ApiService {
 
   getPublications(search = ''): Observable<Publication[]> {
     const params = search.trim() ? new HttpParams().set('search', search.trim()) : undefined;
-    return this.http.get<Publication[]>(`${this.baseUrl}/publications`, { params, headers: this.optionalAuthHeaders() });
+    return this.http.get<unknown[]>(`${this.baseUrl}/publications`, { params, headers: this.optionalAuthHeaders() })
+      .pipe(map((response) => response.map((item) => this.toPublication(item))));
   }
 
   createPublication(request: CreatePublicationRequest): Observable<Publication> {
-    return this.http.post<Publication>(`${this.baseUrl}/publications`, request, { headers: this.authHeaders() });
+    return this.http.post<unknown>(`${this.baseUrl}/publications`, request, { headers: this.authHeaders() })
+      .pipe(map((response) => this.toPublication(response)));
   }
 
   importDocument(file: File, visibility: 'PUBLIC' | 'INSTITUTION'): Observable<Publication> {
     const data = new FormData();
     data.append('fichier', file);
     data.append('visibilite', visibility);
-    return this.http.post<Publication>(`${this.baseUrl}/documents`, data, { headers: this.authHeaders() });
+    return this.http.post<unknown>(`${this.baseUrl}/documents`, data, { headers: this.authHeaders() })
+      .pipe(map((response) => this.toPublication(response)));
   }
 
   updatePublicationStatus(publicationId: number, request: UpdatePublicationStatusRequest): Observable<Publication> {
-    return this.http.put<Publication>(`${this.baseUrl}/publications/${publicationId}/status`, request, { headers: this.authHeaders() });
+    return this.http.put<unknown>(`${this.baseUrl}/publications/${publicationId}/status`, request, { headers: this.authHeaders() })
+      .pipe(map((response) => this.toPublication(response)));
   }
 
   deletePublication(publicationId: number): Observable<Publication> {
-    return this.http.delete<Publication>(`${this.baseUrl}/publications/${publicationId}`, { headers: this.authHeaders() });
+    return this.http.delete<unknown>(`${this.baseUrl}/publications/${publicationId}`, { headers: this.authHeaders() })
+      .pipe(map((response) => this.toPublication(response)));
   }
 
   getInstitutions(): Observable<Institution[]> {
-    return this.http.get<Institution[]>(`${this.baseUrl}/institutions`, { headers: this.authHeaders() });
+    return this.http.get<unknown[]>(`${this.baseUrl}/institutions`, { headers: this.authHeaders() })
+      .pipe(map((response) => response.map((item) => this.toInstitution(item))));
   }
 
   createInstitution(request: CreateInstitutionRequest): Observable<Institution> {
-    return this.http.post<Institution>(`${this.baseUrl}/institutions`, request, { headers: this.authHeaders() });
+    return this.http.post<unknown>(`${this.baseUrl}/institutions`, request, { headers: this.authHeaders() })
+      .pipe(map((response) => this.toInstitution(response)));
   }
 
   deactivateInstitution(institutionId: number): Observable<Institution> {
-    return this.http.delete<Institution>(`${this.baseUrl}/institutions/${institutionId}`, { headers: this.authHeaders() });
+    return this.http.delete<unknown>(`${this.baseUrl}/institutions/${institutionId}`, { headers: this.authHeaders() })
+      .pipe(map((response) => this.toInstitution(response)));
   }
 
   getCreditAccount(): Observable<CreditAccount> {
-    return this.http.get<CreditAccount>(`${this.baseUrl}/credits`, { headers: this.authHeaders() });
+    return this.http.get<unknown>(`${this.baseUrl}/credits`, { headers: this.authHeaders() })
+      .pipe(map((response) => this.toCreditAccount(response)));
   }
 
   getCreditPacks(): Observable<CreditPackOption[]> {
-    return this.http.get<CreditPackOption[]>(`${this.baseUrl}/credits/packs`);
+    return this.http.get<unknown[]>(`${this.baseUrl}/credits/packs`)
+      .pipe(map((response) => response.map((item) => this.toCreditPack(item))));
   }
 
   startCreditCheckout(packId: number): Observable<CreditCheckout> {
@@ -242,27 +252,33 @@ export class ApiService {
   }
 
   confirmCreditPayment(reference: string): Observable<CreditBalance> {
-    return this.http.post<CreditBalance>(`${this.baseUrl}/webhooks/stripe`, { reference, type: 'checkout.session.completed' });
+    return this.http.post<unknown>(`${this.baseUrl}/webhooks/stripe`, { reference, type: 'checkout.session.completed' })
+      .pipe(map((response) => this.toCreditBalance(response)));
   }
 
   getCreditBalance(userId: number): Observable<CreditBalance> {
-    return this.http.get<CreditBalance>(`${this.baseUrl}/users/${userId}/credits`, { headers: this.authHeaders() });
+    return this.http.get<unknown>(`${this.baseUrl}/users/${userId}/credits`, { headers: this.authHeaders() })
+      .pipe(map((response) => this.toCreditBalance(response)));
   }
 
   getCreditMovements(userId: number): Observable<CreditMovement[]> {
-    return this.http.get<CreditMovement[]>(`${this.baseUrl}/users/${userId}/credits/movements`, { headers: this.authHeaders() });
+    return this.http.get<unknown[]>(`${this.baseUrl}/users/${userId}/credits/movements`, { headers: this.authHeaders() })
+      .pipe(map((response) => response.map((item) => this.toCreditMovement(item))));
   }
 
   getStatistics(): Observable<DashboardStatistics> {
-    return this.http.get<DashboardStatistics>(`${this.baseUrl}/statistics`, { headers: this.authHeaders() });
+    return this.http.get<unknown>(`${this.baseUrl}/stats`, { headers: this.authHeaders() })
+      .pipe(map((response) => this.toStatistics(response)));
   }
 
   purchaseCredits(userId: number, amount: number): Observable<CreditBalance> {
-    return this.http.post<CreditBalance>(`${this.baseUrl}/users/${userId}/credits/purchase`, { amount }, { headers: this.authHeaders() });
+    return this.http.post<unknown>(`${this.baseUrl}/users/${userId}/credits/purchase`, { amount }, { headers: this.authHeaders() })
+      .pipe(map((response) => this.toCreditBalance(response)));
   }
 
   extractMetadata(publicationId: number): Observable<MetadataExtraction> {
-    return this.http.post<MetadataExtraction>(`${this.baseUrl}/publications/${publicationId}/extraction`, {}, { headers: this.authHeaders() });
+    return this.http.post<unknown>(`${this.baseUrl}/publications/${publicationId}/extraction`, {}, { headers: this.authHeaders() })
+      .pipe(map((response) => this.toMetadataExtraction(response)));
   }
 
   getMetadata(publicationId: number): Observable<MetadataDetails> {
@@ -274,29 +290,34 @@ export class ApiService {
   }
 
   login(request: LoginRequest): Observable<AuthResponse> {
-    return this.http.post<AuthResponse>(`${this.baseUrl}/auth/login`, request);
+    return this.http.post<unknown>(`${this.baseUrl}/auth/login`, request)
+      .pipe(map((response) => this.toAuthResponse(response)));
   }
 
   register(request: RegisterRequest): Observable<AuthResponse> {
-    return this.http.post<AuthResponse>(`${this.baseUrl}/auth/register`, request);
+    return this.http.post<unknown>(`${this.baseUrl}/auth/register`, request)
+      .pipe(map((response) => this.toAuthResponse(response)));
   }
 
   updateProfile(userId: number, request: UpdateProfileRequest): Observable<UserSession> {
-    return this.http.put<UserSession>(`${this.baseUrl}/users/${userId}/profile`, request, { headers: this.authHeaders() });
+    return this.http.put<unknown>(`${this.baseUrl}/users/${userId}/profile`, request, { headers: this.authHeaders() })
+      .pipe(map((response) => this.toUserSession(response)));
   }
 
   requestAccountDeletion(userId: number): Observable<UserSession> {
-    return this.http.delete<UserSession>(`${this.baseUrl}/users/${userId}`, { headers: this.authHeaders() });
+    return this.http.delete<unknown>(`${this.baseUrl}/users/${userId}`, { headers: this.authHeaders() })
+      .pipe(map((response) => this.toUserSession(response)));
   }
 
   getAdminUsers(institutionId?: number): Observable<UserSession[]> {
     const params = institutionId ? new HttpParams().set('institutionId', institutionId) : undefined;
     return this.http.get<PageResponse<UserSession>>(`${this.baseUrl}/admin/users`, { params, headers: this.authHeaders() })
-      .pipe(map((response) => response.contenu));
+      .pipe(map((response) => response.contenu.map((user) => this.toUserSession(user))));
   }
 
   updateAdminUser(userId: number, request: AdminUserUpdateRequest): Observable<UserSession> {
-    return this.http.patch<UserSession>(`${this.baseUrl}/admin/users/${userId}`, request, { headers: this.authHeaders() });
+    return this.http.patch<unknown>(`${this.baseUrl}/admin/users/${userId}`, request, { headers: this.authHeaders() })
+      .pipe(map((response) => this.toUserSession(response)));
   }
 
   getAdminConfig(): Observable<Record<string, string>> {
@@ -314,6 +335,118 @@ export class ApiService {
 
   private optionalAuthHeaders(): HttpHeaders | undefined {
     return this.token ? this.authHeaders() : undefined;
+  }
+
+  private toPublication(value: unknown): Publication {
+    const item = value as Record<string, any>;
+    return {
+      id: item['id'],
+      title: item['titre'] ?? item['title'],
+      author: item['auteur'] ?? item['author'],
+      institution: item['institution'],
+      year: item['annee'] ?? item['year'],
+      status: item['statut'] ?? item['status'],
+      visibility: item['visibilite'] ?? item['visibility'],
+      keywords: item['mots_cles'] ?? item['keywords'] ?? []
+    };
+  }
+
+  private toUserSession(value: unknown): UserSession {
+    const item = value as Record<string, any>;
+    return {
+      id: item['id'],
+      firstName: item['prenom'] ?? item['firstName'],
+      lastName: item['nom'] ?? item['lastName'],
+      email: item['email'],
+      role: item['role'],
+      institution: item['institution'],
+      status: item['statut'] ?? item['status']
+    };
+  }
+
+  private toAuthResponse(value: unknown): AuthResponse {
+    const item = value as Record<string, any>;
+    return {
+      token: item['token'],
+      user: this.toUserSession(item['utilisateur'] ?? item['user'])
+    };
+  }
+
+  private toInstitution(value: unknown): Institution {
+    const item = value as Record<string, any>;
+    return {
+      id: item['id'],
+      code: item['code'],
+      name: item['nom'] ?? item['name'],
+      emailDomain: item['domaine_email'] ?? item['emailDomain'],
+      active: item['actif'] ?? item['active']
+    };
+  }
+
+  private toCreditBalance(value: unknown): CreditBalance {
+    const item = value as Record<string, any>;
+    return {
+      institutionId: item['institution_id'] ?? item['institutionId'],
+      institution: item['institution'],
+      balance: item['solde_credits'] ?? item['balance']
+    };
+  }
+
+  private toCreditMovement(value: unknown): CreditMovement {
+    const item = value as Record<string, any>;
+    return {
+      id: item['id'],
+      institution: item['institution'],
+      type: item['type'],
+      amount: item['montant'] ?? item['amount'],
+      balanceAfter: item['solde_apres'] ?? item['balanceAfter'],
+      description: item['description'],
+      createdAt: item['date_creation'] ?? item['createdAt']
+    };
+  }
+
+  private toCreditAccount(value: unknown): CreditAccount {
+    const item = value as Record<string, any>;
+    return {
+      balance: this.toCreditBalance(item['solde'] ?? item['balance']),
+      movements: (item['mouvements'] ?? item['movements'] ?? []).map((movement: unknown) => this.toCreditMovement(movement))
+    };
+  }
+
+  private toCreditPack(value: unknown): CreditPackOption {
+    const item = value as Record<string, any>;
+    return {
+      id: item['id'],
+      credits: item['quantite'] ?? item['credits'],
+      amount: item['montant_paye'] ?? item['amount'],
+      currency: item['devise'] ?? item['currency'],
+      label: item['libelle'] ?? item['label']
+    };
+  }
+
+  private toStatistics(value: unknown): DashboardStatistics {
+    const item = value as Record<string, any>;
+    return {
+      scope: item['scope'],
+      totalPublications: item['total_publications'] ?? item['totalPublications'],
+      publishedPublications: item['publications_publiees'] ?? item['publishedPublications'],
+      pendingValidationPublications: item['publications_a_valider'] ?? item['pendingValidationPublications'],
+      publicPublications: item['publications_publiques'] ?? item['publicPublications'],
+      institutionOnlyPublications: item['publications_institution'] ?? item['institutionOnlyPublications'],
+      creditBalance: item['solde_credits'] ?? item['creditBalance']
+    };
+  }
+
+  private toMetadataExtraction(value: unknown): MetadataExtraction {
+    const item = value as Record<string, any>;
+    return {
+      publicationId: item['publication_id'] ?? item['publicationId'],
+      title: item['titre'] ?? item['title'],
+      suggestedTitle: item['titre_suggere'] ?? item['suggestedTitle'],
+      suggestedAuthor: item['auteur_suggere'] ?? item['suggestedAuthor'],
+      suggestedKeywords: item['mots_cles_suggeres'] ?? item['suggestedKeywords'] ?? [],
+      creditBalance: item['solde_credits'] ?? item['creditBalance']
+    };
   }
 
   private resolveBaseUrl(): string {

@@ -46,7 +46,7 @@ public class AccountService {
 		}
 
 		loginAttemptService.reset(request.email());
-		return new AuthResponse(jwtService.createToken(user), UserResponse.from(user));
+		return new AuthResponse(jwtService.createToken(user), 3600, UserResponse.from(user));
 	}
 
 	@Transactional
@@ -69,7 +69,7 @@ public class AccountService {
 		);
 
 		UserEntity saved = userRepository.save(user);
-		return new AuthResponse(jwtService.createToken(saved), UserResponse.from(saved));
+		return new AuthResponse(jwtService.createToken(saved), 3600, UserResponse.from(saved));
 	}
 
 	@Transactional(readOnly = true)

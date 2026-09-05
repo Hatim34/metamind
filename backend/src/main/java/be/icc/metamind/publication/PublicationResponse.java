@@ -3,6 +3,8 @@ package be.icc.metamind.publication;
 import java.util.Arrays;
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import be.icc.metamind.document.DocumentEntity;
 import be.icc.metamind.document.DocumentStatus;
 import be.icc.metamind.document.DocumentVisibility;
@@ -10,12 +12,25 @@ import be.icc.metamind.document.MetadataEntity;
 
 public record PublicationResponse(
 		long id,
+
+		@JsonProperty("titre")
 		String title,
+
+		@JsonProperty("auteur")
 		String author,
+
 		String institution,
+
+		@JsonProperty("annee")
 		int year,
+
+		@JsonProperty("statut")
 		PublicationStatus status,
+
+		@JsonProperty("visibilite")
 		Visibility visibility,
+
+		@JsonProperty("mots_cles")
 		List<String> keywords
 ) {
 	public static PublicationResponse from(Publication publication) {

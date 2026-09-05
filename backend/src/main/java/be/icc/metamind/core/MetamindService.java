@@ -62,7 +62,7 @@ public class MetamindService {
 				.findFirst()
 				.orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "Les identifiants sont incorrects."));
 
-		return new AuthResponse(localToken(user.id()), UserResponse.from(user));
+		return new AuthResponse(localToken(user.id()), 3600, UserResponse.from(user));
 	}
 
 	public AuthResponse register(RegisterRequest request) {
@@ -75,7 +75,7 @@ public class MetamindService {
 		}
 
 		UserAccount user = createUser(request.firstName(), request.lastName(), request.email(), request.institution());
-		return new AuthResponse(localToken(user.id()), UserResponse.from(user));
+		return new AuthResponse(localToken(user.id()), 3600, UserResponse.from(user));
 	}
 
 	public UserResponse getProfile(long id) {
@@ -103,7 +103,7 @@ public class MetamindService {
 				user.id(),
 				"Compte",
 				"Supprime",
-				"compte-supprime-" + user.id() + "@metamind.local",
+				"compte-supprime-" + user.id() + "@metamind.example",
 				user.role(),
 				user.institution(),
 				UserStatus.DESACTIVE

@@ -1,12 +1,26 @@
 package be.icc.metamind.user;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 public record UserResponse(
 		long id,
+
+		@JsonProperty("prenom")
 		String firstName,
+
+		@JsonProperty("nom")
 		String lastName,
+
 		String email,
+
 		String role,
+
 		String institution,
+
+		@JsonProperty("institution_id")
+		long institutionId,
+
+		@JsonProperty("statut")
 		UserStatus status
 ) {
 	public static UserResponse from(UserAccount user) {
@@ -17,6 +31,7 @@ public record UserResponse(
 				user.email(),
 				user.role(),
 				user.institution(),
+				0,
 				user.status()
 		);
 	}
@@ -27,16 +42,10 @@ public record UserResponse(
 				user.getFirstName(),
 				user.getLastName(),
 				user.getEmail(),
-				displayRole(user.getRole()),
+				user.getRole().name(),
 				user.getInstitution().getName(),
+				user.getInstitution().getId(),
 				user.getStatus()
 		);
-	}
-
-	private static String displayRole(UserRole role) {
-		return switch (role) {
-			case LIBRARIAN -> "Bibliothecaire";
-			case ADMIN -> "Administrateur";
-		};
 	}
 }

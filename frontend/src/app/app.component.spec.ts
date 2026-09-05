@@ -29,7 +29,7 @@ describe('AppComponent', () => {
       firstName: 'Sarah',
       lastName: 'Lemaire',
       email: 'sarah@institution-a.example',
-      role: 'Bibliothecaire',
+      role: 'LIBRARIAN',
       institution: 'Institution A',
       status: 'ACTIF'
     }
