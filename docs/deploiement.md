@@ -117,7 +117,7 @@ Email : admin@metamind.example
 Mot de passe : 558435
 ```
 
-## Elements a remettre pour le livrable 22
+## Elements a remettre pour la partie deploiement
 
 URL de l'application :
 

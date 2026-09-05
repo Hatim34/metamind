@@ -168,6 +168,34 @@ class ApiControllerTests {
 	}
 
 	@Test
+	void documentsListIsPaginatedAndScopedByInstitution() throws Exception {
+		InstitutionEntity otherInstitution = institutionRepository.findByNameIgnoreCase("Institution B").orElseThrow();
+		TestDocumentFactory documents = new TestDocumentFactory(documentRepository, metadataRepository, authorRepository, keywordRepository, documentAuthorRepository, documentKeywordRepository);
+		documents.create(
+				"Document reserve institution B",
+				"Jan Peeters",
+				2026,
+				DocumentStatus.A_VALIDER,
+				DocumentVisibility.INSTITUTION,
+				List.of("catalogage"),
+				otherInstitution,
+				null
+		);
+
+		mockMvc.perform(get("/api/v1/documents")
+						.param("page", "0")
+						.param("size", "20")
+						.header("Authorization", bearerToken()))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.contenu", hasSize(2)))
+				.andExpect(jsonPath("$.page", is(0)))
+				.andExpect(jsonPath("$.size", is(20)))
+				.andExpect(jsonPath("$.total_elements", is(2)))
+				.andExpect(jsonPath("$.contenu[0].institution", is("Institution A")))
+				.andExpect(jsonPath("$.contenu[1].institution", is("Institution A")));
+	}
+
+	@Test
 	void publicationCanBeCreated() throws Exception {
 		String body = """
 				{

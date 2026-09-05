@@ -1,5 +1,5 @@
 -- DUMP DE LA BASE DE DONNEES - METAMIND
--- PostgreSQL 16 - structure et donnees coherentes avec les livrables 08 et 09.
+-- PostgreSQL 16 - structure et donnees coherentes avec le schema et le dictionnaire.
 -- Donnees fictives en domaines .example, sans secret et sans domaine reel.
 
 SET client_encoding = 'UTF8';

@@ -74,6 +74,21 @@ public class PublicationService {
 	}
 
 	@Transactional(readOnly = true)
+	public PageResponse<PublicationResponse> findDocumentsPage(String search, DocumentStatus status, int page, int size, UserEntity currentUser) {
+		String value = Optional.ofNullable(search).orElse("").trim();
+		List<DocumentEntity> documents = value.isBlank()
+				? documentRepository.findAll()
+				: documentRepository.search(value);
+
+		List<PublicationResponse> responses = documents.stream()
+				.filter(document -> isInManagementScope(document, currentUser))
+				.filter(document -> status == null || document.getStatus() == status)
+				.map(this::toResponse)
+				.toList();
+		return PageResponse.from(responses, page, size);
+	}
+
+	@Transactional(readOnly = true)
 	public PublicationResponse findPublication(long id, UserEntity currentUser) {
 		DocumentEntity document = documentRepository.findById(id)
 				.orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "La publication demandee est introuvable."));
@@ -200,6 +215,13 @@ public class PublicationService {
 	private boolean canManage(DocumentEntity document, UserEntity currentUser) {
 		return currentUser.getRole() == UserRole.ADMIN
 				|| document.getInstitution().getId().equals(currentUser.getInstitution().getId());
+	}
+
+	private boolean isInManagementScope(DocumentEntity document, UserEntity currentUser) {
+		if (currentUser.getRole() == UserRole.ADMIN) {
+			return true;
+		}
+		return document.getInstitution().getId().equals(currentUser.getInstitution().getId());
 	}
 
 	private void validate(PublicationRequest request) {
