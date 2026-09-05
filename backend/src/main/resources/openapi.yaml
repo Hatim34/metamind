@@ -247,10 +247,10 @@ paths:
       tags: [Credits]
       summary: Demarrer l'achat d'un pack de credits
       description: >
-        Dans le MVP, ce endpoint cree une reference de paiement et une URL de
-        confirmation locale. L'integration Stripe Checkout reelle reste prevue
-        pour la mise en production, avec cle secrete et verification de signature
-        stockees uniquement dans les variables d'environnement.
+        Cree une reference de paiement et retourne une URL Checkout. Si
+        STRIPE_SECRET_KEY est configuree, l'URL provient de Stripe Checkout.
+        Sans cle Stripe, l'application conserve un parcours local pour les
+        tests et la validation fonctionnelle.
       requestBody:
         required: true
         content:
@@ -290,15 +290,20 @@ paths:
   /webhooks/stripe:
     post:
       tags: [Credits]
-      summary: Confirmer un paiement de credits dans le MVP
+      summary: Confirmer un paiement de credits
       security: []
       description: >
-        Endpoint de confirmation simule pour le MVP. Il ne verifie pas encore
-        l'en-tete Stripe-Signature et ne doit pas etre presente comme une
-        integration Stripe production. La version production devra verifier la
-        signature du webhook avec le secret stocke en variable d'environnement.
+        Traite l'evenement Stripe checkout.session.completed. Si
+        STRIPE_WEBHOOK_SECRET est configure, l'en-tete Stripe-Signature est
+        obligatoire et verifie avant credit du solde institutionnel.
+      parameters:
+        - name: Stripe-Signature
+          in: header
+          required: false
+          schema: { type: string }
       responses:
         '200': { description: Evenement traite }
+        '401': { description: Signature Stripe manquante ou invalide, $ref: '#/components/responses/Error' }
         '400': { description: Reference invalide, $ref: '#/components/responses/Error' }
 
   /stats:

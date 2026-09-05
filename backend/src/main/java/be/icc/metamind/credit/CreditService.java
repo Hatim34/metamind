@@ -4,6 +4,16 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import com.stripe.Stripe;
+import com.stripe.exception.SignatureVerificationException;
+import com.stripe.exception.StripeException;
+import com.stripe.model.checkout.Session;
+import com.stripe.net.Webhook;
+import com.stripe.param.checkout.SessionCreateParams;
+
 import be.icc.metamind.api.ApiException;
 import be.icc.metamind.document.AuditLogEntity;
 import be.icc.metamind.document.AuditLogRepository;
@@ -34,6 +44,8 @@ public class CreditService {
 	private final CreditPackRepository packRepository;
 	private final AuditLogRepository auditLogRepository;
 	private final String publicUrl;
+	private final String stripeSecretKey;
+	private final String stripeWebhookSecret;
 
 	public CreditService(
 			UserRepository userRepository,
@@ -41,7 +53,9 @@ public class CreditService {
 			CreditMovementRepository movementRepository,
 			CreditPackRepository packRepository,
 			AuditLogRepository auditLogRepository,
-			@Value("${metamind.public-url:https://metamind-app.duckdns.org}") String publicUrl
+			@Value("${metamind.public-url:https://metamind-app.duckdns.org}") String publicUrl,
+			@Value("${metamind.stripe.secret-key:}") String stripeSecretKey,
+			@Value("${metamind.stripe.webhook-secret:}") String stripeWebhookSecret
 	) {
 		this.userRepository = userRepository;
 		this.institutionRepository = institutionRepository;
@@ -49,6 +63,8 @@ public class CreditService {
 		this.packRepository = packRepository;
 		this.auditLogRepository = auditLogRepository;
 		this.publicUrl = publicUrl;
+		this.stripeSecretKey = stripeSecretKey == null ? "" : stripeSecretKey.trim();
+		this.stripeWebhookSecret = stripeWebhookSecret == null ? "" : stripeWebhookSecret.trim();
 	}
 
 	@Transactional(readOnly = true)
@@ -91,15 +107,25 @@ public class CreditService {
 				reference,
 				CreditPackStatus.EN_ATTENTE
 		));
-		String checkoutUrl = publicUrl + "/paiement/confirmation?reference=" + reference + "&pack=" + pack.getId();
+		String checkoutUrl = createCheckoutUrl(option, reference, pack.getId());
 		return new CreditCheckoutResponse(checkoutUrl, reference);
 	}
 
 	@Transactional
 	public CreditBalanceResponse confirmStripePayment(StripeWebhookRequest request) {
-		CreditPackEntity pack = packRepository.findByPaymentReference(request.reference())
+		return confirmPaymentReference(request.reference(), request.type());
+	}
+
+	@Transactional
+	public CreditBalanceResponse confirmStripePayment(String payload, String signature) {
+		StripeWebhookRequest request = parseWebhookPayload(payload, signature);
+		return confirmPaymentReference(request.reference(), request.type());
+	}
+
+	private CreditBalanceResponse confirmPaymentReference(String reference, String type) {
+		CreditPackEntity pack = packRepository.findByPaymentReference(reference)
 				.orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "La reference de paiement est introuvable."));
-		if (!isCompletedPayment(request.type())) {
+		if (!isCompletedPayment(type)) {
 			pack.markFailed();
 			return toResponse(pack.getInstitution());
 		}
@@ -108,6 +134,89 @@ public class CreditService {
 			addPurchasedCredits(pack.getInstitution(), pack.getQuantite(), "Paiement confirme " + pack.getPaymentReference());
 		}
 		return toResponse(pack.getInstitution());
+	}
+
+	private String createCheckoutUrl(CreditPackOptionResponse option, String reference, long packId) {
+		if (!isStripeEnabled() || option.amount().compareTo(BigDecimal.ZERO) == 0) {
+			return publicUrl + "/paiement/confirmation?reference=" + reference + "&pack=" + packId;
+		}
+		Stripe.apiKey = stripeSecretKey;
+		try {
+			SessionCreateParams params = SessionCreateParams.builder()
+					.setMode(SessionCreateParams.Mode.PAYMENT)
+					.setClientReferenceId(reference)
+					.setSuccessUrl(publicUrl + "/paiement/succes?session_id={CHECKOUT_SESSION_ID}")
+					.setCancelUrl(publicUrl + "/credits")
+					.addLineItem(SessionCreateParams.LineItem.builder()
+							.setQuantity(1L)
+							.setPriceData(SessionCreateParams.LineItem.PriceData.builder()
+									.setCurrency(option.currency().toLowerCase())
+									.setUnitAmount(option.amount().multiply(new BigDecimal("100")).longValueExact())
+									.setProductData(SessionCreateParams.LineItem.PriceData.ProductData.builder()
+											.setName(option.label())
+											.build())
+									.build())
+							.build())
+					.build();
+			Session session = Session.create(params);
+			return session.getUrl();
+		} catch (StripeException | ArithmeticException exception) {
+			throw new ApiException(HttpStatus.BAD_GATEWAY, "La session de paiement n'a pas pu etre creee.");
+		}
+	}
+
+	private StripeWebhookRequest parseWebhookPayload(String payload, String signature) {
+		if (payload == null || payload.isBlank()) {
+			throw new ApiException(HttpStatus.BAD_REQUEST, "Le contenu du webhook est vide.");
+		}
+		if (!stripeWebhookSecret.isBlank()) {
+			if (signature == null || signature.isBlank()) {
+				throw new ApiException(HttpStatus.UNAUTHORIZED, "La signature Stripe est manquante.");
+			}
+			try {
+				Webhook.constructEvent(payload, signature, stripeWebhookSecret);
+			} catch (SignatureVerificationException exception) {
+				throw new ApiException(HttpStatus.UNAUTHORIZED, "La signature Stripe est invalide.");
+			}
+		}
+		try {
+			JsonObject root = JsonParser.parseString(payload).getAsJsonObject();
+			String type = text(root, "type");
+			String reference = text(root, "reference");
+			JsonObject object = root.has("data") && root.get("data").isJsonObject()
+					? root.getAsJsonObject("data").getAsJsonObject("object")
+					: null;
+			if (reference == null) {
+				reference = text(object, "client_reference_id");
+			}
+			if (reference == null) {
+				reference = text(object, "reference");
+			}
+			if (reference == null) {
+				throw new ApiException(HttpStatus.BAD_REQUEST, "La reference de paiement est manquante.");
+			}
+			return new StripeWebhookRequest(reference, type);
+		} catch (ApiException exception) {
+			throw exception;
+		} catch (Exception exception) {
+			throw new ApiException(HttpStatus.BAD_REQUEST, "Le contenu du webhook est invalide.");
+		}
+	}
+
+	private String text(JsonObject node, String field) {
+		if (node == null || !node.has(field)) {
+			return null;
+		}
+		JsonElement element = node.get(field);
+		if (element == null || element.isJsonNull()) {
+			return null;
+		}
+		String value = element.getAsString();
+		return value.isBlank() ? null : value;
+	}
+
+	private boolean isStripeEnabled() {
+		return !stripeSecretKey.isBlank();
 	}
 
 	@Transactional

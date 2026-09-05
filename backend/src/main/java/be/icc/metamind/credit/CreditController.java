@@ -44,8 +44,11 @@ public class CreditController {
 	}
 
 	@PostMapping("/webhooks/stripe")
-	public CreditBalanceResponse stripeWebhook(@RequestBody StripeWebhookRequest request) {
-		return service.confirmStripePayment(request);
+	public CreditBalanceResponse stripeWebhook(
+			@RequestBody String payload,
+			@RequestHeader(value = "Stripe-Signature", required = false) String signature
+	) {
+		return service.confirmStripePayment(payload, signature);
 	}
 
 	@PostMapping("/admin/institutions/{institutionId}/credits/adjustments")

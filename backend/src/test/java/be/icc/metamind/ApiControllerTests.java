@@ -395,6 +395,36 @@ class ApiControllerTests {
 	}
 
 	@Test
+	void stripeWebhookAcceptsCheckoutSessionEventPayload() throws Exception {
+		String response = mockMvc.perform(post("/api/v1/credits")
+						.header("Authorization", bearerToken())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{\"pack_id\":2,\"cgv_acceptees\":true}"))
+				.andExpect(status().isOk())
+				.andReturn()
+				.getResponse()
+				.getContentAsString();
+
+		String reference = response.replaceFirst(".*\\\"reference\\\"\\s*:\\s*\\\"([^\\\"]+)\\\".*", "$1");
+		String event = """
+				{
+				  "type": "checkout.session.completed",
+				  "data": {
+				    "object": {
+				      "client_reference_id": "%s"
+				    }
+				  }
+				}
+				""".formatted(reference);
+
+		mockMvc.perform(post("/api/v1/webhooks/stripe")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(event))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.solde_credits", is(100)));
+	}
+
+	@Test
 	void administratorCanAdjustInstitutionCredits() throws Exception {
 		InstitutionEntity institution = institutionRepository.findByNameIgnoreCase("Institution A").orElseThrow();
 		String body = """
