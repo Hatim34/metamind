@@ -53,6 +53,8 @@ describe('AppComponent', () => {
       'getStatistics',
       'purchaseCredits',
       'extractMetadata',
+      'getMetadata',
+      'validateMetadata',
       'updatePublicationStatus',
       'deletePublication',
       'login',
@@ -96,6 +98,20 @@ describe('AppComponent', () => {
     api.getAdminUsers.and.returnValue(of([]));
     api.getAdminConfig.and.returnValue(of({ prix_credit_eur: '0.50' }));
     api.getAdminLogs.and.returnValue(of([]));
+    api.getMetadata.and.returnValue(of({
+      id: 7,
+      document_id: 1,
+      titre: 'Analyse automatique des metadonnees',
+      resume: 'Resume valide par un bibliothecaire.',
+      date_publication: '2026-01-01',
+      classification: 'Sciences de l information',
+      visibilite: 'PUBLIC',
+      statut: 'EN_ATTENTE',
+      date_validation: null,
+      validee_par: null,
+      auteurs: [{ nom_complet: 'Sarah Lemaire' }],
+      mots_cles: ['Dublin Core']
+    }));
 
     await TestBed.configureTestingModule({
       imports: [AppComponent],
@@ -205,6 +221,57 @@ describe('AppComponent', () => {
     component.updatePublicationStatus(component.publications[0], 'PUBLIE');
 
     expect(api.updatePublicationStatus).toHaveBeenCalledWith(1, { status: 'PUBLIE' });
+    expect(component.message).toBe(component.t('publicationPublished'));
+  });
+
+  it('prepare la validation des metadonnees', () => {
+    component.session = authResponse.user;
+
+    component.startMetadataValidation(publications[0]);
+
+    expect(api.getMetadata).toHaveBeenCalledWith(1);
+    expect(component.selectedMetadataPublicationId).toBe(1);
+    expect(component.metadataForm.title).toBe('Analyse automatique des metadonnees');
+    expect(component.metadataForm.authors).toBe('Sarah Lemaire');
+  });
+
+  it('valide les metadonnees corrigees', () => {
+    api.validateMetadata.and.returnValue(of({
+      id: 7,
+      document_id: 1,
+      titre: 'Analyse automatique des metadonnees',
+      resume: 'Resume valide par un bibliothecaire.',
+      date_publication: '2026-01-01',
+      classification: 'Sciences de l information',
+      visibilite: 'PUBLIC',
+      statut: 'VALIDE',
+      date_validation: '2026-09-05T12:00:00',
+      validee_par: 10,
+      auteurs: [{ nom_complet: 'Sarah Lemaire' }],
+      mots_cles: ['Dublin Core']
+    }));
+    component.session = authResponse.user;
+    component.selectedMetadataPublicationId = 1;
+    component.metadataForm = {
+      documentId: 1,
+      title: 'Analyse automatique des metadonnees',
+      summary: 'Resume valide par un bibliothecaire.',
+      publicationDate: '2026-01-01',
+      classification: 'Sciences de l information',
+      visibility: 'PUBLIC',
+      authors: 'Sarah Lemaire',
+      keywords: 'Dublin Core'
+    };
+
+    component.validateMetadata();
+
+    expect(api.validateMetadata).toHaveBeenCalledWith(1, jasmine.objectContaining({
+      titre: 'Analyse automatique des metadonnees',
+      visibilite: 'PUBLIC',
+      auteurs: [{ nom_complet: 'Sarah Lemaire' }],
+      mots_cles: ['Dublin Core']
+    }));
+    expect(component.selectedMetadataPublicationId).toBeNull();
     expect(component.message).toBe(component.t('publicationPublished'));
   });
 

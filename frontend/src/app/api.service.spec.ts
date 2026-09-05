@@ -141,6 +141,68 @@ describe('ApiService', () => {
     });
   });
 
+  it('lit les metadonnees d un document', () => {
+    service.setToken('token-test');
+
+    service.getMetadata(5).subscribe((response) => {
+      expect(response.titre).toBe('Analyse automatique des metadonnees');
+    });
+
+    const request = httpMock.expectOne('/api/v1/documents/5/metadata');
+    expect(request.request.method).toBe('GET');
+    expect(request.request.headers.get('Authorization')).toBe('Bearer token-test');
+    request.flush({
+      id: 7,
+      document_id: 5,
+      titre: 'Analyse automatique des metadonnees',
+      resume: 'Resume valide par un bibliothecaire.',
+      date_publication: '2026-01-01',
+      classification: 'Sciences de l information',
+      visibilite: 'PUBLIC',
+      statut: 'EN_ATTENTE',
+      date_validation: null,
+      validee_par: null,
+      auteurs: [{ nom_complet: 'Sarah Lemaire' }],
+      mots_cles: ['Dublin Core']
+    });
+  });
+
+  it('valide les metadonnees d un document', () => {
+    service.setToken('token-test');
+
+    service.validateMetadata(5, {
+      titre: 'Analyse automatique des metadonnees',
+      resume: 'Resume valide par un bibliothecaire.',
+      date_publication: '2026-01-01',
+      classification: 'Sciences de l information',
+      visibilite: 'PUBLIC',
+      auteurs: [{ nom_complet: 'Sarah Lemaire' }],
+      mots_cles: ['Dublin Core']
+    }).subscribe((response) => {
+      expect(response.statut).toBe('VALIDE');
+    });
+
+    const request = httpMock.expectOne('/api/v1/documents/5/metadata');
+    expect(request.request.method).toBe('PUT');
+    expect(request.request.headers.get('Authorization')).toBe('Bearer token-test');
+    expect(request.request.body.titre).toBe('Analyse automatique des metadonnees');
+    expect(request.request.body.visibilite).toBe('PUBLIC');
+    request.flush({
+      id: 7,
+      document_id: 5,
+      titre: 'Analyse automatique des metadonnees',
+      resume: 'Resume valide par un bibliothecaire.',
+      date_publication: '2026-01-01',
+      classification: 'Sciences de l information',
+      visibilite: 'PUBLIC',
+      statut: 'VALIDE',
+      date_validation: '2026-09-05T12:00:00',
+      validee_par: 10,
+      auteurs: [{ nom_complet: 'Sarah Lemaire' }],
+      mots_cles: ['Dublin Core']
+    });
+  });
+
   it('modifie le statut d une publication', () => {
     service.setToken('token-test');
 

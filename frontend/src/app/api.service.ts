@@ -87,6 +87,36 @@ export interface MetadataExtraction {
   creditBalance: number;
 }
 
+export interface MetadataAuthor {
+  nom_complet: string;
+  orcid?: string;
+}
+
+export interface MetadataDetails {
+  id: number;
+  document_id: number;
+  titre: string;
+  resume: string;
+  date_publication: string | null;
+  classification: string;
+  visibilite: 'PUBLIC' | 'INSTITUTION';
+  statut: 'EN_ATTENTE' | 'VALIDE';
+  date_validation: string | null;
+  validee_par: number | null;
+  auteurs: MetadataAuthor[];
+  mots_cles: string[];
+}
+
+export interface MetadataValidationRequest {
+  titre: string;
+  resume: string;
+  date_publication: string | null;
+  classification: string;
+  visibilite: 'PUBLIC' | 'INSTITUTION';
+  auteurs: MetadataAuthor[];
+  mots_cles: string[];
+}
+
 export interface AuthResponse {
   token: string;
   user: UserSession;
@@ -233,6 +263,14 @@ export class ApiService {
 
   extractMetadata(publicationId: number): Observable<MetadataExtraction> {
     return this.http.post<MetadataExtraction>(`${this.baseUrl}/publications/${publicationId}/extraction`, {}, { headers: this.authHeaders() });
+  }
+
+  getMetadata(publicationId: number): Observable<MetadataDetails> {
+    return this.http.get<MetadataDetails>(`${this.baseUrl}/documents/${publicationId}/metadata`, { headers: this.authHeaders() });
+  }
+
+  validateMetadata(publicationId: number, request: MetadataValidationRequest): Observable<MetadataDetails> {
+    return this.http.put<MetadataDetails>(`${this.baseUrl}/documents/${publicationId}/metadata`, request, { headers: this.authHeaders() });
   }
 
   login(request: LoginRequest): Observable<AuthResponse> {

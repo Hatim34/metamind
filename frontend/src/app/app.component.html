@@ -80,13 +80,50 @@
           <button type="button" class="primary" *ngIf="canExtractPublication(publication)" (click)="extractMetadata(publication)">
             {{ t('extract') }}
           </button>
-          <button type="button" *ngIf="canPublishPublication(publication)" (click)="updatePublicationStatus(publication, 'PUBLIE')">
-            {{ t('publish') }}
+          <button type="button" *ngIf="canPublishPublication(publication)" (click)="startMetadataValidation(publication)">
+            {{ t('editMetadata') }}
           </button>
           <button type="button" class="danger" *ngIf="canDeletePublication(publication)" (click)="deletePublication(publication)">
             {{ t('deletePublication') }}
           </button>
         </div>
+        <form class="metadata-form" *ngIf="selectedMetadataPublicationId === publication.id" (ngSubmit)="validateMetadata()">
+          <label>
+            {{ t('titleLabel') }}
+            <input name="metadataTitle{{ publication.id }}" [(ngModel)]="metadataForm.title" required maxlength="500" />
+          </label>
+          <label>
+            {{ t('author') }}
+            <input name="metadataAuthors{{ publication.id }}" [(ngModel)]="metadataForm.authors" required maxlength="500" />
+          </label>
+          <label>
+            {{ t('summary') }}
+            <textarea name="metadataSummary{{ publication.id }}" [(ngModel)]="metadataForm.summary" maxlength="5000"></textarea>
+          </label>
+          <label>
+            {{ t('publicationDate') }}
+            <input name="metadataDate{{ publication.id }}" type="date" [(ngModel)]="metadataForm.publicationDate" />
+          </label>
+          <label>
+            {{ t('classification') }}
+            <input name="metadataClassification{{ publication.id }}" [(ngModel)]="metadataForm.classification" maxlength="255" />
+          </label>
+          <label>
+            {{ t('visibility') }}
+            <select name="metadataVisibility{{ publication.id }}" [(ngModel)]="metadataForm.visibility">
+              <option value="PUBLIC">{{ t('publicVisibility') }}</option>
+              <option value="INSTITUTION">{{ t('institutionOnly') }}</option>
+            </select>
+          </label>
+          <label>
+            {{ t('keywords') }}
+            <input name="metadataKeywords{{ publication.id }}" [(ngModel)]="metadataForm.keywords" required maxlength="500" />
+          </label>
+          <div class="actions">
+            <button class="primary" type="submit" [disabled]="!isMetadataFormValid()">{{ t('validateMetadataAction') }}</button>
+            <button type="button" (click)="cancelMetadataValidation()">{{ t('cancel') }}</button>
+          </div>
+        </form>
       </article>
     </div>
   </section>

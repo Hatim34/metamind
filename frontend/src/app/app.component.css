@@ -40,7 +40,6 @@ h2 {
 
 h3 {
   margin-bottom: 8px;
-  font-size: 18px;
 }
 
 nav {
@@ -106,7 +105,6 @@ button:disabled {
   background: #ffffff;
   border: 1px solid #dfe5eb;
   border-radius: 8px;
-  box-shadow: 0 8px 24px rgba(31, 45, 61, 0.06);
 }
 
 .summary-grid article,
@@ -120,12 +118,6 @@ button:disabled {
   display: block;
   font-size: 13px;
   margin-bottom: 8px;
-}
-
-.summary-grid strong,
-.profile-grid strong {
-  color: #1d2835;
-  font-size: 20px;
 }
 
 .panel {
@@ -144,20 +136,23 @@ button:disabled {
   min-width: 320px;
 }
 
-input {
+input,
+textarea,
+select {
   border: 1px solid #cad3dc;
   border-radius: 8px;
   font: inherit;
   padding: 11px 12px;
 }
 
+textarea {
+  min-height: 120px;
+  resize: vertical;
+}
+
 select {
-  border: 1px solid #cad3dc;
-  border-radius: 8px;
   background: #ffffff;
   color: #1d2835;
-  font: inherit;
-  padding: 11px 12px;
 }
 
 .publication-list {
@@ -169,15 +164,11 @@ select {
   border: 1px solid #dfe5eb;
   border-radius: 8px;
   display: flex;
+  flex-wrap: wrap;
   align-items: flex-start;
   justify-content: space-between;
   gap: 18px;
   padding: 18px;
-}
-
-.publication-card p {
-  color: #617081;
-  margin-bottom: 0;
 }
 
 .tags {
@@ -203,10 +194,6 @@ select {
   gap: 8px;
   justify-content: flex-end;
   min-width: 250px;
-}
-
-.form-panel {
-  max-width: 620px;
 }
 
 form {
@@ -242,10 +229,22 @@ label {
 }
 
 .import-form,
+.metadata-form,
 .credit-history {
   border-top: 1px solid #dfe5eb;
   margin-top: 20px;
   padding-top: 20px;
+}
+
+.metadata-form {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  width: 100%;
+}
+
+.metadata-form label:nth-child(3),
+.metadata-form label:nth-child(7),
+.metadata-form .actions {
+  grid-column: 1 / -1;
 }
 
 .pack-grid {
@@ -262,11 +261,6 @@ label {
 
 .pack-grid strong {
   font-size: 20px;
-}
-
-.pack-grid span {
-  color: #617081;
-  font-size: 13px;
 }
 
 .admin-form {
@@ -386,6 +380,10 @@ li span {
   .publication-actions {
     justify-content: flex-start;
     min-width: 0;
+  }
+
+  .metadata-form {
+    grid-template-columns: 1fr;
   }
 
   .admin-columns {

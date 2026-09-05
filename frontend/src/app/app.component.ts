@@ -2,7 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
-import { ApiService, AuditLog, CreditMovement, CreditPackOption, DashboardStatistics, Institution, MetadataExtraction, Publication, PublicationStatus, UserSession } from './api.service';
+import { ApiService, AuditLog, CreditMovement, CreditPackOption, DashboardStatistics, Institution, MetadataDetails, MetadataExtraction, Publication, PublicationStatus, UserSession } from './api.service';
 
 type Page = 'catalogue' | 'connexion' | 'inscription' | 'profil' | 'publication' | 'administration';
 type Language = 'fr' | 'nl' | 'en';
@@ -87,6 +87,12 @@ const translations = {
     adminRequired: 'Connectez-vous avec un compte administrateur.',
     extract: 'Extraire',
     publish: 'Publier',
+    validateMetadataAction: 'Valider les métadonnées',
+    editMetadata: 'Corriger les métadonnées',
+    summary: 'Résumé',
+    publicationDate: 'Date de publication',
+    classification: 'Classification',
+    cancel: 'Annuler',
     deletePublication: 'Supprimer',
     apiUnavailable: "Impossible de joindre l'API locale.",
     loginFailed: 'Connexion impossible avec les donnees envoyees.',
@@ -95,6 +101,7 @@ const translations = {
     purchaseFailed: 'Achat de credits impossible.',
     extractionFailed: 'Extraction impossible. Verifiez le solde de credits.',
     publicationPublished: 'La publication est publiee.',
+    metadataLoaded: 'Les métadonnées sont prêtes à être corrigées.',
     publicationDeleted: 'La publication est supprimee logiquement.',
     statusUpdateFailed: 'Modification du statut impossible.',
     updateProfileFailed: 'Modification du profil impossible.',
@@ -185,6 +192,12 @@ const translations = {
     adminRequired: 'Meld u aan met een beheerdersaccount.',
     extract: 'Extraheren',
     publish: 'Publiceren',
+    validateMetadataAction: 'Metadata valideren',
+    editMetadata: 'Metadata corrigeren',
+    summary: 'Samenvatting',
+    publicationDate: 'Publicatiedatum',
+    classification: 'Classificatie',
+    cancel: 'Annuleren',
     deletePublication: 'Verwijderen',
     apiUnavailable: 'De lokale API is niet bereikbaar.',
     loginFailed: 'Aanmelden is onmogelijk met de verzonden gegevens.',
@@ -193,6 +206,7 @@ const translations = {
     purchaseFailed: 'Credits kopen is onmogelijk.',
     extractionFailed: 'Extractie is onmogelijk. Controleer het creditsaldo.',
     publicationPublished: 'De publicatie is gepubliceerd.',
+    metadataLoaded: 'De metadata is klaar om gecorrigeerd te worden.',
     publicationDeleted: 'De publicatie is logisch verwijderd.',
     statusUpdateFailed: 'Status wijzigen is onmogelijk.',
     updateProfileFailed: 'Profiel wijzigen is onmogelijk.',
@@ -283,6 +297,12 @@ const translations = {
     adminRequired: 'Sign in with an administrator account.',
     extract: 'Extract',
     publish: 'Publish',
+    validateMetadataAction: 'Validate metadata',
+    editMetadata: 'Edit metadata',
+    summary: 'Summary',
+    publicationDate: 'Publication date',
+    classification: 'Classification',
+    cancel: 'Cancel',
     deletePublication: 'Delete',
     apiUnavailable: 'Unable to reach the local API.',
     loginFailed: 'Sign-in failed with the submitted data.',
@@ -291,6 +311,7 @@ const translations = {
     purchaseFailed: 'Credit purchase failed.',
     extractionFailed: 'Extraction failed. Check the credit balance.',
     publicationPublished: 'The publication is published.',
+    metadataLoaded: 'The metadata is ready for review.',
     publicationDeleted: 'The publication is logically deleted.',
     statusUpdateFailed: 'Status update failed.',
     updateProfileFailed: 'Profile update failed.',
@@ -353,6 +374,17 @@ export class AppComponent implements OnInit {
     visibility: 'INSTITUTION' as 'PUBLIC' | 'INSTITUTION'
   };
 
+  metadataForm = {
+    documentId: 0,
+    title: '',
+    summary: '',
+    publicationDate: '',
+    classification: '',
+    visibility: 'PUBLIC' as 'PUBLIC' | 'INSTITUTION',
+    authors: '',
+    keywords: ''
+  };
+
   profileForm = {
     firstName: '',
     lastName: '',
@@ -377,6 +409,7 @@ export class AppComponent implements OnInit {
   creditMovements: CreditMovement[] = [];
   statistics: DashboardStatistics | null = null;
   extractionResult: MetadataExtraction | null = null;
+  selectedMetadataPublicationId: number | null = null;
 
   constructor(private readonly api: ApiService) {}
 
@@ -638,11 +671,85 @@ export class AppComponent implements OnInit {
         this.loadCreditMovements();
         this.loadStatistics();
         this.loadPublications();
+        this.startMetadataValidation(publication);
       },
       error: () => {
         this.message = this.t('extractionFailed');
       }
     });
+  }
+
+  startMetadataValidation(publication: Publication): void {
+    if (!this.canManagePublication(publication)) {
+      this.message = this.t('statusUpdateFailed');
+      return;
+    }
+
+    this.api.getMetadata(publication.id).subscribe({
+      next: (metadata) => {
+        this.fillMetadataForm(metadata, publication);
+        this.message = this.t('metadataLoaded');
+      },
+      error: () => {
+        this.metadataForm = {
+          documentId: publication.id,
+          title: publication.title,
+          summary: '',
+          publicationDate: publication.year > 0 ? `${publication.year}-01-01` : '',
+          classification: '',
+          visibility: publication.visibility,
+          authors: publication.author,
+          keywords: publication.keywords.join(', ')
+        };
+        this.selectedMetadataPublicationId = publication.id;
+      }
+    });
+  }
+
+  validateMetadata(): void {
+    if (!this.session || !this.selectedMetadataPublicationId || !this.isMetadataFormValid()) {
+      this.message = this.t('invalidForm');
+      return;
+    }
+
+    this.api.validateMetadata(this.selectedMetadataPublicationId, {
+      titre: this.metadataForm.title.trim(),
+      resume: this.metadataForm.summary.trim(),
+      date_publication: this.metadataForm.publicationDate || null,
+      classification: this.metadataForm.classification.trim(),
+      visibilite: this.metadataForm.visibility,
+      auteurs: this.metadataForm.authors.split(',')
+        .map((author) => author.trim())
+        .filter(Boolean)
+        .map((author) => ({ nom_complet: author })),
+      mots_cles: this.metadataForm.keywords.split(',')
+        .map((keyword) => keyword.trim())
+        .filter(Boolean)
+    }).subscribe({
+      next: () => {
+        this.cancelMetadataValidation();
+        this.message = this.t('publicationPublished');
+        this.loadStatistics();
+        this.loadPublications(false);
+      },
+      error: () => {
+        this.message = this.t('statusUpdateFailed');
+      }
+    });
+  }
+
+  cancelMetadataValidation(): void {
+    this.selectedMetadataPublicationId = null;
+    this.metadataForm = {
+      documentId: 0,
+      title: '',
+      summary: '',
+      publicationDate: '',
+      classification: '',
+      visibility: 'PUBLIC',
+      authors: '',
+      keywords: ''
+    };
   }
 
   updatePublicationStatus(publication: Publication, status: Extract<PublicationStatus, 'A_VALIDER' | 'PUBLIE' | 'SUPPRIME'>): void {
@@ -859,6 +966,12 @@ export class AppComponent implements OnInit {
       && this.publicationForm.year <= 2100;
   }
 
+  isMetadataFormValid(): boolean {
+    return this.metadataForm.title.trim().length >= 3
+      && this.metadataForm.authors.trim().length >= 2
+      && this.metadataForm.keywords.trim().length >= 2;
+  }
+
   isRegisterFormValid(): boolean {
     return this.registerForm.firstName.trim().length >= 2
       && this.registerForm.lastName.trim().length >= 2
@@ -879,5 +992,19 @@ export class AppComponent implements OnInit {
       lastName: user.lastName,
       institution: user.institution
     };
+  }
+
+  private fillMetadataForm(metadata: MetadataDetails, publication: Publication): void {
+    this.metadataForm = {
+      documentId: metadata.document_id,
+      title: metadata.titre || publication.title,
+      summary: metadata.resume || '',
+      publicationDate: metadata.date_publication || (publication.year > 0 ? `${publication.year}-01-01` : ''),
+      classification: metadata.classification || '',
+      visibility: metadata.visibilite || publication.visibility,
+      authors: metadata.auteurs.length > 0 ? metadata.auteurs.map((author) => author.nom_complet).join(', ') : publication.author,
+      keywords: metadata.mots_cles.length > 0 ? metadata.mots_cles.join(', ') : publication.keywords.join(', ')
+    };
+    this.selectedMetadataPublicationId = publication.id;
   }
 }
