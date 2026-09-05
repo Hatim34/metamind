@@ -1,6 +1,7 @@
 import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 
 export interface Publication {
   id: number;
@@ -143,6 +144,14 @@ export interface AuditLog {
   date_creation: string;
 }
 
+export interface PageResponse<T> {
+  contenu: T[];
+  page: number;
+  size: number;
+  total_elements: number;
+  total_pages: number;
+}
+
 @Injectable({ providedIn: 'root' })
 export class ApiService {
   private readonly baseUrl = this.resolveBaseUrl();
@@ -244,7 +253,8 @@ export class ApiService {
 
   getAdminUsers(institutionId?: number): Observable<UserSession[]> {
     const params = institutionId ? new HttpParams().set('institutionId', institutionId) : undefined;
-    return this.http.get<UserSession[]>(`${this.baseUrl}/admin/users`, { params, headers: this.authHeaders() });
+    return this.http.get<PageResponse<UserSession>>(`${this.baseUrl}/admin/users`, { params, headers: this.authHeaders() })
+      .pipe(map((response) => response.contenu));
   }
 
   updateAdminUser(userId: number, request: AdminUserUpdateRequest): Observable<UserSession> {
@@ -256,7 +266,8 @@ export class ApiService {
   }
 
   getAdminLogs(): Observable<AuditLog[]> {
-    return this.http.get<AuditLog[]>(`${this.baseUrl}/admin/logs`, { headers: this.authHeaders() });
+    return this.http.get<PageResponse<AuditLog>>(`${this.baseUrl}/admin/logs`, { headers: this.authHeaders() })
+      .pipe(map((response) => response.contenu));
   }
 
   private authHeaders(): HttpHeaders {

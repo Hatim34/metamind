@@ -415,9 +415,12 @@ class ApiControllerTests {
 	void publicSearchReturnsOnlyPublishedPublicDocuments() throws Exception {
 		mockMvc.perform(get("/api/v1/search").param("q", "institution"))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$", hasSize(1)))
-				.andExpect(jsonPath("$[0].title", is("Analyse automatique des metadonnees pour les depots institutionnels")))
-				.andExpect(jsonPath("$[0].visibility", is("PUBLIC")));
+				.andExpect(jsonPath("$.contenu", hasSize(1)))
+				.andExpect(jsonPath("$.page", is(0)))
+				.andExpect(jsonPath("$.size", is(20)))
+				.andExpect(jsonPath("$.total_elements", is(1)))
+				.andExpect(jsonPath("$.contenu[0].title", is("Analyse automatique des metadonnees pour les depots institutionnels")))
+				.andExpect(jsonPath("$.contenu[0].visibility", is("PUBLIC")));
 	}
 
 	@Test
@@ -428,8 +431,9 @@ class ApiControllerTests {
 						.param("institutionId", institution.getId().toString())
 						.header("Authorization", adminBearerToken()))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$", hasSize(1)))
-				.andExpect(jsonPath("$[0].email", is("jan@institution-b.example")));
+				.andExpect(jsonPath("$.contenu", hasSize(1)))
+				.andExpect(jsonPath("$.total_elements", is(1)))
+				.andExpect(jsonPath("$.contenu[0].email", is("jan@institution-b.example")));
 	}
 
 	@Test

@@ -1,6 +1,6 @@
 package be.icc.metamind.publication;
 
-import java.util.List;
+import be.icc.metamind.api.PageResponse;
 
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -17,10 +17,12 @@ public class SearchController {
 	}
 
 	@GetMapping
-	public List<PublicationResponse> search(
+	public PageResponse<PublicationResponse> search(
 			@RequestParam(value = "q", required = false) String query,
-			@RequestParam(required = false) String author
+			@RequestParam(required = false) String author,
+			@RequestParam(defaultValue = "0") int page,
+			@RequestParam(defaultValue = "20") int size
 	) {
-		return service.findPublicSearch(query, author);
+		return service.findPublicSearchPage(query, author, page, size);
 	}
 }

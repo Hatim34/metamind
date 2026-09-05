@@ -6,6 +6,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import be.icc.metamind.api.ApiException;
+import be.icc.metamind.api.PageResponse;
 import be.icc.metamind.document.AuthorEntity;
 import be.icc.metamind.document.AuthorRepository;
 import be.icc.metamind.document.DocumentAuthorEntity;
@@ -84,6 +85,15 @@ public class PublicationService {
 
 	@Transactional(readOnly = true)
 	public List<PublicationResponse> findPublicSearch(String search, String author) {
+		return buildPublicSearch(search, author);
+	}
+
+	@Transactional(readOnly = true)
+	public PageResponse<PublicationResponse> findPublicSearchPage(String search, String author, int page, int size) {
+		return PageResponse.from(buildPublicSearch(search, author), page, size);
+	}
+
+	private List<PublicationResponse> buildPublicSearch(String search, String author) {
 		String value = Optional.ofNullable(search).orElse("").trim();
 		String authorFilter = Optional.ofNullable(author).orElse("").trim().toLowerCase();
 		List<DocumentEntity> documents = value.isBlank()

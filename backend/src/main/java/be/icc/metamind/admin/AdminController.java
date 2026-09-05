@@ -5,6 +5,7 @@ import java.util.Map;
 
 import jakarta.validation.Valid;
 
+import be.icc.metamind.api.PageResponse;
 import be.icc.metamind.institution.InstitutionResponse;
 import be.icc.metamind.user.AccountService;
 import be.icc.metamind.user.UserEntity;
@@ -31,9 +32,14 @@ public class AdminController {
 	}
 
 	@GetMapping("/users")
-	public List<UserResponse> users(@RequestHeader("Authorization") String authorization, @RequestParam(required = false) Long institutionId) {
+	public PageResponse<UserResponse> users(
+			@RequestHeader("Authorization") String authorization,
+			@RequestParam(required = false) Long institutionId,
+			@RequestParam(defaultValue = "0") int page,
+			@RequestParam(defaultValue = "20") int size
+	) {
 		accountService.authenticateAdmin(authorization);
-		return service.listUsers(institutionId);
+		return service.listUsers(institutionId, page, size);
 	}
 
 	@PatchMapping("/users/{id}")
@@ -55,8 +61,12 @@ public class AdminController {
 	}
 
 	@GetMapping("/logs")
-	public List<AuditLogResponse> logs(@RequestHeader("Authorization") String authorization) {
+	public PageResponse<AuditLogResponse> logs(
+			@RequestHeader("Authorization") String authorization,
+			@RequestParam(defaultValue = "0") int page,
+			@RequestParam(defaultValue = "20") int size
+	) {
 		accountService.authenticateAdmin(authorization);
-		return service.listLogs();
+		return service.listLogs(page, size);
 	}
 }

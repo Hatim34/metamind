@@ -5,6 +5,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import be.icc.metamind.api.ApiException;
+import be.icc.metamind.api.PageResponse;
 import be.icc.metamind.document.AuditLogEntity;
 import be.icc.metamind.document.AuditLogRepository;
 import be.icc.metamind.document.ConfigurationRepository;
@@ -33,11 +34,12 @@ public class AdminService {
 	}
 
 	@Transactional(readOnly = true)
-	public List<UserResponse> listUsers(Long institutionId) {
-		return userRepository.findAll().stream()
+	public PageResponse<UserResponse> listUsers(Long institutionId, int page, int size) {
+		List<UserResponse> users = userRepository.findAll().stream()
 				.filter(user -> institutionId == null || user.getInstitution().getId().equals(institutionId))
 				.map(UserResponse::from)
 				.toList();
+		return PageResponse.from(users, page, size);
 	}
 
 	@Transactional
@@ -74,9 +76,10 @@ public class AdminService {
 	}
 
 	@Transactional(readOnly = true)
-	public List<AuditLogResponse> listLogs() {
-		return auditLogRepository.findAllByOrderByCreatedAtDesc().stream()
+	public PageResponse<AuditLogResponse> listLogs(int page, int size) {
+		List<AuditLogResponse> logs = auditLogRepository.findAllByOrderByCreatedAtDesc().stream()
 				.map(AuditLogResponse::from)
 				.toList();
+		return PageResponse.from(logs, page, size);
 	}
 }

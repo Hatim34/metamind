@@ -163,4 +163,32 @@ describe('ApiService', () => {
       keywords: ['Dublin Core']
     });
   });
+
+  it('lit les utilisateurs admin depuis une page', () => {
+    service.setToken('token-test');
+
+    service.getAdminUsers().subscribe((response) => {
+      expect(response.length).toBe(1);
+      expect(response[0].email).toBe('sarah@institution-a.example');
+    });
+
+    const request = httpMock.expectOne('/api/v1/admin/users');
+    expect(request.request.method).toBe('GET');
+    expect(request.request.headers.get('Authorization')).toBe('Bearer token-test');
+    request.flush({
+      contenu: [{
+        id: 10,
+        firstName: 'Sarah',
+        lastName: 'Lemaire',
+        email: 'sarah@institution-a.example',
+        role: 'Bibliothecaire',
+        institution: 'Institution A',
+        status: 'ACTIF'
+      }],
+      page: 0,
+      size: 20,
+      total_elements: 1,
+      total_pages: 1
+    });
+  });
 });
