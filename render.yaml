@@ -14,6 +14,8 @@ services:
     dockerContext: .
     dockerfilePath: ./Dockerfile
     healthCheckPath: /api/v1/health
+    domains:
+      - metamind-app.duckdns.org
     envVars:
       - key: METAMIND_DATABASE_URL
         fromDatabase:
