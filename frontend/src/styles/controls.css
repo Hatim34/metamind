@@ -1,96 +1,93 @@
 /* ============================================================
    Controles : boutons, champs, cartes, badges, encarts
+   Etats visuels des actions principales et secondaires.
    ============================================================ */
 
-/* Boutons */
+/* --- Boutons --- */
 button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: var(--sp-2);
-  border: 1px solid var(--border);
-  border-radius: var(--r-sm);
+  gap: 0.45rem;
+  font-family: var(--f-body);
+  font-size: 0.9rem;
+  font-weight: 600;
+  padding: 0.6rem 1.1rem;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
   background: var(--surface);
   color: var(--ink);
   cursor: pointer;
-  font: inherit;
-  font-weight: 600;
-  padding: 10px 16px;
   transition: background var(--t), border-color var(--t), color var(--t),
     box-shadow var(--t), transform var(--t);
 }
 
 button:hover {
-  border-color: var(--brand);
-  color: var(--brand-strong);
-  background: var(--brand-100);
+  border-color: var(--teal);
+  color: var(--teal-ink);
 }
 
 button:active {
   transform: translateY(1px);
 }
 
+/* Primaire : action principale (teal plein) */
 button.primary {
-  background: var(--brand);
-  border-color: var(--brand);
+  background: var(--teal);
+  border-color: var(--teal);
   color: #fff;
-  box-shadow: var(--shadow-sm);
 }
 
 button.primary:hover {
-  background: var(--brand-strong);
-  border-color: var(--brand-strong);
+  background: var(--teal-dark);
+  border-color: var(--teal-dark);
   color: #fff;
 }
 
+/* Danger : action destructive */
 button.danger {
-  border-color: color-mix(in srgb, var(--danger) 45%, var(--border));
-  color: var(--danger-strong);
-  background: var(--surface);
+  background: var(--red-soft);
+  border-color: var(--red);
+  color: var(--red);
 }
 
 button.danger:hover {
-  background: color-mix(in srgb, var(--danger) 8%, var(--surface));
-  border-color: var(--danger);
-  color: var(--danger-strong);
+  background: color-mix(in srgb, var(--red) 14%, var(--surface));
+  color: var(--red);
 }
 
 button:disabled {
   cursor: not-allowed;
-  opacity: 0.5;
-  box-shadow: none;
+  background: var(--surface-2);
+  border-color: var(--line);
+  color: var(--ink-faint);
+  transform: none;
 }
 
-button:disabled:hover {
-  background: var(--surface);
-  border-color: var(--border);
-  color: var(--ink);
-}
-
-/* Champs */
+/* --- Champs --- */
 input,
 textarea,
 select {
   width: 100%;
-  border: 1px solid var(--border);
-  border-radius: var(--r-sm);
-  background: var(--surface);
-  color: var(--ink);
   font: inherit;
-  padding: 11px 13px;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  padding: 0.62rem 0.8rem;
   transition: border-color var(--t), box-shadow var(--t);
 }
 
 input::placeholder,
 textarea::placeholder {
-  color: color-mix(in srgb, var(--muted) 75%, transparent);
+  color: var(--ink-faint);
 }
 
 input:focus,
 textarea:focus,
 select:focus {
   outline: none;
-  border-color: var(--brand);
+  border-color: var(--teal);
   box-shadow: var(--ring);
 }
 
@@ -99,45 +96,50 @@ textarea {
   resize: vertical;
 }
 
+/* Recherche : champ en pilule */
+input[type="search"] {
+  border-radius: 999px;
+  padding-left: 1.1rem;
+}
+
 input[type="file"] {
-  padding: 9px 12px;
-  background: var(--brand-100);
+  padding: 0.5rem 0.7rem;
+  background: var(--surface-2);
   border-style: dashed;
   cursor: pointer;
 }
 
 label {
   display: grid;
-  gap: var(--sp-2);
-  color: var(--ink-2);
+  gap: 0.4rem;
+  font-size: 0.85rem;
   font-weight: 600;
-  font-size: 14px;
+  color: var(--ink-soft);
 }
 
 form {
   display: grid;
-  gap: var(--sp-4);
+  gap: 1rem;
 }
 
 .actions {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--sp-3);
-  margin-top: var(--sp-5);
+  gap: 0.7rem;
+  margin-top: 1.1rem;
 }
 
-/* Panneaux et cartes */
+/* --- Panneaux et cartes --- */
 .panel {
-  padding: var(--sp-7);
+  padding: clamp(1.3rem, 3vw, 2rem);
   background: var(--surface);
   border: 1px solid var(--line);
-  border-radius: var(--r-lg);
-  box-shadow: var(--shadow-sm);
+  border-radius: var(--radius);
 }
 
 .publication-list {
   display: grid;
-  gap: var(--sp-3);
+  gap: 0.9rem;
 }
 
 .publication-card {
@@ -145,65 +147,97 @@ form {
   flex-wrap: wrap;
   align-items: flex-start;
   justify-content: space-between;
-  gap: var(--sp-5);
-  padding: var(--sp-5);
-  border: 1px solid var(--line);
-  border-radius: var(--r-md);
+  gap: 1.2rem;
+  padding: 1.2rem 1.3rem;
   background: var(--surface);
-  transition: border-color var(--t), box-shadow var(--t), transform var(--t);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  transition: border-color var(--t), box-shadow var(--t);
 }
 
 .publication-card:hover {
-  border-color: color-mix(in srgb, var(--brand) 40%, var(--line));
+  border-color: var(--line-strong);
   box-shadow: var(--shadow-md);
-  transform: translateY(-1px);
 }
 
 .publication-card h3 {
-  margin-bottom: var(--sp-1);
+  margin-bottom: 0.25rem;
 }
 
 .publication-card p {
   margin: 0;
-  color: var(--muted);
-  font-size: 14px;
+  color: var(--ink-soft);
+  font-size: 0.9rem;
 }
 
-/* Etiquettes */
+/* --- Etiquettes et badges de statut --- */
 .tags {
   display: flex;
   flex-wrap: wrap;
   align-content: start;
-  gap: var(--sp-2);
+  gap: 0.4rem;
   justify-content: flex-end;
   max-width: 420px;
 }
 
 .tags span {
-  padding: 5px 11px;
-  background: var(--brand-050);
-  border-radius: var(--r-pill);
-  color: var(--brand-strong);
-  font-size: 12px;
+  font-family: var(--f-mono);
+  font-size: 0.68rem;
+  padding: 0.18rem 0.5rem;
+  border-radius: 999px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  color: var(--ink-soft);
+}
+
+/* Badge de statut colore */
+.badge {
+  font-family: var(--f-mono);
+  font-size: 0.68rem;
   font-weight: 600;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  background: var(--teal-soft);
+  color: var(--teal-ink);
+  white-space: nowrap;
+}
+
+.badge-green {
+  background: var(--green-soft);
+  color: var(--green);
+}
+
+.badge-amber {
+  background: var(--amber-soft);
+  color: var(--amber);
+}
+
+.badge-orange {
+  background: var(--orange-soft);
+  color: var(--orange);
+}
+
+.badge-red {
+  background: var(--red-soft);
+  color: var(--red);
 }
 
 .publication-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--sp-2);
+  gap: 0.5rem;
   justify-content: flex-end;
-  min-width: 250px;
+  min-width: 240px;
 }
 
-/* Encarts d'information */
+/* --- Encart d'information --- */
 .notice {
-  margin-top: var(--sp-4);
-  padding: var(--sp-4) var(--sp-5);
-  background: var(--brand-100);
-  border: 1px solid color-mix(in srgb, var(--brand) 18%, var(--line));
-  border-left: 3px solid var(--brand);
-  border-radius: var(--r-sm);
-  color: var(--ink-2);
-  font-size: 14px;
+  margin-top: 1rem;
+  padding: 0.9rem 1.1rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--teal);
+  border-radius: var(--radius-sm);
+  color: var(--ink-soft);
+  font-size: 0.9rem;
 }
