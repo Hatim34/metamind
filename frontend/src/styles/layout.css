@@ -1,168 +1,207 @@
 /* ============================================================
-   Mise en page : coquille, en-tete, navigation, indicateurs
+   Mise en page : barre de navigation, hero, stats, pied de page
    ============================================================ */
-.app-shell {
-  max-width: 1180px;
-  margin: 0 auto;
-  padding: var(--sp-7) var(--sp-6) var(--sp-8);
-}
 
-/* En-tete */
-.topbar {
+/* --- Barre de navigation (pleine largeur, logo a gauche) --- */
+.navbar {
   position: sticky;
   top: 0;
-  z-index: 20;
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: var(--sp-4) var(--sp-6);
-  margin: 0 0 var(--sp-6);
-  padding: var(--sp-4) 0;
-  background: color-mix(in srgb, var(--bg) 88%, transparent);
-  backdrop-filter: blur(8px);
+  z-index: 30;
+  background: var(--surface);
   border-bottom: 1px solid var(--line);
 }
 
-.eyebrow {
-  margin: 0 0 var(--sp-1);
-  color: var(--brand);
-  font-size: 12px;
-  font-weight: 700;
+.navbar-inner {
+  max-width: var(--maxw);
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 1rem 1.4rem;
+  flex-wrap: wrap;
+  padding: 0.7rem clamp(1.1rem, 4vw, 2rem);
+}
+
+/* Logo (symbole + mot) */
+.nav-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+
+.nav-brand:hover {
+  background: none;
+}
+
+.nav-logo {
+  display: inline-flex;
+}
+
+.nav-logo svg {
+  width: 32px;
+  height: 32px;
+  display: block;
+}
+
+.nav-word {
+  font-family: var(--f-display);
+  font-weight: 600;
+  font-size: 1.3rem;
   letter-spacing: 0;
-  text-transform: uppercase;
+  color: var(--teal-ink);
 }
 
-h1 {
-  margin: 0;
-  font-size: clamp(26px, 3.4vw, 34px);
-  line-height: 1.08;
-}
-
-h2 {
-  margin: 0 0 var(--sp-5);
-  font-size: 22px;
-}
-
-h3 {
-  margin: 0 0 var(--sp-2);
-  font-size: 16px;
-}
-
-/* Navigation principale */
-nav {
+/* Liens de navigation */
+.nav-links {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--sp-2);
-  width: 100%;
-  padding-top: var(--sp-2);
+  align-items: center;
+  gap: 0.2rem;
+  margin-left: 1rem;
 }
 
-nav button {
-  border-radius: var(--r-pill);
-  padding: 9px 15px;
+.nav-links button {
+  border: 0;
+  background: none;
+  color: var(--ink-soft);
   font-weight: 600;
+  font-size: 0.92rem;
+  padding: 0.5rem 0.8rem;
+  border-radius: var(--radius-sm);
 }
 
-nav button.active {
-  background: var(--brand);
-  border-color: var(--brand);
-  color: #fff;
-  box-shadow: var(--shadow-sm);
+.nav-links button:hover {
+  background: var(--surface-2);
+  color: var(--teal-ink);
 }
 
-nav button.active:hover {
-  color: #fff;
+.nav-links button.active {
+  color: var(--teal-ink);
+  background: var(--teal-soft);
 }
 
-/* Selecteur de langue */
-.language-switch {
+/* Actions a droite (langue + compte) */
+.nav-actions {
   display: flex;
-  gap: var(--sp-1);
+  align-items: center;
+  gap: 0.6rem;
   margin-left: auto;
-  padding: var(--sp-1);
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: var(--r-pill);
+}
+
+.language-switch {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  background: var(--surface-2);
+  border-radius: 999px;
 }
 
 .language-switch button {
-  min-width: 42px;
-  padding: 6px 10px;
-  border: 1px solid transparent;
-  border-radius: var(--r-pill);
+  border: 0;
+  background: none;
+  min-width: 38px;
+  padding: 5px 9px;
+  border-radius: 999px;
+  font-family: var(--f-mono);
+  font-size: 0.72rem;
   font-weight: 600;
+  color: var(--ink-soft);
 }
 
 .language-switch button.active {
-  background: var(--brand-050);
-  border-color: transparent;
-  color: var(--brand-strong);
+  background: var(--surface);
+  color: var(--teal-ink);
+  box-shadow: var(--shadow-sm);
 }
 
-/* Grille d'indicateurs */
+/* --- Conteneur de contenu --- */
+.app-shell {
+  max-width: var(--maxw);
+  margin: 0 auto;
+  padding: clamp(1.6rem, 4vw, 2.6rem) clamp(1.1rem, 4vw, 2rem) 3rem;
+}
+
+/* --- Hero (accueil / catalogue) --- */
+.hero {
+  background: var(--teal-soft);
+  border: 1px solid color-mix(in srgb, var(--teal) 16%, var(--line));
+  border-radius: var(--radius);
+  padding: clamp(1.6rem, 4vw, 2.6rem);
+  margin-bottom: 1.8rem;
+}
+
+.hero h1 {
+  color: var(--teal-ink);
+  max-width: 22ch;
+}
+
+.hero .lead {
+  color: var(--ink-soft);
+  max-width: 62ch;
+  margin: 0.6rem 0 1.3rem;
+}
+
+.hero .hero-search {
+  max-width: 560px;
+}
+
+/* --- Bandeau d'indicateurs (sobre, chiffres en mono) --- */
 .summary-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
-  gap: var(--sp-3);
-  margin-bottom: var(--sp-6);
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 0.9rem;
+  margin-bottom: 1.8rem;
 }
 
 .summary-grid article {
-  position: relative;
-  overflow: hidden;
-  padding: var(--sp-5);
+  padding: 0.9rem 1.1rem;
   background: var(--surface);
   border: 1px solid var(--line);
-  border-radius: var(--r-md);
-  box-shadow: var(--shadow-sm);
-  transition: transform var(--t), box-shadow var(--t);
-}
-
-.summary-grid article::before {
-  content: "";
-  position: absolute;
-  inset: 0 auto 0 0;
-  width: 3px;
-  background: var(--brand);
-  opacity: 0.85;
-}
-
-.summary-grid article:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
+  border-radius: var(--radius-sm);
 }
 
 .summary-grid span {
   display: block;
-  margin-bottom: var(--sp-2);
-  color: var(--muted);
-  font-size: 12px;
+  margin-bottom: 0.35rem;
+  font-family: var(--f-mono);
+  font-size: 0.68rem;
   font-weight: 600;
   letter-spacing: 0;
   text-transform: uppercase;
+  color: var(--ink-faint);
 }
 
 .summary-grid strong {
-  font-size: 26px;
-  font-weight: 700;
+  font-family: var(--f-display);
+  font-size: 1.6rem;
+  font-weight: 600;
   color: var(--ink);
 }
 
-/* En-tete de section */
+/* --- En-tete de section --- */
 .section-heading {
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
-  gap: var(--sp-5);
-  margin-bottom: var(--sp-5);
-}
-
-.section-heading .eyebrow {
-  margin-bottom: var(--sp-1);
+  gap: 1.4rem;
+  margin-bottom: 1.3rem;
 }
 
 .section-heading input {
   align-self: end;
-  min-width: 320px;
+  min-width: 300px;
+}
+
+/* --- Pied de page --- */
+.site-footer {
+  max-width: var(--maxw);
+  margin: 0 auto;
+  padding: 1.6rem clamp(1.1rem, 4vw, 2rem) 2.4rem;
+  border-top: 1px solid var(--line);
+  color: var(--ink-faint);
+  font-family: var(--f-mono);
+  font-size: 0.76rem;
 }

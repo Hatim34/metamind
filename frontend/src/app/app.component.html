@@ -1,25 +1,38 @@
-<main class="app-shell">
-  <header class="topbar">
-    <div>
-      <p class="eyebrow">Metamind</p>
-      <h1>{{ t('title') }}</h1>
-    </div>
-    <div class="language-switch" [attr.aria-label]="t('language')">
-      <button type="button" [class.active]="language === 'fr'" (click)="setLanguage('fr')">FR</button>
-      <button type="button" [class.active]="language === 'nl'" (click)="setLanguage('nl')">NL</button>
-      <button type="button" [class.active]="language === 'en'" (click)="setLanguage('en')">EN</button>
-    </div>
-    <nav aria-label="Navigation principale">
+<nav class="navbar">
+  <div class="navbar-inner">
+    <button type="button" class="nav-brand" (click)="navigate('catalogue')" [attr.aria-label]="t('title')">
+      <span class="nav-logo" aria-hidden="true">
+        <svg width="32" height="32" viewBox="0 0 42 42" role="img" aria-label="Logo Metamind">
+          <rect x="3" y="3" width="36" height="36" rx="10" fill="#12787B" />
+          <circle cx="14" cy="15" r="3" fill="#fff" />
+          <circle cx="28" cy="13" r="3" fill="#fff" />
+          <circle cx="21" cy="28" r="3" fill="#fff" />
+          <path d="M14,15 L28,13 M14,15 L21,28 M28,13 L21,28" stroke="#fff" stroke-width="1.6" fill="none" opacity="0.85" />
+        </svg>
+      </span>
+      <span class="nav-word">Metamind</span>
+    </button>
+    <div class="nav-links" role="navigation" aria-label="Navigation principale">
       <button type="button" [class.active]="page === 'catalogue'" (click)="navigate('catalogue')">{{ t('catalogue') }}</button>
-      <button type="button" [class.active]="page === 'connexion'" (click)="navigate('connexion')">{{ t('login') }}</button>
-      <button type="button" [class.active]="page === 'inscription'" (click)="navigate('inscription')">{{ t('register') }}</button>
-      <button type="button" [class.active]="page === 'profil'" (click)="navigate('profil')">{{ t('profile') }}</button>
       <button type="button" *ngIf="session" [class.active]="page === 'publication'" (click)="navigate('publication')">{{ t('newPublication') }}</button>
       <button type="button" *ngIf="isAdmin" [class.active]="page === 'administration'" (click)="navigate('administration')">{{ t('administration') }}</button>
-    </nav>
-  </header>
+      <button type="button" [class.active]="page === 'profil'" (click)="navigate('profil')">{{ t('profile') }}</button>
+      <button type="button" *ngIf="!session" [class.active]="page === 'connexion'" (click)="navigate('connexion')">{{ t('login') }}</button>
+      <button type="button" *ngIf="!session" [class.active]="page === 'inscription'" (click)="navigate('inscription')">{{ t('register') }}</button>
+    </div>
+    <div class="nav-actions">
+      <div class="language-switch" [attr.aria-label]="t('language')">
+        <button type="button" [class.active]="language === 'fr'" (click)="setLanguage('fr')">FR</button>
+        <button type="button" [class.active]="language === 'nl'" (click)="setLanguage('nl')">NL</button>
+        <button type="button" [class.active]="language === 'en'" (click)="setLanguage('en')">EN</button>
+      </div>
+    </div>
+  </div>
+</nav>
 
-  <section class="summary-grid" [attr.aria-label]="t('indicators')">
+<main class="app-shell">
+
+  <section class="summary-grid" *ngIf="page === 'catalogue' || page === 'profil'" [attr.aria-label]="t('indicators')">
     <article>
       <span>{{ t('publications') }}</span>
       <strong>{{ statistics?.totalPublications ?? publications.length }}</strong>
@@ -50,13 +63,19 @@
     </article>
   </section>
 
-  <section *ngIf="page === 'catalogue'" class="panel">
+  <ng-container *ngIf="page === 'catalogue'">
+    <div class="hero">
+      <p class="eyebrow">{{ t('catalogue') }}</p>
+      <h1>{{ t('title') }}</h1>
+      <input class="hero-search" type="search" [(ngModel)]="search" (ngModelChange)="loadPublications()" [placeholder]="t('searchPlaceholder')" />
+    </div>
+
+    <section class="panel">
     <div class="section-heading">
       <div>
         <p class="eyebrow">{{ t('catalogue') }}</p>
         <h2>{{ t('availablePublications') }}</h2>
       </div>
-      <input type="search" [(ngModel)]="search" (ngModelChange)="loadPublications()" [placeholder]="t('searchPlaceholder')" />
     </div>
 
     <p class="notice" *ngIf="loading">{{ t('loadingCatalogue') }}</p>
@@ -72,7 +91,7 @@
           <p>{{ publication.author }} · {{ publication.institution }} · {{ publication.year }}</p>
         </div>
         <div class="tags">
-          <span>{{ publication.status }}</span>
+          <span class="badge" [class.badge-green]="publication.status === 'PUBLIE'" [class.badge-amber]="publication.status === 'A_VALIDER'" [class.badge-red]="publication.status === 'SUPPRIME'">{{ publication.status }}</span>
           <span>{{ publication.visibility }}</span>
           <span *ngFor="let keyword of publication.keywords">{{ keyword }}</span>
         </div>
@@ -126,7 +145,8 @@
         </form>
       </article>
     </div>
-  </section>
+    </section>
+  </ng-container>
 
   <section *ngIf="page === 'publication'" class="panel form-panel">
     <p class="eyebrow">{{ t('newPublication') }}</p>
@@ -430,3 +450,7 @@
     </ng-template>
   </section>
 </main>
+
+<footer class="site-footer">
+  Metamind · {{ t('title') }} · ASSAL Hatim, ICC 2025-2026
+</footer>
