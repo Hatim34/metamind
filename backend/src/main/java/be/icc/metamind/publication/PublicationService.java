@@ -102,17 +102,40 @@ public class PublicationService {
 
 	@Transactional(readOnly = true)
 	public List<PublicationResponse> findPublicSearch(String search, String author) {
-		return buildPublicSearch(search, author);
+		return buildPublicSearch(search, author, null, null, null, null);
 	}
 
 	@Transactional(readOnly = true)
 	public PageResponse<PublicationResponse> findPublicSearchPage(String search, String author, int page, int size) {
-		return PageResponse.from(buildPublicSearch(search, author), page, size);
+		return findPublicSearchPage(search, author, null, null, null, null, page, size);
 	}
 
-	private List<PublicationResponse> buildPublicSearch(String search, String author) {
+	@Transactional(readOnly = true)
+	public PageResponse<PublicationResponse> findPublicSearchPage(
+			String search,
+			String author,
+			String language,
+			String documentType,
+			LocalDate startDate,
+			LocalDate endDate,
+			int page,
+			int size
+	) {
+		return PageResponse.from(buildPublicSearch(search, author, language, documentType, startDate, endDate), page, size);
+	}
+
+	private List<PublicationResponse> buildPublicSearch(
+			String search,
+			String author,
+			String language,
+			String documentType,
+			LocalDate startDate,
+			LocalDate endDate
+	) {
 		String value = Optional.ofNullable(search).orElse("").trim();
 		String authorFilter = Optional.ofNullable(author).orElse("").trim().toLowerCase();
+		String languageFilter = Optional.ofNullable(language).orElse("").trim().toLowerCase();
+		String documentTypeFilter = Optional.ofNullable(documentType).orElse("").trim().toLowerCase();
 		List<DocumentEntity> documents = value.isBlank()
 				? documentRepository.findAll()
 				: documentRepository.search(value);
@@ -122,6 +145,10 @@ public class PublicationService {
 				.filter(document -> document.getVisibility() == DocumentVisibility.PUBLIC)
 				.map(this::toResponse)
 				.filter(publication -> authorFilter.isBlank() || publication.author().toLowerCase().contains(authorFilter))
+				.filter(publication -> languageFilter.isBlank() || matchesText(publication.language(), languageFilter))
+				.filter(publication -> documentTypeFilter.isBlank() || matchesText(publication.documentType(), documentTypeFilter))
+				.filter(publication -> startDate == null || publication.publicationDate() != null && !publication.publicationDate().isBefore(startDate))
+				.filter(publication -> endDate == null || publication.publicationDate() != null && !publication.publicationDate().isAfter(endDate))
 				.toList();
 	}
 
@@ -256,6 +283,10 @@ public class PublicationService {
 			return true;
 		}
 		return document.getInstitution().getId().equals(currentUser.getInstitution().getId());
+	}
+
+	private boolean matchesText(String value, String filter) {
+		return value != null && value.toLowerCase().contains(filter);
 	}
 
 	private void validate(PublicationRequest request) {

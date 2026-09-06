@@ -529,7 +529,11 @@ class ApiControllerTests {
 
 	@Test
 	void publicSearchReturnsOnlyPublishedPublicDocuments() throws Exception {
-		mockMvc.perform(get("/api/v1/search").param("q", "institution"))
+		mockMvc.perform(get("/api/v1/search")
+						.param("q", "institution")
+						.param("author", "Sarah")
+						.param("date_debut", "2026-01-01")
+						.param("date_fin", "2026-12-31"))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.contenu", hasSize(1)))
 				.andExpect(jsonPath("$.page", is(0)))
@@ -537,6 +541,16 @@ class ApiControllerTests {
 				.andExpect(jsonPath("$.total_elements", is(1)))
 				.andExpect(jsonPath("$.contenu[0].titre", is("Analyse automatique des metadonnees pour les depots institutionnels")))
 				.andExpect(jsonPath("$.contenu[0].visibilite", is("PUBLIC")));
+	}
+
+	@Test
+	void publicSearchFiltersByPublicationDate() throws Exception {
+		mockMvc.perform(get("/api/v1/search")
+						.param("q", "institution")
+						.param("date_fin", "2025-12-31"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.contenu", hasSize(0)))
+				.andExpect(jsonPath("$.total_elements", is(0)));
 	}
 
 	@Test

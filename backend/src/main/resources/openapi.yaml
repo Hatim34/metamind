@@ -248,6 +248,9 @@ paths:
       security: []
       parameters:
         - $ref: '#/components/parameters/q'
+        - name: author
+          in: query
+          schema: { type: string, example: Sarah Lemaire }
         - $ref: '#/components/parameters/page'
         - $ref: '#/components/parameters/size'
         - name: langue
@@ -256,6 +259,12 @@ paths:
         - name: type
           in: query
           schema: { type: string, example: article }
+        - name: date_debut
+          in: query
+          schema: { type: string, format: date, example: "2024-01-01" }
+        - name: date_fin
+          in: query
+          schema: { type: string, format: date, example: "2026-12-31" }
       responses:
         '200':
           description: Resultats publics
