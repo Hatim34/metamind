@@ -241,7 +241,7 @@ public class DocumentUploadService {
 			}
 			return target.toString();
 		}
-		catch (IOException exception) {
+		catch (Exception exception) {
 			return null;
 		}
 	}

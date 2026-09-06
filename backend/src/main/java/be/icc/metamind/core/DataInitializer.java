@@ -142,15 +142,27 @@ public class DataInitializer implements ApplicationRunner {
 
 	private void createDocument(String title, String authorName, int year, String discipline, DocumentStatus status, DocumentVisibility visibility, List<String> keywords, InstitutionEntity institution, UserEntity importedBy) {
 		String summary = "Publication de recherche en " + discipline.toLowerCase(Locale.ROOT) + " : " + title + ".";
-		byte[] pdf = documentUploadService.buildTitlePagePdf(title, authorName, year, discipline, institution.getName());
-		String fileName = title.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]+", "-").replaceAll("(^-|-$)", "") + ".pdf";
-		String filePath = documentUploadService.storeSeedDocumentPdf(pdf, fileName);
-		String coverPath = documentUploadService.storePdfThumbnailFromBytes(pdf);
+		String slug = title.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]+", "-").replaceAll("(^-|-$)", "");
+		String fileName = slug + ".pdf";
+		String filePath = null;
+		String coverPath = null;
+		long fileSize = 0L;
+		String mediaType = "application/pdf";
+		try {
+			byte[] pdf = documentUploadService.buildTitlePagePdf(title, authorName, year, discipline, institution.getName());
+			filePath = documentUploadService.storeSeedDocumentPdf(pdf, fileName);
+			coverPath = documentUploadService.storePdfThumbnailFromBytes(pdf);
+			fileSize = pdf.length;
+		}
+		catch (RuntimeException exception) {
+			fileName = slug + ".txt";
+			mediaType = "TXT";
+		}
 		DocumentEntity document = documentRepository.save(new DocumentEntity(
 				fileName,
 				filePath,
-				(long) pdf.length,
-				"application/pdf",
+				fileSize,
+				mediaType,
 				title + "\n\n" + summary,
 				status,
 				visibility,
