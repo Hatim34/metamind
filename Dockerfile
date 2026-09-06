@@ -15,6 +15,7 @@ RUN mvn -q -DskipTests package
 
 FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
+RUN apk add --no-cache fontconfig ttf-dejavu
 COPY --from=backend-build /app/backend/target/*.jar app.jar
 COPY scripts/render-start.sh render-start.sh
 RUN chmod +x render-start.sh
