@@ -206,7 +206,11 @@ public class PublicationService {
 				currentUser.getInstitution(),
 				currentUser
 		));
-		document.updateCoverImagePath(documentUploadService.storeCoverImage(image));
+		String coverPath = documentUploadService.storeCoverImage(image);
+		if (coverPath == null) {
+			coverPath = documentUploadService.storePdfThumbnail(file);
+		}
+		document.updateCoverImagePath(coverPath);
 		metadataRepository.save(new MetadataEntity(
 				document,
 				titleFromFileName(imported.fileName()),

@@ -1,14 +1,34 @@
 package be.icc.metamind.document;
 
+import java.awt.Color;
+import java.awt.Graphics2D;
+import java.awt.RenderingHints;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.text.Normalizer;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
+
+import javax.imageio.ImageIO;
+
+import org.apache.pdfbox.Loader;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.PDPage;
+import org.apache.pdfbox.pdmodel.PDPageContentStream;
+import org.apache.pdfbox.pdmodel.common.PDRectangle;
+import org.apache.pdfbox.pdmodel.font.PDType1Font;
+import org.apache.pdfbox.pdmodel.font.Standard14Fonts;
+import org.apache.pdfbox.rendering.ImageType;
+import org.apache.pdfbox.rendering.PDFRenderer;
 
 import be.icc.metamind.api.ApiException;
 
@@ -189,6 +209,153 @@ public class DocumentUploadService {
 			case "txt" -> MediaType.TEXT_PLAIN;
 			default -> MediaType.APPLICATION_OCTET_STREAM;
 		};
+	}
+
+	public String storePdfThumbnail(MultipartFile file) {
+		if (file == null || file.isEmpty() || !"pdf".equals(extension(file.getOriginalFilename()))) {
+			return null;
+		}
+		try {
+			return storePdfThumbnailFromBytes(file.getBytes());
+		}
+		catch (IOException exception) {
+			return null;
+		}
+	}
+
+	public String storePdfThumbnailFromBytes(byte[] pdfBytes) {
+		if (pdfBytes == null || pdfBytes.length == 0) {
+			return null;
+		}
+		try (PDDocument document = Loader.loadPDF(pdfBytes)) {
+			if (document.getNumberOfPages() == 0) {
+				return null;
+			}
+			BufferedImage rendered = new PDFRenderer(document).renderImageWithDPI(0, 110, ImageType.RGB);
+			BufferedImage thumbnail = scaleToWidth(rendered, 520);
+			Path coverRoot = storageRoot.resolve("covers").normalize();
+			Files.createDirectories(coverRoot);
+			Path target = coverRoot.resolve(UUID.randomUUID() + "-vignette.jpg").normalize();
+			try (OutputStream output = Files.newOutputStream(target)) {
+				ImageIO.write(thumbnail, "jpg", output);
+			}
+			return target.toString();
+		}
+		catch (IOException exception) {
+			return null;
+		}
+	}
+
+	public byte[] buildTitlePagePdf(String title, String author, int year, String discipline, String institution) {
+		try (PDDocument document = new PDDocument(); ByteArrayOutputStream output = new ByteArrayOutputStream()) {
+			PDPage page = new PDPage(PDRectangle.A4);
+			document.addPage(page);
+			PDType1Font bold = new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD);
+			PDType1Font regular = new PDType1Font(Standard14Fonts.FontName.HELVETICA);
+			float margin = 72f;
+			float usable = PDRectangle.A4.getWidth() - 2 * margin;
+			try (PDPageContentStream content = new PDPageContentStream(document, page)) {
+				float y = 730f;
+				content.beginText();
+				content.setFont(regular, 11);
+				content.newLineAtOffset(margin, y);
+				content.showText(sanitizePdfText(discipline == null ? "" : discipline.toUpperCase(Locale.ROOT)));
+				content.endText();
+				y -= 46f;
+				y = drawWrappedTitle(content, bold, 23f, sanitizePdfText(title), margin, y, usable);
+				y -= 26f;
+				content.beginText();
+				content.setFont(regular, 13);
+				content.newLineAtOffset(margin, y);
+				content.showText(sanitizePdfText(author + "  -  " + year));
+				content.endText();
+				y -= 22f;
+				content.beginText();
+				content.setFont(regular, 12);
+				content.newLineAtOffset(margin, y);
+				content.showText(sanitizePdfText(institution));
+				content.endText();
+			}
+			document.save(output);
+			return output.toByteArray();
+		}
+		catch (IOException exception) {
+			throw new ApiException(HttpStatus.INTERNAL_SERVER_ERROR, "La page de titre n'a pas pu etre generee.");
+		}
+	}
+
+	public String storeSeedDocumentPdf(byte[] pdfBytes, String fileName) {
+		try {
+			Files.createDirectories(storageRoot);
+			Path target = storageRoot.resolve(UUID.randomUUID() + "-" + cleanOriginalFileName(fileName)).normalize();
+			Files.write(target, pdfBytes);
+			return target.toString();
+		}
+		catch (IOException exception) {
+			throw new ApiException(HttpStatus.INTERNAL_SERVER_ERROR, "Le document d'exemple n'a pas pu etre stocke.");
+		}
+	}
+
+	private BufferedImage scaleToWidth(BufferedImage source, int targetWidth) {
+		if (source.getWidth() <= targetWidth) {
+			return source;
+		}
+		int targetHeight = Math.round(source.getHeight() * (targetWidth / (float) source.getWidth()));
+		BufferedImage scaled = new BufferedImage(targetWidth, targetHeight, BufferedImage.TYPE_INT_RGB);
+		Graphics2D graphics = scaled.createGraphics();
+		graphics.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+		graphics.setColor(Color.WHITE);
+		graphics.fillRect(0, 0, targetWidth, targetHeight);
+		graphics.drawImage(source, 0, 0, targetWidth, targetHeight, null);
+		graphics.dispose();
+		return scaled;
+	}
+
+	private float drawWrappedTitle(PDPageContentStream content, PDType1Font font, float size, String text, float x, float y, float maxWidth) throws IOException {
+		List<String> lines = new ArrayList<>();
+		StringBuilder line = new StringBuilder();
+		for (String word : text.split("\\s+")) {
+			String candidate = line.length() == 0 ? word : line + " " + word;
+			float width = font.getStringWidth(candidate) / 1000 * size;
+			if (width > maxWidth && line.length() > 0) {
+				lines.add(line.toString());
+				line = new StringBuilder(word);
+			}
+			else {
+				line = new StringBuilder(candidate);
+			}
+		}
+		if (line.length() > 0) {
+			lines.add(line.toString());
+		}
+		float leading = size * 1.2f;
+		for (String rendered : lines) {
+			content.beginText();
+			content.setFont(font, size);
+			content.newLineAtOffset(x, y);
+			content.showText(rendered);
+			content.endText();
+			y -= leading;
+		}
+		return y;
+	}
+
+	private String sanitizePdfText(String value) {
+		if (value == null) {
+			return "";
+		}
+		String cleaned = value
+				.replace('\u2019', '\'')
+				.replace('\u2018', '\'')
+				.replace('\u201C', '"')
+				.replace('\u201D', '"')
+				.replace('\u2013', '-')
+				.replace('\u2014', '-');
+		StringBuilder builder = new StringBuilder(cleaned.length());
+		for (char character : cleaned.toCharArray()) {
+			builder.append(character <= 0xFF ? character : '?');
+		}
+		return builder.toString();
 	}
 
 	public record ImportedDocument(String fileName, String filePath, long fileSize, String mediaType, String extractedText) {
