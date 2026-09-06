@@ -79,6 +79,23 @@ public class DocumentUploadService {
 		}
 	}
 
+	public StoredFile loadDocumentFile(String storedPath) {
+		if (storedPath == null || storedPath.isBlank()) {
+			throw new ApiException(HttpStatus.NOT_FOUND, "Aucun fichier n'est disponible pour ce document.");
+		}
+		try {
+			Path path = Path.of(storedPath).toAbsolutePath().normalize();
+			if (!path.startsWith(storageRoot) || !Files.isRegularFile(path)) {
+				throw new ApiException(HttpStatus.NOT_FOUND, "Aucun fichier n'est disponible pour ce document.");
+			}
+			String mediaType = Files.probeContentType(path);
+			return new StoredFile(Files.readAllBytes(path), documentMediaTypeFromPath(path, mediaType));
+		}
+		catch (IOException exception) {
+			throw new ApiException(HttpStatus.NOT_FOUND, "Aucun fichier n'est disponible pour ce document.");
+		}
+	}
+
 	private void validate(MultipartFile file) {
 		if (file == null || file.isEmpty()) {
 			throw new ApiException(HttpStatus.BAD_REQUEST, "Le fichier est obligatoire.");
@@ -161,9 +178,25 @@ public class DocumentUploadService {
 		};
 	}
 
+	private MediaType documentMediaTypeFromPath(Path path, String probedType) {
+		String mediaType = probedType == null || probedType.isBlank() ? null : probedType.toLowerCase(Locale.ROOT);
+		if (ALLOWED_MEDIA_TYPES.contains(mediaType)) {
+			return MediaType.parseMediaType(mediaType);
+		}
+		return switch (extension(path.getFileName().toString())) {
+			case "pdf" -> MediaType.APPLICATION_PDF;
+			case "docx" -> MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.wordprocessingml.document");
+			case "txt" -> MediaType.TEXT_PLAIN;
+			default -> MediaType.APPLICATION_OCTET_STREAM;
+		};
+	}
+
 	public record ImportedDocument(String fileName, String filePath, long fileSize, String mediaType, String extractedText) {
 	}
 
 	public record StoredImage(byte[] content, MediaType mediaType) {
+	}
+
+	public record StoredFile(byte[] content, MediaType mediaType) {
 	}
 }

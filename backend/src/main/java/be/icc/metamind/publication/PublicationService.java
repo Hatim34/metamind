@@ -18,6 +18,7 @@ import be.icc.metamind.document.DocumentRepository;
 import be.icc.metamind.document.DocumentStatus;
 import be.icc.metamind.document.DocumentUploadService;
 import be.icc.metamind.document.DocumentUploadService.ImportedDocument;
+import be.icc.metamind.document.DocumentUploadService.StoredFile;
 import be.icc.metamind.document.DocumentUploadService.StoredImage;
 import be.icc.metamind.document.DocumentVisibility;
 import be.icc.metamind.document.KeywordEntity;
@@ -198,6 +199,16 @@ public class PublicationService {
 			throw new ApiException(HttpStatus.FORBIDDEN, "Cette image n'est pas accessible avec ce compte.");
 		}
 		return documentUploadService.loadCoverImage(document.getCoverImagePath());
+	}
+
+	@Transactional(readOnly = true)
+	public StoredFile findDocumentFile(long id, UserEntity currentUser) {
+		DocumentEntity document = documentRepository.findById(id)
+				.orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "La publication demandee est introuvable."));
+		if (!isVisibleFor(document, currentUser)) {
+			throw new ApiException(HttpStatus.FORBIDDEN, "Ce fichier n'est pas accessible avec ce compte.");
+		}
+		return documentUploadService.loadDocumentFile(document.getFilePath());
 	}
 
 	@Transactional

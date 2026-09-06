@@ -180,6 +180,25 @@ paths:
         '403': { $ref: '#/components/responses/Error' }
         '404': { $ref: '#/components/responses/Error' }
 
+  /documents/{id}/file:
+    get:
+      tags: [Documents]
+      summary: Consulter ou telecharger le fichier d'un document
+      security: []
+      parameters: [ { $ref: '#/components/parameters/id' } ]
+      responses:
+        '200':
+          description: Fichier du document
+          content:
+            application/pdf:
+              schema: { type: string, format: binary }
+            text/plain:
+              schema: { type: string, format: binary }
+            application/vnd.openxmlformats-officedocument.wordprocessingml.document:
+              schema: { type: string, format: binary }
+        '403': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
+
   /documents/{id}/extraction:
     post:
       tags: [Extraction]
@@ -500,9 +519,15 @@ components:
         auteur: { type: string, example: Sarah Mertens }
         institution: { type: string, example: Institution A }
         annee: { type: integer, example: 2026 }
+        resume: { type: string, nullable: true, example: Resume valide par un bibliothecaire. }
+        date_publication: { type: string, format: date, nullable: true, example: "2026-01-15" }
+        classification: { type: string, nullable: true, example: Informatique documentaire }
+        langue: { type: string, nullable: true, example: fr }
+        type_document: { type: string, nullable: true, example: Article scientifique }
         statut: { type: string, enum: [EN_ATTENTE, EXTRACTION, A_VALIDER, PUBLIE, SUPPRIME], example: PUBLIE }
         visibilite: { type: string, enum: [PUBLIC, INSTITUTION], example: PUBLIC }
         image_url: { type: string, nullable: true, example: /api/v1/documents/1/image }
+        fichier_url: { type: string, nullable: true, example: /api/v1/documents/1/file }
         mots_cles:
           type: array
           items: { type: string, example: Dublin Core }

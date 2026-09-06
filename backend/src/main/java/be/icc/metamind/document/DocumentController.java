@@ -1,6 +1,7 @@
 package be.icc.metamind.document;
 
 import be.icc.metamind.api.PageResponse;
+import be.icc.metamind.document.DocumentUploadService.StoredFile;
 import be.icc.metamind.document.DocumentUploadService.StoredImage;
 import be.icc.metamind.publication.PublicationResponse;
 import be.icc.metamind.publication.PublicationService;
@@ -77,6 +78,18 @@ public class DocumentController {
 		return ResponseEntity.ok()
 				.contentType(image.mediaType())
 				.body(image.content());
+	}
+
+	@GetMapping("/{id}/file")
+	public ResponseEntity<byte[]> file(
+			@PathVariable long id,
+			@RequestHeader(value = "Authorization", required = false) String authorization
+	) {
+		UserEntity currentUser = authorization == null ? null : accountService.authenticate(authorization);
+		StoredFile file = publicationService.findDocumentFile(id, currentUser);
+		return ResponseEntity.ok()
+				.contentType(file.mediaType())
+				.body(file.content());
 	}
 
 	@DeleteMapping("/{id}")

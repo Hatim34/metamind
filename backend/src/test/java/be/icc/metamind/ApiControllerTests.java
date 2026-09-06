@@ -249,7 +249,8 @@ class ApiControllerTests {
 				.andExpect(jsonPath("$.titre", is("article metadonnees")))
 				.andExpect(jsonPath("$.institution", is("Institution A")))
 				.andExpect(jsonPath("$.statut", is("EN_ATTENTE")))
-				.andExpect(jsonPath("$.visibilite", is("INSTITUTION")));
+				.andExpect(jsonPath("$.visibilite", is("INSTITUTION")))
+				.andExpect(jsonPath("$.fichier_url", startsWith("/api/v1/documents/")));
 
 		DocumentEntity document = documentRepository.findAll().stream()
 				.filter(item -> "article-metadonnees.txt".equals(item.getFileName()))
@@ -258,6 +259,12 @@ class ApiControllerTests {
 		org.assertj.core.api.Assertions.assertThat(document.getExtractedText()).contains("Dublin Core");
 		org.assertj.core.api.Assertions.assertThat(document.getInstitution().getName()).isEqualTo("Institution A");
 		org.assertj.core.api.Assertions.assertThat(document.getImportedBy().getEmail()).isEqualTo("sarah@institution-a.example");
+
+		mockMvc.perform(get("/api/v1/documents/" + document.getId() + "/file")
+						.header("Authorization", bearerToken()))
+				.andExpect(status().isOk())
+				.andExpect(content().contentTypeCompatibleWith(MediaType.TEXT_PLAIN))
+				.andExpect(content().string("Article scientifique sur les metadonnees Dublin Core."));
 	}
 
 	@Test
