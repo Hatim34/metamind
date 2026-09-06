@@ -14,6 +14,7 @@ import be.icc.metamind.api.ApiException;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -58,6 +59,24 @@ public class DocumentUploadService {
 		String originalFileName = cleanOriginalFileName(image.getOriginalFilename());
 		Path coverRoot = storageRoot.resolve("covers").normalize();
 		return store(image, coverRoot, originalFileName).toString();
+	}
+
+	public StoredImage loadCoverImage(String storedPath) {
+		if (storedPath == null || storedPath.isBlank()) {
+			throw new ApiException(HttpStatus.NOT_FOUND, "Aucune image de couverture n'est disponible.");
+		}
+		try {
+			Path coverRoot = storageRoot.resolve("covers").normalize();
+			Path path = Path.of(storedPath).toAbsolutePath().normalize();
+			if (!path.startsWith(coverRoot) || !Files.isRegularFile(path)) {
+				throw new ApiException(HttpStatus.NOT_FOUND, "Aucune image de couverture n'est disponible.");
+			}
+			String mediaType = Files.probeContentType(path);
+			return new StoredImage(Files.readAllBytes(path), mediaTypeFromPath(path, mediaType));
+		}
+		catch (IOException exception) {
+			throw new ApiException(HttpStatus.NOT_FOUND, "Aucune image de couverture n'est disponible.");
+		}
 	}
 
 	private void validate(MultipartFile file) {
@@ -129,6 +148,22 @@ public class DocumentUploadService {
 		return mediaType == null || mediaType.isBlank() ? null : mediaType.toLowerCase(Locale.ROOT);
 	}
 
+	private MediaType mediaTypeFromPath(Path path, String probedType) {
+		String mediaType = probedType == null || probedType.isBlank() ? null : probedType.toLowerCase(Locale.ROOT);
+		if (ALLOWED_IMAGE_MEDIA_TYPES.contains(mediaType)) {
+			return MediaType.parseMediaType(mediaType);
+		}
+		return switch (extension(path.getFileName().toString())) {
+			case "png" -> MediaType.IMAGE_PNG;
+			case "jpg", "jpeg" -> MediaType.IMAGE_JPEG;
+			case "webp" -> MediaType.parseMediaType("image/webp");
+			default -> MediaType.APPLICATION_OCTET_STREAM;
+		};
+	}
+
 	public record ImportedDocument(String fileName, String filePath, long fileSize, String mediaType, String extractedText) {
+	}
+
+	public record StoredImage(byte[] content, MediaType mediaType) {
 	}
 }

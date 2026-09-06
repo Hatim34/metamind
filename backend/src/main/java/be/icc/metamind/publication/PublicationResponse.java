@@ -31,7 +31,10 @@ public record PublicationResponse(
 		Visibility visibility,
 
 		@JsonProperty("mots_cles")
-		List<String> keywords
+		List<String> keywords,
+
+		@JsonProperty("image_url")
+		String imageUrl
 ) {
 	public static PublicationResponse from(Publication publication) {
 		return new PublicationResponse(
@@ -42,7 +45,8 @@ public record PublicationResponse(
 				publication.year(),
 				publication.status(),
 				publication.visibility(),
-				publication.keywords()
+				publication.keywords(),
+				null
 		);
 	}
 
@@ -55,7 +59,8 @@ public record PublicationResponse(
 				metadata == null || metadata.getPublicationDate() == null ? 0 : metadata.getPublicationDate().getYear(),
 				toPublicationStatus(document.getStatus()),
 				toVisibility(document.getVisibility()),
-				keywords
+				keywords,
+				document.getCoverImagePath() == null || document.getCoverImagePath().isBlank() ? null : "/api/v1/documents/" + document.getId() + "/image"
 		);
 	}
 

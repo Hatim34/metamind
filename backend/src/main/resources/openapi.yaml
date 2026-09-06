@@ -131,6 +131,7 @@ paths:
               required: [fichier]
               properties:
                 fichier: { type: string, format: binary }
+                image: { type: string, format: binary, description: Image de couverture PNG, JPEG ou WEBP, 5 MB maximum }
                 visibilite: { type: string, enum: [PUBLIC, INSTITUTION], default: INSTITUTION }
       responses:
         '201':
@@ -158,6 +159,25 @@ paths:
       parameters: [ { $ref: '#/components/parameters/id' } ]
       responses:
         '204': { description: Document supprime (statut SUPPRIME, ligne conservee) }
+        '404': { $ref: '#/components/responses/Error' }
+
+  /documents/{id}/image:
+    get:
+      tags: [Documents]
+      summary: Consulter l'image de couverture d'un document
+      security: []
+      parameters: [ { $ref: '#/components/parameters/id' } ]
+      responses:
+        '200':
+          description: Image de couverture
+          content:
+            image/png:
+              schema: { type: string, format: binary }
+            image/jpeg:
+              schema: { type: string, format: binary }
+            image/webp:
+              schema: { type: string, format: binary }
+        '403': { $ref: '#/components/responses/Error' }
         '404': { $ref: '#/components/responses/Error' }
 
   /documents/{id}/extraction:
@@ -482,6 +502,7 @@ components:
         annee: { type: integer, example: 2026 }
         statut: { type: string, enum: [EN_ATTENTE, EXTRACTION, A_VALIDER, PUBLIE, SUPPRIME], example: PUBLIE }
         visibilite: { type: string, enum: [PUBLIC, INSTITUTION], example: PUBLIC }
+        image_url: { type: string, nullable: true, example: /api/v1/documents/1/image }
         mots_cles:
           type: array
           items: { type: string, example: Dublin Core }

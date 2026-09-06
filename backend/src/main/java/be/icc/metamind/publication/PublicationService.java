@@ -18,6 +18,7 @@ import be.icc.metamind.document.DocumentRepository;
 import be.icc.metamind.document.DocumentStatus;
 import be.icc.metamind.document.DocumentUploadService;
 import be.icc.metamind.document.DocumentUploadService.ImportedDocument;
+import be.icc.metamind.document.DocumentUploadService.StoredImage;
 import be.icc.metamind.document.DocumentVisibility;
 import be.icc.metamind.document.KeywordEntity;
 import be.icc.metamind.document.KeywordRepository;
@@ -125,6 +126,11 @@ public class PublicationService {
 
 	@Transactional
 	public PublicationResponse createPublication(PublicationRequest request, UserEntity currentUser) {
+		return createPublication(request, null, currentUser);
+	}
+
+	@Transactional
+	public PublicationResponse createPublication(PublicationRequest request, MultipartFile image, UserEntity currentUser) {
 		validate(request);
 
 		DocumentEntity document = documentRepository.save(new DocumentEntity(
@@ -138,6 +144,7 @@ public class PublicationService {
 				currentUser.getInstitution(),
 				currentUser
 		));
+		document.updateCoverImagePath(documentUploadService.storeCoverImage(image));
 		metadataRepository.save(new MetadataEntity(
 				document,
 				request.title().trim(),
@@ -154,6 +161,11 @@ public class PublicationService {
 
 	@Transactional
 	public PublicationResponse importDocument(MultipartFile file, Visibility visibility, UserEntity currentUser) {
+		return importDocument(file, visibility, null, currentUser);
+	}
+
+	@Transactional
+	public PublicationResponse importDocument(MultipartFile file, Visibility visibility, MultipartFile image, UserEntity currentUser) {
 		ImportedDocument imported = documentUploadService.importFile(file);
 		DocumentEntity document = documentRepository.save(new DocumentEntity(
 				imported.fileName(),
@@ -166,6 +178,7 @@ public class PublicationService {
 				currentUser.getInstitution(),
 				currentUser
 		));
+		document.updateCoverImagePath(documentUploadService.storeCoverImage(image));
 		metadataRepository.save(new MetadataEntity(
 				document,
 				titleFromFileName(imported.fileName()),
@@ -175,6 +188,16 @@ public class PublicationService {
 				MetadataStatus.EN_ATTENTE
 		));
 		return toResponse(document);
+	}
+
+	@Transactional(readOnly = true)
+	public StoredImage findCoverImage(long id, UserEntity currentUser) {
+		DocumentEntity document = documentRepository.findById(id)
+				.orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "La publication demandee est introuvable."));
+		if (!isVisibleFor(document, currentUser)) {
+			throw new ApiException(HttpStatus.FORBIDDEN, "Cette image n'est pas accessible avec ce compte.");
+		}
+		return documentUploadService.loadCoverImage(document.getCoverImagePath());
 	}
 
 	@Transactional

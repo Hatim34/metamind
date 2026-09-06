@@ -10,6 +10,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.forwardedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -257,6 +258,41 @@ class ApiControllerTests {
 		org.assertj.core.api.Assertions.assertThat(document.getExtractedText()).contains("Dublin Core");
 		org.assertj.core.api.Assertions.assertThat(document.getInstitution().getName()).isEqualTo("Institution A");
 		org.assertj.core.api.Assertions.assertThat(document.getImportedBy().getEmail()).isEqualTo("sarah@institution-a.example");
+	}
+
+	@Test
+	void documentImportStoresCoverImage() throws Exception {
+		byte[] imageContent = new byte[] { 1, 2, 3, 4 };
+		MockMultipartFile file = new MockMultipartFile(
+				"fichier",
+				"rapport-couverture.txt",
+				MediaType.TEXT_PLAIN_VALUE,
+				"Rapport scientifique avec couverture.".getBytes(StandardCharsets.UTF_8)
+		);
+		MockMultipartFile image = new MockMultipartFile(
+				"image",
+				"couverture.png",
+				MediaType.IMAGE_PNG_VALUE,
+				imageContent
+		);
+
+		mockMvc.perform(multipart("/api/v1/documents")
+						.file(file)
+						.file(image)
+						.header("Authorization", bearerToken()))
+				.andExpect(status().isCreated())
+				.andExpect(jsonPath("$.image_url", startsWith("/api/v1/documents/")));
+
+		DocumentEntity document = documentRepository.findAll().stream()
+				.filter(item -> "rapport-couverture.txt".equals(item.getFileName()))
+				.findFirst()
+				.orElseThrow();
+
+		mockMvc.perform(get("/api/v1/documents/" + document.getId() + "/image")
+						.header("Authorization", bearerToken()))
+				.andExpect(status().isOk())
+				.andExpect(content().contentTypeCompatibleWith(MediaType.IMAGE_PNG))
+				.andExpect(content().bytes(imageContent));
 	}
 
 	@Test

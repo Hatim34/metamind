@@ -1,6 +1,7 @@
 package be.icc.metamind.document;
 
 import be.icc.metamind.api.PageResponse;
+import be.icc.metamind.document.DocumentUploadService.StoredImage;
 import be.icc.metamind.publication.PublicationResponse;
 import be.icc.metamind.publication.PublicationService;
 import be.icc.metamind.publication.Visibility;
@@ -59,10 +60,23 @@ public class DocumentController {
 			@RequestHeader("Authorization") String authorization,
 			@RequestParam(value = "fichier", required = false) MultipartFile fichier,
 			@RequestParam(value = "file", required = false) MultipartFile file,
+			@RequestParam(value = "image", required = false) MultipartFile image,
 			@RequestParam(value = "visibilite", required = false) Visibility visibility
 	) {
 		UserEntity currentUser = accountService.authenticate(authorization);
-		return publicationService.importDocument(fichier == null ? file : fichier, visibility, currentUser);
+		return publicationService.importDocument(fichier == null ? file : fichier, visibility, image, currentUser);
+	}
+
+	@GetMapping("/{id}/image")
+	public ResponseEntity<byte[]> image(
+			@PathVariable long id,
+			@RequestHeader(value = "Authorization", required = false) String authorization
+	) {
+		UserEntity currentUser = authorization == null ? null : accountService.authenticate(authorization);
+		StoredImage image = publicationService.findCoverImage(id, currentUser);
+		return ResponseEntity.ok()
+				.contentType(image.mediaType())
+				.body(image.content());
 	}
 
 	@DeleteMapping("/{id}")
