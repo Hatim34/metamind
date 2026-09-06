@@ -55,7 +55,8 @@
               }
             ],
             "styles": [
-              "src/styles.css"
+              "src/styles.css",
+              "src/styles/layout.css"
             ],
             "scripts": []
           },
@@ -113,7 +114,8 @@
               }
             ],
             "styles": [
-              "src/styles.css"
+              "src/styles.css",
+              "src/styles/layout.css"
             ],
             "scripts": []
           }

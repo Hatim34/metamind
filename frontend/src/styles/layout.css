@@ -1,0 +1,168 @@
+/* ============================================================
+   Mise en page : coquille, en-tete, navigation, indicateurs
+   ============================================================ */
+.app-shell {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: var(--sp-7) var(--sp-6) var(--sp-8);
+}
+
+/* En-tete */
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--sp-4) var(--sp-6);
+  margin: 0 0 var(--sp-6);
+  padding: var(--sp-4) 0;
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--line);
+}
+
+.eyebrow {
+  margin: 0 0 var(--sp-1);
+  color: var(--brand);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+h1 {
+  margin: 0;
+  font-size: clamp(26px, 3.4vw, 34px);
+  line-height: 1.08;
+}
+
+h2 {
+  margin: 0 0 var(--sp-5);
+  font-size: 22px;
+}
+
+h3 {
+  margin: 0 0 var(--sp-2);
+  font-size: 16px;
+}
+
+/* Navigation principale */
+nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  width: 100%;
+  padding-top: var(--sp-2);
+}
+
+nav button {
+  border-radius: var(--r-pill);
+  padding: 9px 15px;
+  font-weight: 600;
+}
+
+nav button.active {
+  background: var(--brand);
+  border-color: var(--brand);
+  color: #fff;
+  box-shadow: var(--shadow-sm);
+}
+
+nav button.active:hover {
+  color: #fff;
+}
+
+/* Selecteur de langue */
+.language-switch {
+  display: flex;
+  gap: var(--sp-1);
+  margin-left: auto;
+  padding: var(--sp-1);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-pill);
+}
+
+.language-switch button {
+  min-width: 42px;
+  padding: 6px 10px;
+  border: 1px solid transparent;
+  border-radius: var(--r-pill);
+  font-weight: 600;
+}
+
+.language-switch button.active {
+  background: var(--brand-050);
+  border-color: transparent;
+  color: var(--brand-strong);
+}
+
+/* Grille d'indicateurs */
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-6);
+}
+
+.summary-grid article {
+  position: relative;
+  overflow: hidden;
+  padding: var(--sp-5);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow-sm);
+  transition: transform var(--t), box-shadow var(--t);
+}
+
+.summary-grid article::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 3px;
+  background: var(--brand);
+  opacity: 0.85;
+}
+
+.summary-grid article:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.summary-grid span {
+  display: block;
+  margin-bottom: var(--sp-2);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.summary-grid strong {
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+/* En-tete de section */
+.section-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--sp-5);
+  margin-bottom: var(--sp-5);
+}
+
+.section-heading .eyebrow {
+  margin-bottom: var(--sp-1);
+}
+
+.section-heading input {
+  align-self: end;
+  min-width: 320px;
+}
