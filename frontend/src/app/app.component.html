@@ -194,10 +194,6 @@
       </label>
       <button class="primary" type="submit">{{ t('signIn') }}</button>
     </form>
-    <div class="quick-actions">
-      <button type="button" (click)="useLibrarianAccount()">{{ t('librarianAccount') }}</button>
-      <button type="button" (click)="useAdminAccount()">{{ t('adminAccount') }}</button>
-    </div>
   </section>
 
   <section *ngIf="page === 'inscription'" class="panel form-panel">

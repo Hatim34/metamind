@@ -126,13 +126,6 @@ form {
   margin-top: var(--sp-5);
 }
 
-.quick-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--sp-3);
-  margin-top: var(--sp-4);
-}
-
 /* Panneaux et cartes */
 .panel {
   padding: var(--sp-7);

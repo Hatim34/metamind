@@ -18,10 +18,6 @@
   margin-bottom: var(--sp-6);
 }
 
-.form-panel .quick-actions {
-  justify-content: center;
-}
-
 /* Tablette */
 @media (max-width: 960px) {
   .admin-form {

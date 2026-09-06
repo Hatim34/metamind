@@ -344,13 +344,8 @@ export class AppComponent implements OnInit {
   profileSaved = false;
 
   loginForm = {
-    email: 'sarah@institution-a.example',
-    password: '558435'
-  };
-
-  adminLoginForm = {
-    email: 'admin@metamind.example',
-    password: '558435'
+    email: '',
+    password: ''
   };
 
   registerForm = {
@@ -500,17 +495,6 @@ export class AppComponent implements OnInit {
         this.message = this.t('registerFailed');
       }
     });
-  }
-
-  useAdminAccount(): void {
-    this.loginForm = { ...this.adminLoginForm };
-  }
-
-  useLibrarianAccount(): void {
-    this.loginForm = {
-      email: 'sarah@institution-a.example',
-      password: '558435'
-    };
   }
 
   createPublication(): void {

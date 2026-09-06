@@ -128,6 +128,11 @@ describe('AppComponent', () => {
     expect(component.publications).toEqual(publications);
   });
 
+  it('laisse le formulaire de connexion vide au demarrage', () => {
+    expect(component.loginForm.email).toBe('');
+    expect(component.loginForm.password).toBe('');
+  });
+
   it('change la langue de l interface', () => {
     component.setLanguage('nl');
 
