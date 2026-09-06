@@ -2,7 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
-import { ApiService, AuditLog, CreditMovement, CreditPackOption, DashboardStatistics, Institution, MetadataDetails, MetadataExtraction, Publication, PublicationStatus, UserSession } from './api.service';
+import { ApiService, AuditLog, CreditMovement, CreditPackOption, DashboardStatistics, Institution, MetadataDetails, MetadataExtraction, Publication, PublicationStatus, SearchFilters, UserSession } from './api.service';
 
 type Page = 'catalogue' | 'detail' | 'connexion' | 'inscription' | 'profil' | 'publication' | 'administration';
 type Language = 'fr' | 'nl' | 'en';
@@ -37,6 +37,10 @@ const translations = {
     loadingCatalogue: 'Chargement du catalogue...',
     addPublication: 'Ajouter une publication',
     consult: 'Consulter',
+    filters: 'Filtres',
+    clearFilters: 'Effacer les filtres',
+    startDate: 'Date minimale',
+    endDate: 'Date maximale',
     publicationDetails: 'Fiche publication',
     backToCatalogue: 'Retour au catalogue',
     downloadFile: 'Consulter le fichier',
@@ -149,6 +153,10 @@ const translations = {
     loadingCatalogue: 'Catalogus wordt geladen...',
     addPublication: 'Een publicatie toevoegen',
     consult: 'Bekijken',
+    filters: 'Filters',
+    clearFilters: 'Filters wissen',
+    startDate: 'Begindatum',
+    endDate: 'Einddatum',
     publicationDetails: 'Publicatiefiche',
     backToCatalogue: 'Terug naar catalogus',
     downloadFile: 'Bestand bekijken',
@@ -261,6 +269,10 @@ const translations = {
     loadingCatalogue: 'Loading catalogue...',
     addPublication: 'Add a publication',
     consult: 'View',
+    filters: 'Filters',
+    clearFilters: 'Clear filters',
+    startDate: 'Start date',
+    endDate: 'End date',
     publicationDetails: 'Publication record',
     backToCatalogue: 'Back to catalogue',
     downloadFile: 'View file',
@@ -363,6 +375,13 @@ export class AppComponent implements OnInit {
   loading = false;
   message = '';
   profileSaved = false;
+  searchFilters: SearchFilters = {
+    author: '',
+    language: '',
+    documentType: '',
+    startDate: '',
+    endDate: ''
+  };
 
   loginForm = {
     email: '',
@@ -455,7 +474,10 @@ export class AppComponent implements OnInit {
 
   loadPublications(clearMessage = true): void {
     this.loading = true;
-    this.api.getPublications(this.search).subscribe({
+    const request = this.hasSearchFilters()
+      ? this.api.searchPublications(this.search, this.searchFilters)
+      : this.api.getPublications(this.search);
+    request.subscribe({
       next: (publications) => {
         this.publications = publications;
         if (this.selectedPublication) {
@@ -472,6 +494,17 @@ export class AppComponent implements OnInit {
         this.message = this.t('apiUnavailable');
       }
     });
+  }
+
+  clearSearchFilters(): void {
+    this.searchFilters = {
+      author: '',
+      language: '',
+      documentType: '',
+      startDate: '',
+      endDate: ''
+    };
+    this.loadPublications();
   }
 
   openPublication(publication: Publication): void {
@@ -1022,6 +1055,14 @@ export class AppComponent implements OnInit {
       && this.registerForm.email.includes('@')
       && this.registerForm.institution.trim().length >= 2
       && this.registerForm.password.length >= 8;
+  }
+
+  hasSearchFilters(): boolean {
+    return !!this.searchFilters.author?.trim()
+      || !!this.searchFilters.language?.trim()
+      || !!this.searchFilters.documentType?.trim()
+      || !!this.searchFilters.startDate
+      || !!this.searchFilters.endDate;
   }
 
   isInstitutionFormValid(): boolean {

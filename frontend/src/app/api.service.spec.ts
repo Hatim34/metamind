@@ -69,6 +69,38 @@ describe('ApiService', () => {
     });
   });
 
+  it('recherche les publications publiques avec filtres', () => {
+    service.searchPublications('metadata', {
+      author: 'Sarah',
+      language: 'fr',
+      documentType: 'article',
+      startDate: '2024-01-01',
+      endDate: '2026-12-31'
+    }).subscribe((publications) => {
+      expect(publications.length).toBe(1);
+      expect(publications[0].title).toBe('Analyse automatique des metadonnees');
+    });
+
+    const request = httpMock.expectOne('/api/v1/search?q=metadata&author=Sarah&langue=fr&type=article&date_debut=2024-01-01&date_fin=2026-12-31');
+    expect(request.request.method).toBe('GET');
+    request.flush({
+      contenu: [{
+        id: 5,
+        titre: 'Analyse automatique des metadonnees',
+        auteur: 'Sarah Lemaire',
+        institution: 'Institution A',
+        annee: 2026,
+        statut: 'PUBLIE',
+        visibilite: 'PUBLIC',
+        mots_cles: ['Dublin Core']
+      }],
+      page: 0,
+      size: 20,
+      total_elements: 1,
+      total_pages: 1
+    });
+  });
+
   it('envoie le jeton JWT sur les routes protegees', () => {
     service.setToken('token-test');
 

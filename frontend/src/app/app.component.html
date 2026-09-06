@@ -82,6 +82,37 @@
         <h1>Le savoir mieux rangé</h1>
         <p class="lead">{{ t('title') }}</p>
         <input class="hero-search" type="search" [(ngModel)]="search" (ngModelChange)="loadPublications()" [attr.aria-label]="t('catalogue')" />
+        <form class="search-filters" (ngSubmit)="loadPublications()">
+          <label>
+            {{ t('author') }}
+            <input name="filterAuthor" [(ngModel)]="searchFilters.author" maxlength="160" />
+          </label>
+          <label>
+            {{ t('language') }}
+            <select name="filterLanguage" [(ngModel)]="searchFilters.language">
+              <option value=""></option>
+              <option value="fr">FR</option>
+              <option value="nl">NL</option>
+              <option value="en">EN</option>
+            </select>
+          </label>
+          <label>
+            {{ t('documentType') }}
+            <input name="filterType" [(ngModel)]="searchFilters.documentType" maxlength="100" />
+          </label>
+          <label>
+            {{ t('startDate') }}
+            <input name="filterStartDate" type="date" [(ngModel)]="searchFilters.startDate" />
+          </label>
+          <label>
+            {{ t('endDate') }}
+            <input name="filterEndDate" type="date" [(ngModel)]="searchFilters.endDate" />
+          </label>
+          <div class="filter-actions">
+            <button type="submit" class="primary">{{ t('filters') }}</button>
+            <button type="button" (click)="clearSearchFilters()" [disabled]="!hasSearchFilters()">{{ t('clearFilters') }}</button>
+          </div>
+        </form>
       </div>
       <div class="hero-visual" aria-hidden="true">
         <svg viewBox="0 0 42 42" role="img" aria-label="Metamind">

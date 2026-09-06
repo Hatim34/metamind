@@ -72,6 +72,15 @@
     grid-template-columns: 1fr;
   }
 
+  .search-filters {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .filter-actions {
+    grid-column: 1 / -1;
+    flex-wrap: wrap;
+  }
+
   .detail-cover {
     width: min(220px, 100%);
   }
@@ -88,6 +97,10 @@
 
 @media (max-width: 420px) {
   .summary-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .search-filters {
     grid-template-columns: 1fr;
   }
 }

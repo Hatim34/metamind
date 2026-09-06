@@ -164,6 +164,14 @@ export interface CreatePublicationRequest {
   image?: File | null;
 }
 
+export interface SearchFilters {
+  author?: string;
+  language?: string;
+  documentType?: string;
+  startDate?: string;
+  endDate?: string;
+}
+
 export interface UpdatePublicationStatusRequest {
   status: Extract<PublicationStatus, 'A_VALIDER' | 'PUBLIE' | 'SUPPRIME'>;
 }
@@ -210,6 +218,30 @@ export class ApiService {
   getPublication(publicationId: number): Observable<Publication> {
     return this.http.get<unknown>(`${this.baseUrl}/publications/${publicationId}`, { headers: this.optionalAuthHeaders() })
       .pipe(map((response) => this.toPublication(response)));
+  }
+
+  searchPublications(search = '', filters: SearchFilters = {}): Observable<Publication[]> {
+    let params = new HttpParams();
+    if (search.trim()) {
+      params = params.set('q', search.trim());
+    }
+    if (filters.author?.trim()) {
+      params = params.set('author', filters.author.trim());
+    }
+    if (filters.language?.trim()) {
+      params = params.set('langue', filters.language.trim());
+    }
+    if (filters.documentType?.trim()) {
+      params = params.set('type', filters.documentType.trim());
+    }
+    if (filters.startDate) {
+      params = params.set('date_debut', filters.startDate);
+    }
+    if (filters.endDate) {
+      params = params.set('date_fin', filters.endDate);
+    }
+    return this.http.get<PageResponse<unknown>>(`${this.baseUrl}/search`, { params })
+      .pipe(map((response) => response.contenu.map((item) => this.toPublication(item))));
   }
 
   createPublication(request: CreatePublicationRequest): Observable<Publication> {

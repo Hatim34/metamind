@@ -46,6 +46,7 @@ describe('AppComponent', () => {
       'setToken',
       'getPublications',
       'getPublication',
+      'searchPublications',
       'createPublication',
       'importDocument',
       'getInstitutions',
@@ -75,6 +76,7 @@ describe('AppComponent', () => {
     ]);
     api.getPublications.and.returnValue(of(publications));
     api.getPublication.and.returnValue(of(publications[0]));
+    api.searchPublications.and.returnValue(of(publications));
     api.getCreditPacks.and.returnValue(of([
       { id: 2, credits: 100, amount: 50, currency: 'EUR', label: 'Pack standard' }
     ]));
@@ -143,6 +145,15 @@ describe('AppComponent', () => {
     expect(component.page).toBe('detail');
     expect(component.selectedPublication?.summary).toContain('donnees documentaires');
     expect(component.selectedPublication?.fileUrl).toBe('/api/v1/documents/1/file');
+  });
+
+  it('utilise la recherche publique quand un filtre est rempli', () => {
+    component.search = 'metadonnees';
+    component.searchFilters.author = 'Sarah';
+
+    component.loadPublications();
+
+    expect(api.searchPublications).toHaveBeenCalledWith('metadonnees', component.searchFilters);
   });
 
   it('laisse le formulaire de connexion vide au demarrage', () => {
