@@ -1,10 +1,96 @@
+/* ============================================================
+   Design tokens + base globale
+   Couleurs identiques a l'identite Metamind, centralisees.
+   ============================================================ */
+:root {
+  /* Marque (teal Metamind) */
+  --brand: #12787b;
+  --brand-strong: #0b5658;
+  --brand-050: #e8f3f3;
+  --brand-100: #f3f7f7;
+
+  /* Texte */
+  --ink: #1d2835;
+  --ink-2: #344253;
+  --muted: #617081;
+
+  /* Surfaces et bordures */
+  --bg: #f5f7f9;
+  --surface: #ffffff;
+  --line: #dfe5eb;
+  --border: #cad3dc;
+
+  /* Etats */
+  --danger: #b43b3b;
+  --danger-strong: #9d2d2d;
+
+  /* Echelle d'espacement */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 20px;
+  --sp-6: 24px;
+  --sp-7: 32px;
+  --sp-8: 48px;
+
+  /* Rayons */
+  --r-sm: 8px;
+  --r-md: 12px;
+  --r-lg: 16px;
+  --r-pill: 999px;
+
+  /* Ombres */
+  --shadow-sm: 0 1px 2px rgba(29, 40, 53, 0.06), 0 1px 3px rgba(29, 40, 53, 0.08);
+  --shadow-md: 0 4px 14px rgba(29, 40, 53, 0.09), 0 2px 6px rgba(29, 40, 53, 0.05);
+  --ring: 0 0 0 3px rgba(18, 120, 123, 0.18);
+
+  /* Typographie */
+  --font-sans: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+
+  /* Transition */
+  --t: 150ms ease;
+}
+
 * {
   box-sizing: border-box;
 }
 
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
 body {
-  background: #f5f7f9;
-  color: #1d2835;
-  font-family: Inter, Arial, sans-serif;
   margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  color: var(--ink);
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+a {
+  color: var(--brand-strong);
+}
+
+::selection {
+  background: var(--brand-050);
+  color: var(--brand-strong);
+}
+
+:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+  border-radius: var(--r-sm);
 }
