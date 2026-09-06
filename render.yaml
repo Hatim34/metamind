@@ -1,14 +1,17 @@
 databases:
   - name: metamind-db
     plan: free
+    region: frankfurt
     databaseName: metamind
     user: metamind
 
 services:
   - type: web
     name: metamind
-    env: docker
+    runtime: docker
     plan: free
+    region: frankfurt
+    dockerContext: .
     dockerfilePath: ./Dockerfile
     healthCheckPath: /api/v1/health
     envVars:
@@ -34,11 +37,13 @@ services:
         generateValue: true
       - key: METAMIND_LLM_PROVIDER
         value: local
+      - key: JAVA_OPTS
+        value: -Xmx384m
       - key: METAMIND_PUBLIC_URL
         fromService:
           type: web
           name: metamind
-          property: host
+          envVarKey: RENDER_EXTERNAL_URL
       - key: GEMINI_API_KEY
         sync: false
       - key: GEMINI_MODEL
