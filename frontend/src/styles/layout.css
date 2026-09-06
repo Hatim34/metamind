@@ -205,3 +205,43 @@
   font-family: var(--f-mono);
   font-size: 0.76rem;
 }
+
+.nav-ico {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 auto;
+}
+
+.hero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 2rem;
+}
+
+.hero-copy {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.hero-copy .lead {
+  margin: 0.4rem 0 1.2rem;
+  color: var(--ink-soft);
+}
+
+.hero-visual {
+  flex: 0 0 auto;
+}
+
+.hero-visual svg {
+  width: clamp(72px, 12vw, 132px);
+  height: auto;
+  display: block;
+  filter: drop-shadow(0 8px 20px rgba(11, 84, 86, 0.22));
+}
+
+@media (max-width: 640px) {
+  .hero-visual {
+    display: none;
+  }
+}

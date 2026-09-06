@@ -13,10 +13,22 @@
       <span class="nav-word">Metamind</span>
     </button>
     <div class="nav-links" role="navigation" aria-label="Navigation principale">
-      <button type="button" [class.active]="page === 'catalogue'" (click)="navigate('catalogue')">{{ t('catalogue') }}</button>
-      <button type="button" *ngIf="session" [class.active]="page === 'publication'" (click)="navigate('publication')">{{ t('newPublication') }}</button>
-      <button type="button" *ngIf="isAdmin" [class.active]="page === 'administration'" (click)="navigate('administration')">{{ t('administration') }}</button>
-      <button type="button" [class.active]="page === 'profil'" (click)="navigate('profil')">{{ t('profile') }}</button>
+      <button type="button" [class.active]="page === 'catalogue'" (click)="navigate('catalogue')">
+        <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="M21 21l-4.3-4.3" /></svg>
+        <span>{{ t('catalogue') }}</span>
+      </button>
+      <button type="button" *ngIf="session" [class.active]="page === 'publication'" (click)="navigate('publication')">
+        <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
+        <span>{{ t('newPublication') }}</span>
+      </button>
+      <button type="button" *ngIf="isAdmin" [class.active]="page === 'administration'" (click)="navigate('administration')">
+        <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v18h18" /><path d="M7 14l4-4 3 3 5-6" /></svg>
+        <span>{{ t('administration') }}</span>
+      </button>
+      <button type="button" [class.active]="page === 'profil'" (click)="navigate('profil')">
+        <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4" /><path d="M4 21c0-4 4-6 8-6s8 2 8 6" /></svg>
+        <span>{{ t('profile') }}</span>
+      </button>
       <button type="button" *ngIf="!session" [class.active]="page === 'connexion'" (click)="navigate('connexion')">{{ t('login') }}</button>
       <button type="button" *ngIf="!session" [class.active]="page === 'inscription'" (click)="navigate('inscription')">{{ t('register') }}</button>
     </div>
@@ -65,9 +77,21 @@
 
   <ng-container *ngIf="page === 'catalogue'">
     <div class="hero">
-      <p class="eyebrow">{{ t('catalogue') }}</p>
-      <h1>{{ t('title') }}</h1>
-      <input class="hero-search" type="search" [(ngModel)]="search" (ngModelChange)="loadPublications()" [placeholder]="t('searchPlaceholder')" />
+      <div class="hero-copy">
+        <p class="eyebrow">{{ t('catalogue') }}</p>
+        <h1>Le savoir mieux rangé</h1>
+        <p class="lead">{{ t('title') }}</p>
+        <input class="hero-search" type="search" [(ngModel)]="search" (ngModelChange)="loadPublications()" [placeholder]="t('searchPlaceholder')" />
+      </div>
+      <div class="hero-visual" aria-hidden="true">
+        <svg viewBox="0 0 42 42" role="img" aria-label="Metamind">
+          <rect x="3" y="3" width="36" height="36" rx="10" fill="#12787B" />
+          <circle cx="14" cy="15" r="3" fill="#fff" />
+          <circle cx="28" cy="13" r="3" fill="#fff" />
+          <circle cx="21" cy="28" r="3" fill="#fff" />
+          <path d="M14,15 L28,13 M14,15 L21,28 M28,13 L21,28" stroke="#fff" stroke-width="1.6" fill="none" opacity="0.85" />
+        </svg>
+      </div>
     </div>
 
     <section class="panel">
@@ -86,9 +110,14 @@
 
     <div class="publication-list">
       <article class="publication-card" *ngFor="let publication of publications">
-        <div>
-          <h3>{{ publication.title }}</h3>
-          <p>{{ publication.author }} · {{ publication.institution }} · {{ publication.year }}</p>
+        <div class="pub-main">
+          <div class="pub-cover" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3v4a1 1 0 0 0 1 1h4" /><path d="M17 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2z" /></svg>
+          </div>
+          <div class="pub-text">
+            <h3>{{ publication.title }}</h3>
+            <p>{{ publication.author }} · {{ publication.institution }} · {{ publication.year }}</p>
+          </div>
         </div>
         <div class="tags">
           <span class="badge" [class.badge-green]="publication.status === 'PUBLIE'" [class.badge-amber]="publication.status === 'A_VALIDER'" [class.badge-red]="publication.status === 'SUPPRIME'">{{ publication.status }}</span>
