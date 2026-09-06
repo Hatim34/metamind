@@ -1,54 +1,54 @@
 /* ============================================================
-   Design tokens + base globale
-   Couleurs identiques a l'identite Metamind, centralisees.
+   Metamind - base globale
+   Couleurs, polices et typographie de l'identite visuelle.
    ============================================================ */
+@import url("https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,680&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap");
+
 :root {
-  /* Marque (teal Metamind) */
-  --brand: #12787b;
-  --brand-strong: #0b5658;
-  --brand-050: #e8f3f3;
-  --brand-100: #f3f7f7;
+  /* Surfaces */
+  --ground: #f5f7f8;
+  --surface: #ffffff;
+  --surface-2: #edf1f2;
 
   /* Texte */
-  --ink: #1d2835;
-  --ink-2: #344253;
-  --muted: #617081;
+  --ink: #182a2b;
+  --ink-soft: #55676a;
+  --ink-faint: #93a2a4;
 
-  /* Surfaces et bordures */
-  --bg: #f5f7f9;
-  --surface: #ffffff;
-  --line: #dfe5eb;
-  --border: #cad3dc;
+  /* Lignes */
+  --line: #dee6e6;
+  --line-strong: #c2cfcf;
 
-  /* Etats */
-  --danger: #b43b3b;
-  --danger-strong: #9d2d2d;
+  /* Accent teal Metamind */
+  --teal: #12787b;
+  --teal-dark: #0b5456;
+  --teal-soft: #e1f0f0;
+  --teal-ink: #0b5456;
 
-  /* Echelle d'espacement */
-  --sp-1: 4px;
-  --sp-2: 8px;
-  --sp-3: 12px;
-  --sp-4: 16px;
-  --sp-5: 20px;
-  --sp-6: 24px;
-  --sp-7: 32px;
-  --sp-8: 48px;
+  /* Etats semantiques */
+  --green: #2e7d46;
+  --green-soft: #e7f3eb;
+  --amber: #9a6b12;
+  --amber-soft: #f6eeda;
+  --orange: #b4531b;
+  --orange-soft: #fbeee2;
+  --red: #b23a3a;
+  --red-soft: #f7e6e6;
 
-  /* Rayons */
-  --r-sm: 8px;
-  --r-md: 12px;
-  --r-lg: 16px;
-  --r-pill: 999px;
+  /* Polices */
+  --f-display: "Fraunces", Georgia, serif;
+  --f-body: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
 
-  /* Ombres */
-  --shadow-sm: 0 1px 2px rgba(29, 40, 53, 0.06), 0 1px 3px rgba(29, 40, 53, 0.08);
-  --shadow-md: 0 4px 14px rgba(29, 40, 53, 0.09), 0 2px 6px rgba(29, 40, 53, 0.05);
+  /* Formes */
+  --radius: 14px;
+  --radius-sm: 9px;
+  --maxw: 1080px;
+
+  /* Ombres discretes */
+  --shadow-sm: 0 1px 2px rgba(24, 42, 43, 0.05);
+  --shadow-md: 0 6px 22px rgba(24, 42, 43, 0.08);
   --ring: 0 0 0 3px rgba(18, 120, 123, 0.18);
-
-  /* Typographie */
-  --font-sans: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
-
-  /* Transition */
   --t: 150ms ease;
 }
 
@@ -62,35 +62,67 @@ html {
 
 body {
   margin: 0;
-  background: var(--bg);
+  background: var(--ground);
   color: var(--ink);
-  font-family: var(--font-sans);
+  font-family: var(--f-body);
   font-size: 15px;
-  line-height: 1.55;
+  line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* Titres en Fraunces (empattements) */
 h1,
 h2,
-h3,
-h4 {
+h3 {
+  font-family: var(--f-display);
   color: var(--ink);
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: 0;
+  margin: 0 0 0.4rem;
+}
+
+h1 {
+  font-size: clamp(1.9rem, 4vw, 2.6rem);
+  line-height: 1.08;
+}
+
+h2 {
+  font-size: 1.55rem;
+  margin-bottom: 1.1rem;
+}
+
+h3 {
+  font-size: 1.08rem;
+  margin-bottom: 0.5rem;
+}
+
+p {
+  margin: 0 0 1rem;
 }
 
 a {
-  color: var(--brand-strong);
+  color: var(--teal-ink);
+}
+
+/* Libelle technique (donnees, statuts, codes) en chasse fixe */
+.eyebrow {
+  margin: 0 0 0.5rem;
+  font-family: var(--f-mono);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: uppercase;
+  color: var(--teal);
 }
 
 ::selection {
-  background: var(--brand-050);
-  color: var(--brand-strong);
+  background: var(--teal-soft);
+  color: var(--teal-ink);
 }
 
 :focus-visible {
   outline: none;
   box-shadow: var(--ring);
-  border-radius: var(--r-sm);
+  border-radius: var(--radius-sm);
 }
