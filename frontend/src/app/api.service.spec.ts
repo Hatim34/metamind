@@ -39,6 +39,36 @@ describe('ApiService', () => {
     request.flush([]);
   });
 
+  it('lit la fiche complete d une publication', () => {
+    service.getPublication(5).subscribe((publication) => {
+      expect(publication.summary).toBe('Resume valide par un bibliothecaire.');
+      expect(publication.publicationDate).toBe('2026-01-01');
+      expect(publication.classification).toBe('Sciences de l information');
+      expect(publication.language).toBe('fr');
+      expect(publication.documentType).toBe('Article scientifique');
+      expect(publication.fileUrl).toBe('/api/v1/documents/5/file');
+    });
+
+    const request = httpMock.expectOne('/api/v1/publications/5');
+    expect(request.request.method).toBe('GET');
+    request.flush({
+      id: 5,
+      titre: 'Analyse automatique des metadonnees',
+      auteur: 'Sarah Lemaire',
+      institution: 'Institution A',
+      annee: 2026,
+      resume: 'Resume valide par un bibliothecaire.',
+      date_publication: '2026-01-01',
+      classification: 'Sciences de l information',
+      langue: 'fr',
+      type_document: 'Article scientifique',
+      statut: 'PUBLIE',
+      visibilite: 'PUBLIC',
+      mots_cles: ['Dublin Core'],
+      fichier_url: '/api/v1/documents/5/file'
+    });
+  });
+
   it('envoie le jeton JWT sur les routes protegees', () => {
     service.setToken('token-test');
 

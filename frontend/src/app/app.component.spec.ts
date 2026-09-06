@@ -18,7 +18,13 @@ describe('AppComponent', () => {
       year: 2026,
       status: 'PUBLIE',
       visibility: 'PUBLIC',
-      keywords: ['Dublin Core']
+      keywords: ['Dublin Core'],
+      summary: 'Controle et enrichissement des donnees documentaires.',
+      publicationDate: '2026-01-15',
+      classification: 'Informatique documentaire',
+      language: 'fr',
+      documentType: 'Article scientifique',
+      fileUrl: '/api/v1/documents/1/file'
     }
   ];
 
@@ -39,6 +45,7 @@ describe('AppComponent', () => {
     api = jasmine.createSpyObj<ApiService>('ApiService', [
       'setToken',
       'getPublications',
+      'getPublication',
       'createPublication',
       'importDocument',
       'getInstitutions',
@@ -67,6 +74,7 @@ describe('AppComponent', () => {
       'getAdminLogs'
     ]);
     api.getPublications.and.returnValue(of(publications));
+    api.getPublication.and.returnValue(of(publications[0]));
     api.getCreditPacks.and.returnValue(of([
       { id: 2, credits: 100, amount: 50, currency: 'EUR', label: 'Pack standard' }
     ]));
@@ -126,6 +134,15 @@ describe('AppComponent', () => {
   it('charge le catalogue au demarrage', () => {
     expect(api.getPublications).toHaveBeenCalled();
     expect(component.publications).toEqual(publications);
+  });
+
+  it('ouvre la fiche publique d une publication', () => {
+    component.openPublication(publications[0]);
+
+    expect(api.getPublication).toHaveBeenCalledWith(1);
+    expect(component.page).toBe('detail');
+    expect(component.selectedPublication?.summary).toContain('donnees documentaires');
+    expect(component.selectedPublication?.fileUrl).toBe('/api/v1/documents/1/file');
   });
 
   it('laisse le formulaire de connexion vide au demarrage', () => {

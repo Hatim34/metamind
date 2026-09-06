@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 
 import { ApiService, AuditLog, CreditMovement, CreditPackOption, DashboardStatistics, Institution, MetadataDetails, MetadataExtraction, Publication, PublicationStatus, UserSession } from './api.service';
 
-type Page = 'catalogue' | 'connexion' | 'inscription' | 'profil' | 'publication' | 'administration';
+type Page = 'catalogue' | 'detail' | 'connexion' | 'inscription' | 'profil' | 'publication' | 'administration';
 type Language = 'fr' | 'nl' | 'en';
 
 const translations = {
@@ -34,9 +34,15 @@ const translations = {
     movementDescription: 'Description',
     noCreditMovement: 'Aucun mouvement de crédit enregistré.',
     availablePublications: 'Publications disponibles',
-    searchPlaceholder: 'Rechercher un titre, auteur ou mot-clé',
     loadingCatalogue: 'Chargement du catalogue...',
     addPublication: 'Ajouter une publication',
+    consult: 'Consulter',
+    publicationDetails: 'Fiche publication',
+    backToCatalogue: 'Retour au catalogue',
+    downloadFile: 'Consulter le fichier',
+    noFile: 'Fichier non disponible.',
+    noSummary: 'Aucun résumé disponible.',
+    documentType: 'Type de document',
     titleLabel: 'Titre',
     author: 'Auteur',
     year: 'Année',
@@ -140,9 +146,15 @@ const translations = {
     movementDescription: 'Beschrijving',
     noCreditMovement: 'Geen creditbeweging geregistreerd.',
     availablePublications: 'Beschikbare publicaties',
-    searchPlaceholder: 'Zoek op titel, auteur of trefwoord',
     loadingCatalogue: 'Catalogus wordt geladen...',
     addPublication: 'Een publicatie toevoegen',
+    consult: 'Bekijken',
+    publicationDetails: 'Publicatiefiche',
+    backToCatalogue: 'Terug naar catalogus',
+    downloadFile: 'Bestand bekijken',
+    noFile: 'Bestand niet beschikbaar.',
+    noSummary: 'Geen samenvatting beschikbaar.',
+    documentType: 'Documenttype',
     titleLabel: 'Titel',
     author: 'Auteur',
     year: 'Jaar',
@@ -246,9 +258,15 @@ const translations = {
     movementDescription: 'Description',
     noCreditMovement: 'No credit movement recorded.',
     availablePublications: 'Available publications',
-    searchPlaceholder: 'Search by title, author or keyword',
     loadingCatalogue: 'Loading catalogue...',
     addPublication: 'Add a publication',
+    consult: 'View',
+    publicationDetails: 'Publication record',
+    backToCatalogue: 'Back to catalogue',
+    downloadFile: 'View file',
+    noFile: 'File not available.',
+    noSummary: 'No summary available.',
+    documentType: 'Document type',
     titleLabel: 'Title',
     author: 'Author',
     year: 'Year',
@@ -400,6 +418,7 @@ export class AppComponent implements OnInit {
   session: UserSession | null = null;
   token = '';
   publications: Publication[] = [];
+  selectedPublication: Publication | null = null;
   institutions: Institution[] = [];
   adminUsers: UserSession[] = [];
   adminConfig: Record<string, string> = {};
@@ -439,6 +458,10 @@ export class AppComponent implements OnInit {
     this.api.getPublications(this.search).subscribe({
       next: (publications) => {
         this.publications = publications;
+        if (this.selectedPublication) {
+          const updated = publications.find((publication) => publication.id === this.selectedPublication?.id);
+          this.selectedPublication = updated ?? this.selectedPublication;
+        }
         this.loading = false;
         if (clearMessage) {
           this.message = '';
@@ -449,6 +472,25 @@ export class AppComponent implements OnInit {
         this.message = this.t('apiUnavailable');
       }
     });
+  }
+
+  openPublication(publication: Publication): void {
+    this.selectedPublication = publication;
+    this.page = 'detail';
+    this.message = '';
+    this.api.getPublication(publication.id).subscribe({
+      next: (details) => {
+        this.selectedPublication = details;
+      },
+      error: () => {
+        this.message = this.t('apiUnavailable');
+      }
+    });
+  }
+
+  backToCatalogue(): void {
+    this.page = 'catalogue';
+    this.selectedPublication = null;
   }
 
   login(): void {
@@ -891,6 +933,7 @@ export class AppComponent implements OnInit {
     this.creditMovements = [];
     this.statistics = null;
     this.extractionResult = null;
+    this.selectedPublication = null;
     this.deletionRequested = false;
     this.profileSaved = false;
     this.page = 'catalogue';

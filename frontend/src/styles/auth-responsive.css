@@ -68,6 +68,14 @@
     min-width: 0;
   }
 
+  .detail-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .detail-cover {
+    width: min(220px, 100%);
+  }
+
   .metadata-form,
   .admin-form {
     grid-template-columns: 1fr;

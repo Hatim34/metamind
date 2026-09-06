@@ -81,7 +81,7 @@
         <p class="eyebrow">{{ t('catalogue') }}</p>
         <h1>Le savoir mieux rangé</h1>
         <p class="lead">{{ t('title') }}</p>
-        <input class="hero-search" type="search" [(ngModel)]="search" (ngModelChange)="loadPublications()" [placeholder]="t('searchPlaceholder')" />
+        <input class="hero-search" type="search" [(ngModel)]="search" (ngModelChange)="loadPublications()" [attr.aria-label]="t('catalogue')" />
       </div>
       <div class="hero-visual" aria-hidden="true">
         <svg viewBox="0 0 42 42" role="img" aria-label="Metamind">
@@ -117,7 +117,8 @@
           </div>
           <div class="pub-text">
             <h3>{{ publication.title }}</h3>
-            <p>{{ publication.author }} · {{ publication.institution }} · {{ publication.year }}</p>
+            <p>{{ publication.author }} · {{ publication.institution }} · {{ publication.publicationDate || publication.year }}</p>
+            <p class="pub-summary" *ngIf="publication.summary">{{ publication.summary }}</p>
           </div>
         </div>
         <div class="tags">
@@ -125,7 +126,10 @@
           <span>{{ publication.visibility }}</span>
           <span *ngFor="let keyword of publication.keywords">{{ keyword }}</span>
         </div>
-        <div class="publication-actions" *ngIf="session">
+        <div class="publication-actions">
+          <button type="button" (click)="openPublication(publication)">
+            {{ t('consult') }}
+          </button>
           <button type="button" class="primary" *ngIf="canExtractPublication(publication)" (click)="extractMetadata(publication)">
             {{ t('extract') }}
           </button>
@@ -178,6 +182,63 @@
     </section>
   </ng-container>
 
+  <section *ngIf="page === 'detail' && selectedPublication as publication" class="panel publication-detail">
+    <div class="detail-toolbar">
+      <button type="button" (click)="backToCatalogue()">{{ t('backToCatalogue') }}</button>
+    </div>
+
+    <div class="detail-layout">
+      <div class="detail-cover" aria-hidden="true">
+        <img *ngIf="publication.imageUrl" [src]="publication.imageUrl" alt="" />
+        <svg *ngIf="!publication.imageUrl" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3v4a1 1 0 0 0 1 1h4" /><path d="M17 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2z" /></svg>
+      </div>
+      <div class="detail-content">
+        <p class="eyebrow">{{ t('publicationDetails') }}</p>
+        <h2>{{ publication.title }}</h2>
+        <p class="detail-meta">{{ publication.author }} · {{ publication.institution }}</p>
+        <p class="detail-summary">{{ publication.summary || t('noSummary') }}</p>
+      </div>
+    </div>
+
+    <dl class="detail-grid">
+      <div>
+        <dt>{{ t('publicationDate') }}</dt>
+        <dd>{{ publication.publicationDate || publication.year }}</dd>
+      </div>
+      <div>
+        <dt>{{ t('language') }}</dt>
+        <dd>{{ publication.language || '-' }}</dd>
+      </div>
+      <div>
+        <dt>{{ t('documentType') }}</dt>
+        <dd>{{ publication.documentType || '-' }}</dd>
+      </div>
+      <div>
+        <dt>{{ t('classification') }}</dt>
+        <dd>{{ publication.classification || '-' }}</dd>
+      </div>
+      <div>
+        <dt>{{ t('status') }}</dt>
+        <dd>{{ publication.status }}</dd>
+      </div>
+      <div>
+        <dt>{{ t('visibility') }}</dt>
+        <dd>{{ publication.visibility }}</dd>
+      </div>
+    </dl>
+
+    <div class="detail-keywords" *ngIf="publication.keywords.length > 0">
+      <span *ngFor="let keyword of publication.keywords">{{ keyword }}</span>
+    </div>
+
+    <div class="actions detail-actions">
+      <a *ngIf="publication.fileUrl" class="button-link primary" [href]="publication.fileUrl" target="_blank" rel="noopener">
+        {{ t('downloadFile') }}
+      </a>
+      <p class="notice" *ngIf="!publication.fileUrl">{{ t('noFile') }}</p>
+    </div>
+  </section>
+
   <section *ngIf="page === 'publication'" class="panel form-panel">
     <p class="eyebrow">{{ t('newPublication') }}</p>
     <h2>{{ t('addPublication') }}</h2>
@@ -204,7 +265,7 @@
       </label>
       <label>
         {{ t('keywords') }}
-        <input name="publicationKeywords" [(ngModel)]="publicationForm.keywords" maxlength="500" placeholder="Dublin Core, catalogage" />
+        <input name="publicationKeywords" [(ngModel)]="publicationForm.keywords" maxlength="500" />
       </label>
       <label>
         {{ t('coverImage') }}
@@ -268,11 +329,11 @@
       </label>
       <label>
         {{ t('email') }}
-        <input name="registerEmail" type="email" [(ngModel)]="registerForm.email" required maxlength="160" placeholder="sarah@institution-a.example" />
+        <input name="registerEmail" type="email" [(ngModel)]="registerForm.email" required maxlength="160" />
       </label>
       <label>
         {{ t('institution') }}
-        <input name="institution" [(ngModel)]="registerForm.institution" required maxlength="160" placeholder="Institution A" />
+        <input name="institution" [(ngModel)]="registerForm.institution" required maxlength="160" />
       </label>
       <label>
         {{ t('password') }}
@@ -390,15 +451,15 @@
     <form *ngIf="isAdmin; else adminRequired" class="admin-form" (ngSubmit)="createInstitution()">
       <label>
         {{ t('code') }}
-        <input name="institutionCode" [(ngModel)]="institutionForm.code" required maxlength="40" placeholder="INST-C" />
+        <input name="institutionCode" [(ngModel)]="institutionForm.code" required maxlength="40" />
       </label>
       <label>
         {{ t('name') }}
-        <input name="institutionName" [(ngModel)]="institutionForm.name" required maxlength="160" placeholder="Institution C" />
+        <input name="institutionName" [(ngModel)]="institutionForm.name" required maxlength="160" />
       </label>
       <label>
         {{ t('domain') }}
-        <input name="institutionDomain" [(ngModel)]="institutionForm.emailDomain" required maxlength="120" pattern="^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$" placeholder="institution-c.example" />
+        <input name="institutionDomain" [(ngModel)]="institutionForm.emailDomain" required maxlength="120" pattern="^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$" />
       </label>
       <button class="primary" type="submit" [disabled]="!isInstitutionFormValid()">{{ t('add') }}</button>
     </form>

@@ -9,10 +9,16 @@ export interface Publication {
   author: string;
   institution: string;
   year: number;
+  summary?: string | null;
+  publicationDate?: string | null;
+  classification?: string | null;
+  language?: string | null;
+  documentType?: string | null;
   status: PublicationStatus;
   visibility: 'PUBLIC' | 'INSTITUTION';
   keywords: string[];
   imageUrl?: string | null;
+  fileUrl?: string | null;
 }
 
 export type PublicationStatus = 'EN_ATTENTE' | 'EXTRACTION' | 'A_VALIDER' | 'PUBLIE' | 'SUPPRIME';
@@ -201,6 +207,11 @@ export class ApiService {
       .pipe(map((response) => response.map((item) => this.toPublication(item))));
   }
 
+  getPublication(publicationId: number): Observable<Publication> {
+    return this.http.get<unknown>(`${this.baseUrl}/publications/${publicationId}`, { headers: this.optionalAuthHeaders() })
+      .pipe(map((response) => this.toPublication(response)));
+  }
+
   createPublication(request: CreatePublicationRequest): Observable<Publication> {
     const data = new FormData();
     data.append('title', request.title);
@@ -359,10 +370,16 @@ export class ApiService {
       author: item['auteur'] ?? item['author'],
       institution: item['institution'],
       year: item['annee'] ?? item['year'],
+      summary: item['resume'] ?? item['summary'] ?? null,
+      publicationDate: item['date_publication'] ?? item['publicationDate'] ?? null,
+      classification: item['classification'] ?? null,
+      language: item['langue'] ?? item['language'] ?? null,
+      documentType: item['type_document'] ?? item['documentType'] ?? null,
       status: item['statut'] ?? item['status'],
       visibility: item['visibilite'] ?? item['visibility'],
       keywords: item['mots_cles'] ?? item['keywords'] ?? [],
-      imageUrl: this.toResourceUrl(item['image_url'] ?? item['imageUrl'])
+      imageUrl: this.toResourceUrl(item['image_url'] ?? item['imageUrl']),
+      fileUrl: this.toResourceUrl(item['fichier_url'] ?? item['fileUrl'])
     };
   }
 
