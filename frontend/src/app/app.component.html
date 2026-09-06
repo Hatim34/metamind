@@ -112,7 +112,8 @@
       <article class="publication-card" *ngFor="let publication of publications">
         <div class="pub-main">
           <div class="pub-cover" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3v4a1 1 0 0 0 1 1h4" /><path d="M17 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2z" /></svg>
+            <img *ngIf="publication.imageUrl" [src]="publication.imageUrl" alt="" />
+            <svg *ngIf="!publication.imageUrl" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3v4a1 1 0 0 0 1 1h4" /><path d="M17 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2z" /></svg>
           </div>
           <div class="pub-text">
             <h3>{{ publication.title }}</h3>
@@ -205,6 +206,10 @@
         {{ t('keywords') }}
         <input name="publicationKeywords" [(ngModel)]="publicationForm.keywords" maxlength="500" placeholder="Dublin Core, catalogage" />
       </label>
+      <label>
+        {{ t('coverImage') }}
+        <input name="publicationImage" type="file" accept="image/png,image/jpeg,image/webp" (change)="onPublicationImageSelected($event)" />
+      </label>
       <button class="primary" type="submit" [disabled]="!isPublicationFormValid()">{{ t('addToCatalogue') }}</button>
     </form>
 
@@ -213,6 +218,10 @@
       <label>
         {{ t('selectedFile') }}
         <input name="documentFile" type="file" accept=".pdf,.docx,.txt" (change)="onFileSelected($event)" />
+      </label>
+      <label>
+        {{ t('coverImage') }}
+        <input name="documentImage" type="file" accept="image/png,image/jpeg,image/webp" (change)="onImportImageSelected($event)" />
       </label>
       <label>
         {{ t('visibility') }}

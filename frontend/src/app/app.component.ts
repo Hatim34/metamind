@@ -64,6 +64,7 @@ const translations = {
     checkoutStarted: 'Paiement confirme, le solde est mis a jour.',
     importFile: 'Importer un document',
     selectedFile: 'Fichier sélectionné',
+    coverImage: 'Image de couverture',
     sendFile: 'Importer le fichier',
     adminUsers: 'Utilisateurs',
     configuration: 'Configuration',
@@ -169,6 +170,7 @@ const translations = {
     checkoutStarted: 'Betaling bevestigd, het saldo is bijgewerkt.',
     importFile: 'Document importeren',
     selectedFile: 'Geselecteerd bestand',
+    coverImage: 'Omslagafbeelding',
     sendFile: 'Bestand importeren',
     adminUsers: 'Gebruikers',
     configuration: 'Configuratie',
@@ -274,6 +276,7 @@ const translations = {
     checkoutStarted: 'Payment confirmed, the balance is updated.',
     importFile: 'Import a document',
     selectedFile: 'Selected file',
+    coverImage: 'Cover image',
     sendFile: 'Import file',
     adminUsers: 'Users',
     configuration: 'Configuration',
@@ -361,11 +364,13 @@ export class AppComponent implements OnInit {
     author: '',
     year: new Date().getFullYear(),
     visibility: 'PUBLIC' as 'PUBLIC' | 'INSTITUTION',
-    keywords: ''
+    keywords: '',
+    image: null as File | null
   };
 
   importForm = {
     file: null as File | null,
+    image: null as File | null,
     visibility: 'INSTITUTION' as 'PUBLIC' | 'INSTITUTION'
   };
 
@@ -513,7 +518,8 @@ export class AppComponent implements OnInit {
       institution: this.session.institution,
       year: this.publicationForm.year,
       visibility: this.publicationForm.visibility,
-      keywords: this.publicationForm.keywords.split(',').map((keyword) => keyword.trim()).filter(Boolean)
+      keywords: this.publicationForm.keywords.split(',').map((keyword) => keyword.trim()).filter(Boolean),
+      image: this.publicationForm.image
     }).subscribe({
       next: () => {
         this.publicationForm = {
@@ -521,7 +527,8 @@ export class AppComponent implements OnInit {
           author: '',
           year: new Date().getFullYear(),
           visibility: 'PUBLIC',
-          keywords: ''
+          keywords: '',
+          image: null
         };
         this.page = 'catalogue';
         this.loadPublications();
@@ -537,15 +544,25 @@ export class AppComponent implements OnInit {
     this.importForm.file = input.files?.[0] ?? null;
   }
 
+  onPublicationImageSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    this.publicationForm.image = input.files?.[0] ?? null;
+  }
+
+  onImportImageSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    this.importForm.image = input.files?.[0] ?? null;
+  }
+
   importDocument(): void {
     if (!this.session || !this.importForm.file) {
       this.message = this.t('invalidForm');
       return;
     }
 
-    this.api.importDocument(this.importForm.file, this.importForm.visibility).subscribe({
+    this.api.importDocument(this.importForm.file, this.importForm.visibility, this.importForm.image).subscribe({
       next: () => {
-        this.importForm = { file: null, visibility: 'INSTITUTION' };
+        this.importForm = { file: null, image: null, visibility: 'INSTITUTION' };
         this.page = 'catalogue';
         this.loadPublications();
       },

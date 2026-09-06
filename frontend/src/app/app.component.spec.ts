@@ -197,7 +197,8 @@ describe('AppComponent', () => {
       author: 'A',
       year: 2026,
       visibility: 'PUBLIC',
-      keywords: ''
+      keywords: '',
+      image: null
     };
 
     component.createPublication();
@@ -212,7 +213,8 @@ describe('AppComponent', () => {
       author: 'Mina Laurent',
       year: 2026,
       visibility: 'INSTITUTION',
-      keywords: 'qualite, catalogage'
+      keywords: 'qualite, catalogage',
+      image: null
     };
 
     expect(component.isPublicationFormValid()).toBeTrue();

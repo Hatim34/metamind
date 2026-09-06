@@ -12,6 +12,7 @@ export interface Publication {
   status: PublicationStatus;
   visibility: 'PUBLIC' | 'INSTITUTION';
   keywords: string[];
+  imageUrl?: string | null;
 }
 
 export type PublicationStatus = 'EN_ATTENTE' | 'EXTRACTION' | 'A_VALIDER' | 'PUBLIE' | 'SUPPRIME';
@@ -154,6 +155,7 @@ export interface CreatePublicationRequest {
   year: number;
   visibility: 'PUBLIC' | 'INSTITUTION';
   keywords: string[];
+  image?: File | null;
 }
 
 export interface UpdatePublicationStatusRequest {
@@ -200,14 +202,26 @@ export class ApiService {
   }
 
   createPublication(request: CreatePublicationRequest): Observable<Publication> {
-    return this.http.post<unknown>(`${this.baseUrl}/publications`, request, { headers: this.authHeaders() })
+    const data = new FormData();
+    data.append('title', request.title);
+    data.append('author', request.author);
+    data.append('year', String(request.year));
+    data.append('visibility', request.visibility);
+    request.keywords.forEach((keyword) => data.append('keywords', keyword));
+    if (request.image) {
+      data.append('image', request.image);
+    }
+    return this.http.post<unknown>(`${this.baseUrl}/publications`, data, { headers: this.authHeaders() })
       .pipe(map((response) => this.toPublication(response)));
   }
 
-  importDocument(file: File, visibility: 'PUBLIC' | 'INSTITUTION'): Observable<Publication> {
+  importDocument(file: File, visibility: 'PUBLIC' | 'INSTITUTION', image?: File | null): Observable<Publication> {
     const data = new FormData();
     data.append('fichier', file);
     data.append('visibilite', visibility);
+    if (image) {
+      data.append('image', image);
+    }
     return this.http.post<unknown>(`${this.baseUrl}/documents`, data, { headers: this.authHeaders() })
       .pipe(map((response) => this.toPublication(response)));
   }
@@ -347,8 +361,22 @@ export class ApiService {
       year: item['annee'] ?? item['year'],
       status: item['statut'] ?? item['status'],
       visibility: item['visibilite'] ?? item['visibility'],
-      keywords: item['mots_cles'] ?? item['keywords'] ?? []
+      keywords: item['mots_cles'] ?? item['keywords'] ?? [],
+      imageUrl: this.toResourceUrl(item['image_url'] ?? item['imageUrl'])
     };
+  }
+
+  private toResourceUrl(value: unknown): string | null {
+    if (typeof value !== 'string' || !value.trim()) {
+      return null;
+    }
+    if (value.startsWith('http://') || value.startsWith('https://')) {
+      return value;
+    }
+    if (this.baseUrl.startsWith('http://localhost:8080') && value.startsWith('/api/')) {
+      return `http://localhost:8080${value}`;
+    }
+    return value;
   }
 
   private toUserSession(value: unknown): UserSession {
