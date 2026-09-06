@@ -57,7 +57,8 @@
             "styles": [
               "src/styles.css",
               "src/styles/layout.css",
-              "src/styles/controls.css"
+              "src/styles/controls.css",
+              "src/styles/data.css"
             ],
             "scripts": []
           },
@@ -117,7 +118,8 @@
             "styles": [
               "src/styles.css",
               "src/styles/layout.css",
-              "src/styles/controls.css"
+              "src/styles/controls.css",
+              "src/styles/data.css"
             ],
             "scripts": []
           }

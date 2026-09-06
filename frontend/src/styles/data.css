@@ -1,0 +1,214 @@
+/* ============================================================
+   Donnees : tableaux, administration, packs, listes
+   ============================================================ */
+
+/* Blocs de formulaires imbriques */
+.profile-form,
+.import-form,
+.metadata-form,
+.credit-history {
+  margin-top: var(--sp-6);
+  padding-top: var(--sp-6);
+  border-top: 1px solid var(--line);
+}
+
+.metadata-form {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  width: 100%;
+  padding: var(--sp-5);
+  margin-top: var(--sp-4);
+  background: var(--brand-100);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+}
+
+.metadata-form label:nth-child(3),
+.metadata-form label:nth-child(7),
+.metadata-form .actions {
+  grid-column: 1 / -1;
+}
+
+/* Fiche profil */
+.profile-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-6);
+}
+
+.profile-grid div {
+  padding: var(--sp-4) var(--sp-5);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+}
+
+.profile-grid span {
+  display: block;
+  margin-bottom: var(--sp-2);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0;
+}
+
+/* Packs de credits */
+.pack-grid {
+  display: grid;
+  gap: var(--sp-3);
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+}
+
+.pack-grid button {
+  display: grid;
+  gap: var(--sp-1);
+  justify-items: start;
+  padding: var(--sp-5);
+  border-radius: var(--r-md);
+  text-align: left;
+}
+
+.pack-grid button:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.pack-grid strong {
+  font-size: 22px;
+  color: var(--brand-strong);
+}
+
+.pack-grid span {
+  color: var(--muted);
+  font-weight: 600;
+}
+
+/* Formulaire d'administration */
+.admin-form {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  align-items: end;
+  margin-bottom: var(--sp-6);
+  padding-bottom: var(--sp-6);
+  border-bottom: 1px solid var(--line);
+}
+
+/* Tableaux */
+.table-wrap {
+  margin-top: var(--sp-6);
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+}
+
+.table-wrap h3 {
+  padding: var(--sp-4) var(--sp-5) 0;
+}
+
+table {
+  width: 100%;
+  min-width: 720px;
+  border-collapse: collapse;
+}
+
+thead th {
+  position: sticky;
+  top: 0;
+  background: var(--brand-100);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0;
+}
+
+th,
+td {
+  padding: 13px var(--sp-4);
+  text-align: left;
+  border-bottom: 1px solid var(--line);
+}
+
+tbody tr {
+  transition: background var(--t);
+}
+
+tbody tr:nth-child(even) {
+  background: color-mix(in srgb, var(--brand-100) 55%, transparent);
+}
+
+tbody tr:hover {
+  background: var(--brand-050);
+}
+
+tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* Colonnes d'administration */
+.admin-columns {
+  display: grid;
+  gap: var(--sp-5);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  margin-top: var(--sp-6);
+}
+
+.admin-columns section {
+  padding: var(--sp-5);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+}
+
+/* Listes de definitions et journaux */
+dl,
+ul {
+  display: grid;
+  gap: var(--sp-3);
+  margin: 0;
+  padding: 0;
+}
+
+dl div {
+  display: grid;
+  gap: var(--sp-1);
+  padding-bottom: var(--sp-3);
+  border-bottom: 1px solid var(--line);
+}
+
+dl div:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+dt {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0;
+}
+
+dd {
+  margin: 0;
+  color: var(--ink);
+  word-break: break-word;
+}
+
+li {
+  display: grid;
+  gap: var(--sp-1);
+  list-style: none;
+  padding-bottom: var(--sp-3);
+  border-bottom: 1px solid var(--line);
+}
+
+li:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+li span {
+  color: var(--muted);
+  font-size: 13px;
+}
