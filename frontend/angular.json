@@ -58,7 +58,8 @@
               "src/styles.css",
               "src/styles/layout.css",
               "src/styles/controls.css",
-              "src/styles/data.css"
+              "src/styles/data.css",
+              "src/styles/auth-responsive.css"
             ],
             "scripts": []
           },
@@ -119,7 +120,8 @@
               "src/styles.css",
               "src/styles/layout.css",
               "src/styles/controls.css",
-              "src/styles/data.css"
+              "src/styles/data.css",
+              "src/styles/auth-responsive.css"
             ],
             "scripts": []
           }

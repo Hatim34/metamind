@@ -1,0 +1,88 @@
+/* ============================================================
+   Ecrans d'authentification + responsive
+   ============================================================ */
+
+/* Panneaux de formulaire centres (connexion, inscription, depot) */
+.form-panel {
+  max-width: 520px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.form-panel .eyebrow {
+  text-align: center;
+}
+
+.form-panel > h2 {
+  text-align: center;
+  margin-bottom: var(--sp-6);
+}
+
+.form-panel .quick-actions {
+  justify-content: center;
+}
+
+/* Tablette */
+@media (max-width: 960px) {
+  .admin-form {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .admin-columns {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Mobile */
+@media (max-width: 760px) {
+  .app-shell {
+    padding: var(--sp-4) var(--sp-4) var(--sp-7);
+  }
+
+  .topbar,
+  .section-heading,
+  .publication-card {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .language-switch {
+    margin-left: 0;
+    align-self: flex-start;
+  }
+
+  nav button {
+    flex: 1 1 auto;
+  }
+
+  .summary-grid,
+  .profile-grid {
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  }
+
+  .section-heading input {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .tags {
+    justify-content: flex-start;
+    max-width: none;
+  }
+
+  .publication-actions {
+    justify-content: flex-start;
+    min-width: 0;
+  }
+
+  .metadata-form,
+  .admin-form {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 420px) {
+  .summary-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
