@@ -34,6 +34,9 @@ public class DocumentEntity {
 	@Column(name = "chemin_fichier", length = 500)
 	private String filePath;
 
+	@Column(name = "image_couverture", length = 500)
+	private String coverImagePath;
+
 	@Column(name = "taille_fichier")
 	private Long fileSize;
 
@@ -87,6 +90,14 @@ public class DocumentEntity {
 
 	public String getFilePath() {
 		return filePath;
+	}
+
+	public String getCoverImagePath() {
+		return coverImagePath;
+	}
+
+	public void updateCoverImagePath(String coverImagePath) {
+		this.coverImagePath = coverImagePath;
 	}
 
 	public Long getFileSize() {

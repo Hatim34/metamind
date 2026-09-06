@@ -20,11 +20,18 @@ import org.springframework.web.multipart.MultipartFile;
 @Service
 public class DocumentUploadService {
 	private static final long MAX_FILE_SIZE = 128L * 1024L * 1024L;
+	private static final long MAX_IMAGE_SIZE = 5L * 1024L * 1024L;
 	private static final Set<String> ALLOWED_EXTENSIONS = Set.of("pdf", "docx", "txt");
+	private static final Set<String> ALLOWED_IMAGE_EXTENSIONS = Set.of("png", "jpg", "jpeg", "webp");
 	private static final Set<String> ALLOWED_MEDIA_TYPES = Set.of(
 			"application/pdf",
 			"application/vnd.openxmlformats-officedocument.wordprocessingml.document",
 			"text/plain"
+	);
+	private static final Set<String> ALLOWED_IMAGE_MEDIA_TYPES = Set.of(
+			"image/png",
+			"image/jpeg",
+			"image/webp"
 	);
 
 	private final Path storageRoot;
@@ -39,8 +46,18 @@ public class DocumentUploadService {
 		validate(file);
 		String extractedText = textExtractor.extract(file);
 		String originalFileName = cleanOriginalFileName(file.getOriginalFilename());
-		Path storedPath = store(file, originalFileName);
+		Path storedPath = store(file, storageRoot, originalFileName);
 		return new ImportedDocument(originalFileName, storedPath.toString(), file.getSize(), normalizeMediaType(file), extractedText);
+	}
+
+	public String storeCoverImage(MultipartFile image) {
+		if (image == null || image.isEmpty()) {
+			return null;
+		}
+		validateCoverImage(image);
+		String originalFileName = cleanOriginalFileName(image.getOriginalFilename());
+		Path coverRoot = storageRoot.resolve("covers").normalize();
+		return store(image, coverRoot, originalFileName).toString();
 	}
 
 	private void validate(MultipartFile file) {
@@ -60,11 +77,25 @@ public class DocumentUploadService {
 		}
 	}
 
-	private Path store(MultipartFile file, String originalFileName) {
+	private void validateCoverImage(MultipartFile image) {
+		if (image.getSize() > MAX_IMAGE_SIZE) {
+			throw new ApiException(HttpStatus.BAD_REQUEST, "L'image de couverture depasse la taille maximale de 5 MB.");
+		}
+		String extension = extension(image.getOriginalFilename());
+		if (!ALLOWED_IMAGE_EXTENSIONS.contains(extension)) {
+			throw new ApiException(HttpStatus.BAD_REQUEST, "L'image de couverture doit etre au format PNG, JPEG ou WEBP.");
+		}
+		String mediaType = normalizeMediaType(image);
+		if (mediaType != null && !ALLOWED_IMAGE_MEDIA_TYPES.contains(mediaType)) {
+			throw new ApiException(HttpStatus.BAD_REQUEST, "Le type MIME de l'image ne correspond pas aux formats autorises.");
+		}
+	}
+
+	private Path store(MultipartFile file, Path targetRoot, String originalFileName) {
 		try {
-			Files.createDirectories(storageRoot);
-			Path target = storageRoot.resolve(UUID.randomUUID() + "-" + originalFileName).normalize();
-			if (!target.startsWith(storageRoot)) {
+			Files.createDirectories(targetRoot);
+			Path target = targetRoot.resolve(UUID.randomUUID() + "-" + originalFileName).normalize();
+			if (!target.startsWith(targetRoot)) {
 				throw new ApiException(HttpStatus.BAD_REQUEST, "Le nom du fichier est invalide.");
 			}
 			try (InputStream input = file.getInputStream()) {

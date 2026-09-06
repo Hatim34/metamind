@@ -70,6 +70,7 @@ CREATE TABLE documents (
   id BIGSERIAL PRIMARY KEY,
   nom_fichier VARCHAR(255) NOT NULL,
   chemin_fichier VARCHAR(500),
+  image_couverture VARCHAR(500),
   taille_fichier BIGINT CHECK (taille_fichier IS NULL OR taille_fichier <= 134217728),
   type_mime VARCHAR(100) CHECK (type_mime IS NULL OR type_mime IN ('PDF','DOCX','TXT')),
   texte_extrait TEXT,
