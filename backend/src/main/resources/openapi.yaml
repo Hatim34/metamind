@@ -422,6 +422,13 @@ paths:
     get:
       tags: [Statistiques]
       summary: Indicateurs d'usage (taux d'acceptation des suggestions, etc.)
+      parameters:
+        - name: date_debut
+          in: query
+          schema: { type: string, format: date }
+        - name: date_fin
+          in: query
+          schema: { type: string, format: date }
       responses:
         '200':
           description: Statistiques
@@ -437,6 +444,15 @@ paths:
                   publications_publiques: { type: integer, example: 45 }
                   publications_institution: { type: integer, example: 35 }
                   solde_credits: { type: integer, example: 120 }
+                  taux_validation: { type: number, format: double, example: 68.75 }
+                  taux_rejet: { type: number, format: double, example: 2.5 }
+                  temps_moyen_traitement_heures: { type: number, format: double, example: 1.25 }
+                  distribution_types_documents:
+                    type: object
+                    additionalProperties: { type: integer }
+                  distribution_classifications:
+                    type: object
+                    additionalProperties: { type: integer }
 
   /admin/users:
     get:

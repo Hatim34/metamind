@@ -1,11 +1,14 @@
 package be.icc.metamind.statistics;
 
+import java.time.LocalDate;
+
 import be.icc.metamind.user.AccountService;
 import be.icc.metamind.user.UserEntity;
 
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -20,8 +23,12 @@ public class StatisticsController {
 	}
 
 	@GetMapping
-	public StatisticsResponse getStatistics(@RequestHeader("Authorization") String authorization) {
+	public StatisticsResponse getStatistics(
+			@RequestHeader("Authorization") String authorization,
+			@RequestParam(value = "date_debut", required = false) LocalDate startDate,
+			@RequestParam(value = "date_fin", required = false) LocalDate endDate
+	) {
 		UserEntity currentUser = accountService.authenticate(authorization);
-		return service.getStatistics(currentUser);
+		return service.getStatistics(currentUser, startDate, endDate);
 	}
 }

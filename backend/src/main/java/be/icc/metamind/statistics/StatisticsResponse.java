@@ -1,5 +1,7 @@
 package be.icc.metamind.statistics;
 
+import java.util.Map;
+
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 public record StatisticsResponse(
@@ -21,6 +23,21 @@ public record StatisticsResponse(
 		long institutionOnlyPublications,
 
 		@JsonProperty("solde_credits")
-		int creditBalance
+		int creditBalance,
+
+		@JsonProperty("taux_validation")
+		double validationRate,
+
+		@JsonProperty("taux_rejet")
+		double rejectionRate,
+
+		@JsonProperty("temps_moyen_traitement_heures")
+		double averageProcessingHours,
+
+		@JsonProperty("distribution_types_documents")
+		Map<String, Long> documentTypeDistribution,
+
+		@JsonProperty("distribution_classifications")
+		Map<String, Long> classificationDistribution
 ) {
 }

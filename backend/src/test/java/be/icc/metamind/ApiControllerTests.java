@@ -905,7 +905,10 @@ class ApiControllerTests {
 				.andExpect(jsonPath("$.total_publications", is(2)))
 				.andExpect(jsonPath("$.publications_publiees", is(1)))
 				.andExpect(jsonPath("$.publications_a_valider", is(1)))
-				.andExpect(jsonPath("$.publications_institution", is(1)));
+				.andExpect(jsonPath("$.publications_institution", is(1)))
+				.andExpect(jsonPath("$.taux_validation", is(50.0)))
+				.andExpect(jsonPath("$.taux_rejet", is(0.0)))
+				.andExpect(jsonPath("$.distribution_classifications['Non renseigne']", is(2)));
 	}
 
 	@Test
@@ -928,7 +931,8 @@ class ApiControllerTests {
 				.andExpect(jsonPath("$.scope", is("GLOBAL")))
 				.andExpect(jsonPath("$.total_publications", is(3)))
 				.andExpect(jsonPath("$.publications_publiees", is(2)))
-				.andExpect(jsonPath("$.publications_institution", is(2)));
+				.andExpect(jsonPath("$.publications_institution", is(2)))
+				.andExpect(jsonPath("$.distribution_types_documents['Non renseigne']", is(3)));
 	}
 
 	@Test
