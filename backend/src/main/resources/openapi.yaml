@@ -600,6 +600,20 @@ paths:
                             type_entite: { type: string, example: document }
                             date_creation: { type: string, format: date-time }
 
+  /admin/reports/documents.csv:
+    get:
+      tags: [Administration]
+      summary: Exporter les documents en CSV (ADMIN)
+      responses:
+        '200':
+          description: Rapport CSV des documents
+          content:
+            text/csv:
+              schema:
+                type: string
+                example: "id,titre,statut,visibilite,institution,date_publication,classification"
+        '403': { $ref: '#/components/responses/Error' }
+
 components:
 
   securitySchemes:

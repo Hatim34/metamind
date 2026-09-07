@@ -653,6 +653,17 @@ class ApiControllerTests {
 	}
 
 	@Test
+	void administratorCanExportDocumentsAsCsv() throws Exception {
+		mockMvc.perform(get("/api/v1/admin/reports/documents.csv")
+						.header("Authorization", adminBearerToken()))
+				.andExpect(status().isOk())
+				.andExpect(content().contentType("text/csv"))
+				.andExpect(result -> assertThat(result.getResponse().getContentAsString())
+						.contains("id,titre,statut,visibilite,institution,date_publication,classification")
+						.contains("Analyse automatique des metadonnees pour les depots institutionnels"));
+	}
+
+	@Test
 	void creditsAndExtractionWorkflowIsSecuredAndConsumesOneCredit() throws Exception {
 		UserEntity user = userRepository.findByEmailIgnoreCase("sarah@institution-a.example").orElseThrow();
 		DocumentEntity publication = documentRepository.findAll().getFirst();

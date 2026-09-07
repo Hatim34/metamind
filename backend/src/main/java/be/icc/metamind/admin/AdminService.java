@@ -11,6 +11,9 @@ import be.icc.metamind.document.AuditLogEntity;
 import be.icc.metamind.document.AuditLogRepository;
 import be.icc.metamind.document.ConfigurationEntity;
 import be.icc.metamind.document.ConfigurationRepository;
+import be.icc.metamind.document.DocumentRepository;
+import be.icc.metamind.document.MetadataEntity;
+import be.icc.metamind.document.MetadataRepository;
 import be.icc.metamind.institution.InstitutionRepository;
 import be.icc.metamind.institution.InstitutionResponse;
 import be.icc.metamind.user.UserEntity;
@@ -36,12 +39,23 @@ public class AdminService {
 	private final InstitutionRepository institutionRepository;
 	private final ConfigurationRepository configurationRepository;
 	private final AuditLogRepository auditLogRepository;
+	private final DocumentRepository documentRepository;
+	private final MetadataRepository metadataRepository;
 
-	public AdminService(UserRepository userRepository, InstitutionRepository institutionRepository, ConfigurationRepository configurationRepository, AuditLogRepository auditLogRepository) {
+	public AdminService(
+			UserRepository userRepository,
+			InstitutionRepository institutionRepository,
+			ConfigurationRepository configurationRepository,
+			AuditLogRepository auditLogRepository,
+			DocumentRepository documentRepository,
+			MetadataRepository metadataRepository
+	) {
 		this.userRepository = userRepository;
 		this.institutionRepository = institutionRepository;
 		this.configurationRepository = configurationRepository;
 		this.auditLogRepository = auditLogRepository;
+		this.documentRepository = documentRepository;
+		this.metadataRepository = metadataRepository;
 	}
 
 	@Transactional(readOnly = true)
@@ -134,5 +148,27 @@ public class AdminService {
 				.map(AuditLogResponse::from)
 				.toList();
 		return PageResponse.from(logs, page, size);
+	}
+
+	@Transactional(readOnly = true)
+	public String exportDocumentsCsv() {
+		StringBuilder csv = new StringBuilder("id,titre,statut,visibilite,institution,date_publication,classification\n");
+		documentRepository.findAll().forEach(document -> {
+			MetadataEntity metadata = metadataRepository.findByDocumentId(document.getId()).orElse(null);
+			csv.append(document.getId()).append(',')
+					.append(csvValue(metadata == null ? document.getFileName() : metadata.getTitre())).append(',')
+					.append(csvValue(document.getStatus().name())).append(',')
+					.append(csvValue(document.getVisibility().name())).append(',')
+					.append(csvValue(document.getInstitution().getName())).append(',')
+					.append(csvValue(metadata == null || metadata.getPublicationDate() == null ? "" : metadata.getPublicationDate().toString())).append(',')
+					.append(csvValue(metadata == null ? "" : metadata.getClassification()))
+					.append('\n');
+		});
+		return csv.toString();
+	}
+
+	private String csvValue(String value) {
+		String cleanValue = value == null ? "" : value;
+		return "\"" + cleanValue.replace("\"", "\"\"") + "\"";
 	}
 }

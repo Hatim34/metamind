@@ -11,6 +11,9 @@ import be.icc.metamind.user.AccountService;
 import be.icc.metamind.user.UserEntity;
 import be.icc.metamind.user.UserResponse;
 
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -81,5 +84,14 @@ public class AdminController {
 	) {
 		accountService.authenticateAdmin(authorization);
 		return service.listLogs(page, size);
+	}
+
+	@GetMapping(value = "/reports/documents.csv", produces = "text/csv")
+	public ResponseEntity<String> exportDocuments(@RequestHeader("Authorization") String authorization) {
+		accountService.authenticateAdmin(authorization);
+		return ResponseEntity.ok()
+				.header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"metamind-documents.csv\"")
+				.contentType(MediaType.parseMediaType("text/csv"))
+				.body(service.exportDocumentsCsv());
 	}
 }
