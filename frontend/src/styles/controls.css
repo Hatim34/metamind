@@ -120,9 +120,11 @@ form {
   border: 0;
 }
 
-/* --- Liste des publications = sommaire de revue --- */
+/* --- Liste des publications : grille dense (2 colonnes) --- */
 .publication-list {
-  display: block;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 420px), 1fr));
+  gap: 0 2.4rem;
 }
 
 .publication-card {
@@ -130,8 +132,8 @@ form {
   flex-wrap: wrap;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 1.4rem;
-  padding: 1.5rem 0;
+  gap: 1.2rem;
+  padding: 1.2rem 0;
   border: 0;
   border-bottom: 1px solid var(--line);
   border-radius: 0;

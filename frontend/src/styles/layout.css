@@ -114,7 +114,7 @@
 .app-shell {
   max-width: var(--maxw);
   margin: 0 auto;
-  padding: clamp(2rem, 5vw, 3.4rem) clamp(1.1rem, 4vw, 2rem) 3rem;
+  padding: clamp(1.3rem, 3vw, 2rem) clamp(1.1rem, 4vw, 2rem) 3rem;
 }
 
 /* --- Hero typographique (pas de bloc colore, pas de graphique) --- */

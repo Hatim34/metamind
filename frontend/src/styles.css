@@ -35,8 +35,8 @@
   --f-body: "Inter", system-ui, -apple-system, sans-serif;
   --f-mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
 
-  --measure: 68ch;
-  --maxw: 1000px;
+  --measure: 78ch;
+  --maxw: 1280px;
 }
 
 * {
