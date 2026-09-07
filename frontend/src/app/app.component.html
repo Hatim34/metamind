@@ -562,12 +562,18 @@
     <div class="admin-columns" *ngIf="isAdmin">
       <section>
         <h3>{{ t('configuration') }}</h3>
-        <dl>
+        <form (ngSubmit)="saveAdminConfig()">
           <div *ngFor="let item of adminConfig | keyvalue">
-            <dt>{{ item.key }}</dt>
-            <dd>{{ item.value }}</dd>
+            <label>
+              {{ item.key }}
+              <input [name]="'config' + item.key" [(ngModel)]="adminConfigForm[item.key]" maxlength="500" />
+            </label>
           </div>
-        </dl>
+          <div class="actions">
+            <button type="submit" class="primary">{{ t('saveConfiguration') }}</button>
+            <button type="button" (click)="exportAdminDocumentsCsv()">{{ t('exportCsv') }}</button>
+          </div>
+        </form>
       </section>
       <section>
         <h3>{{ t('auditLogs') }}</h3>

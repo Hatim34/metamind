@@ -83,6 +83,11 @@ export interface DashboardStatistics {
   publicPublications: number;
   institutionOnlyPublications: number;
   creditBalance: number;
+  validationRate?: number;
+  rejectionRate?: number;
+  averageProcessingHours?: number;
+  documentTypeDistribution?: Record<string, number>;
+  classificationDistribution?: Record<string, number>;
 }
 
 export interface MetadataExtraction {
@@ -382,6 +387,17 @@ export class ApiService {
     return this.http.get<Record<string, string>>(`${this.baseUrl}/admin/config`, { headers: this.authHeaders() });
   }
 
+  updateAdminConfig(config: Record<string, string>): Observable<Record<string, string>> {
+    return this.http.patch<Record<string, string>>(`${this.baseUrl}/admin/config`, config, { headers: this.authHeaders() });
+  }
+
+  exportAdminDocumentsCsv(): Observable<string> {
+    return this.http.get(`${this.baseUrl}/admin/reports/documents.csv`, {
+      headers: this.authHeaders(),
+      responseType: 'text'
+    });
+  }
+
   getAdminLogs(): Observable<AuditLog[]> {
     return this.http.get<PageResponse<AuditLog>>(`${this.baseUrl}/admin/logs`, { headers: this.authHeaders() })
       .pipe(map((response) => response.contenu));
@@ -511,7 +527,12 @@ export class ApiService {
       pendingValidationPublications: item['publications_a_valider'] ?? item['pendingValidationPublications'],
       publicPublications: item['publications_publiques'] ?? item['publicPublications'],
       institutionOnlyPublications: item['publications_institution'] ?? item['institutionOnlyPublications'],
-      creditBalance: item['solde_credits'] ?? item['creditBalance']
+      creditBalance: item['solde_credits'] ?? item['creditBalance'],
+      validationRate: item['taux_validation'] ?? item['validationRate'],
+      rejectionRate: item['taux_rejet'] ?? item['rejectionRate'],
+      averageProcessingHours: item['temps_moyen_traitement_heures'] ?? item['averageProcessingHours'],
+      documentTypeDistribution: item['distribution_types_documents'] ?? item['documentTypeDistribution'],
+      classificationDistribution: item['distribution_classifications'] ?? item['classificationDistribution']
     };
   }
 

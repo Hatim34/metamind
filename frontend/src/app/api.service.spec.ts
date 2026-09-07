@@ -179,7 +179,12 @@ describe('ApiService', () => {
       publications_a_valider: 1,
       publications_publiques: 1,
       publications_institution: 1,
-      solde_credits: 20
+      solde_credits: 20,
+      taux_validation: 80,
+      taux_rejet: 5,
+      temps_moyen_traitement_heures: 1.5,
+      distribution_types_documents: { article: 2 },
+      distribution_classifications: { Informatique: 1 }
     });
   });
 
@@ -314,5 +319,33 @@ describe('ApiService', () => {
       total_elements: 1,
       total_pages: 1
     });
+  });
+
+  it('met a jour la configuration admin', () => {
+    service.setToken('token-test');
+
+    service.updateAdminConfig({ prix_credit_eur: '0.60' }).subscribe((response) => {
+      expect(response['prix_credit_eur']).toBe('0.60');
+    });
+
+    const request = httpMock.expectOne('/api/v1/admin/config');
+    expect(request.request.method).toBe('PATCH');
+    expect(request.request.headers.get('Authorization')).toBe('Bearer token-test');
+    expect(request.request.body).toEqual({ prix_credit_eur: '0.60' });
+    request.flush({ prix_credit_eur: '0.60' });
+  });
+
+  it('exporte les documents admin en csv', () => {
+    service.setToken('token-test');
+
+    service.exportAdminDocumentsCsv().subscribe((response) => {
+      expect(response).toContain('id,titre');
+    });
+
+    const request = httpMock.expectOne('/api/v1/admin/reports/documents.csv');
+    expect(request.request.method).toBe('GET');
+    expect(request.request.responseType).toBe('text');
+    expect(request.request.headers.get('Authorization')).toBe('Bearer token-test');
+    request.flush('id,titre');
   });
 });

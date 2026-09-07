@@ -72,6 +72,8 @@ describe('AppComponent', () => {
       'getAdminUsers',
       'updateAdminUser',
       'getAdminConfig',
+      'updateAdminConfig',
+      'exportAdminDocumentsCsv',
       'getAdminLogs'
     ]);
     api.getPublications.and.returnValue(of(publications));
@@ -107,6 +109,8 @@ describe('AppComponent', () => {
     }));
     api.getAdminUsers.and.returnValue(of([]));
     api.getAdminConfig.and.returnValue(of({ prix_credit_eur: '0.50' }));
+    api.updateAdminConfig.and.returnValue(of({ prix_credit_eur: '0.60' }));
+    api.exportAdminDocumentsCsv.and.returnValue(of('id,titre'));
     api.getAdminLogs.and.returnValue(of([]));
     api.getMetadata.and.returnValue(of({
       id: 7,
@@ -120,7 +124,8 @@ describe('AppComponent', () => {
       date_validation: null,
       validee_par: null,
       auteurs: [{ nom_complet: 'Sarah Lemaire' }],
-      mots_cles: ['Dublin Core']
+      mots_cles: ['Dublin Core'],
+      texte_extrait: 'Texte extrait du document'
     }));
 
     await TestBed.configureTestingModule({

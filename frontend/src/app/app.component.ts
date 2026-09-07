@@ -78,6 +78,11 @@ const translations = {
     sendFile: 'Importer le fichier',
     adminUsers: 'Utilisateurs',
     configuration: 'Configuration',
+    saveConfiguration: 'Enregistrer la configuration',
+    configurationSaved: 'La configuration est mise à jour.',
+    configurationFailed: 'Modification de la configuration impossible.',
+    exportCsv: 'Exporter le CSV',
+    exportFailed: 'Export CSV impossible.',
     auditLogs: 'Journal d audit',
     deactivateAccount: 'Désactiver',
     requestDeletion: 'Demander la suppression du compte',
@@ -196,6 +201,11 @@ const translations = {
     sendFile: 'Bestand importeren',
     adminUsers: 'Gebruikers',
     configuration: 'Configuratie',
+    saveConfiguration: 'Configuratie opslaan',
+    configurationSaved: 'De configuratie is bijgewerkt.',
+    configurationFailed: 'Configuratie wijzigen is onmogelijk.',
+    exportCsv: 'CSV exporteren',
+    exportFailed: 'CSV-export is onmogelijk.',
     auditLogs: 'Auditlogboek',
     deactivateAccount: 'Deactiveren',
     requestDeletion: 'Verwijdering van de account aanvragen',
@@ -314,6 +324,11 @@ const translations = {
     sendFile: 'Import file',
     adminUsers: 'Users',
     configuration: 'Configuration',
+    saveConfiguration: 'Save configuration',
+    configurationSaved: 'The configuration is updated.',
+    configurationFailed: 'Configuration update failed.',
+    exportCsv: 'Export CSV',
+    exportFailed: 'CSV export failed.',
     auditLogs: 'Audit log',
     deactivateAccount: 'Deactivate',
     requestDeletion: 'Request account deletion',
@@ -448,6 +463,7 @@ export class AppComponent implements OnInit {
   institutions: Institution[] = [];
   adminUsers: UserSession[] = [];
   adminConfig: Record<string, string> = {};
+  adminConfigForm: Record<string, string> = {};
   auditLogs: AuditLog[] = [];
   creditPacks: CreditPackOption[] = [];
   creditBalance: number | null = null;
@@ -970,6 +986,7 @@ export class AppComponent implements OnInit {
     this.institutions = [];
     this.adminUsers = [];
     this.adminConfig = {};
+    this.adminConfigForm = {};
     this.auditLogs = [];
     this.creditBalance = null;
     this.creditMovements = [];
@@ -1001,9 +1018,11 @@ export class AppComponent implements OnInit {
     this.api.getAdminConfig().subscribe({
       next: (config) => {
         this.adminConfig = config;
+        this.adminConfigForm = { ...config };
       },
       error: () => {
         this.adminConfig = {};
+        this.adminConfigForm = {};
       }
     });
     this.api.getAdminLogs().subscribe({
@@ -1025,6 +1044,45 @@ export class AppComponent implements OnInit {
       next: () => this.loadAdminData(),
       error: () => {
         this.message = this.t('statusUpdateFailed');
+      }
+    });
+  }
+
+  saveAdminConfig(): void {
+    if (!this.isAdmin) {
+      return;
+    }
+
+    this.api.updateAdminConfig(this.adminConfigForm).subscribe({
+      next: (config) => {
+        this.adminConfig = config;
+        this.adminConfigForm = { ...config };
+        this.message = this.t('configurationSaved');
+        this.loadAdminData();
+      },
+      error: () => {
+        this.message = this.t('configurationFailed');
+      }
+    });
+  }
+
+  exportAdminDocumentsCsv(): void {
+    if (!this.isAdmin) {
+      return;
+    }
+
+    this.api.exportAdminDocumentsCsv().subscribe({
+      next: (csv) => {
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = 'metamind-documents.csv';
+        link.click();
+        URL.revokeObjectURL(url);
+      },
+      error: () => {
+        this.message = this.t('exportFailed');
       }
     });
   }

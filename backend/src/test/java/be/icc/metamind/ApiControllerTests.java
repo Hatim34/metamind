@@ -634,6 +634,7 @@ class ApiControllerTests {
 		String body = """
 				{
 				  "modele_llm": "gemini-2.5-flash-lite",
+				  "prix_credit_eur": "0.60",
 				  "langues": "fr,nl,en"
 				}
 				""";
@@ -641,9 +642,10 @@ class ApiControllerTests {
 		mockMvc.perform(patch("/api/v1/admin/config")
 						.header("Authorization", adminBearerToken())
 						.contentType(MediaType.APPLICATION_JSON)
-						.content(body))
+				.content(body))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.modele_llm", is("gemini-2.5-flash-lite")))
+				.andExpect(jsonPath("$.prix_credit_eur", is("0.60")))
 				.andExpect(jsonPath("$.langues", is("fr,nl,en")));
 
 		mockMvc.perform(get("/api/v1/admin/logs")

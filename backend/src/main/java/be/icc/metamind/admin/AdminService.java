@@ -32,7 +32,12 @@ public class AdminService {
 			"url_dspace",
 			"taille_max_upload_mo",
 			"langues",
-			"cle_api_llm"
+			"cle_api_llm",
+			"prix_credit_eur",
+			"stripe_actif",
+			"recherche_cache_secondes",
+			"tentatives_connexion_max",
+			"jwt_duree_secondes"
 	);
 
 	private final UserRepository userRepository;
