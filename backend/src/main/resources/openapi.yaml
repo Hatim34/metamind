@@ -217,6 +217,47 @@ paths:
         '402': { description: Solde de credits insuffisant, $ref: '#/components/responses/Error' }
         '404': { $ref: '#/components/responses/Error' }
 
+  /documents/extractions:
+    post:
+      tags: [Extraction]
+      summary: Lancer l'extraction sur plusieurs documents
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [document_ids]
+              properties:
+                document_ids:
+                  type: array
+                  minItems: 1
+                  maxItems: 50
+                  items: { type: integer }
+      responses:
+        '202':
+          description: Resultat du traitement groupe
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total: { type: integer, example: 2 }
+                  succes: { type: integer, example: 2 }
+                  echecs: { type: integer, example: 0 }
+                  resultats:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        document_id: { type: integer }
+                        statut: { type: string, example: TERMINE }
+                        succes: { type: boolean }
+                        message: { type: string }
+                        enrichissement_id: { type: integer, nullable: true }
+        '400': { $ref: '#/components/responses/Error' }
+        '402': { description: Solde de credits insuffisant, $ref: '#/components/responses/Error' }
+
   /documents/{id}/metadata:
     get:
       tags: [Metadonnees]

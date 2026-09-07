@@ -665,6 +665,40 @@ class ApiControllerTests {
 	}
 
 	@Test
+	void batchExtractionConsumesOneCreditPerSuccessfulDocument() throws Exception {
+		UserEntity user = userRepository.findByEmailIgnoreCase("sarah@institution-a.example").orElseThrow();
+		List<DocumentEntity> publications = documentRepository.findAll().stream()
+				.filter(document -> document.getInstitution().getId().equals(user.getInstitution().getId()))
+				.toList();
+		String authorization = bearerToken();
+
+		mockMvc.perform(post("/api/v1/users/" + user.getId() + "/credits/purchase")
+						.header("Authorization", authorization)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{\"amount\":3}"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.solde_credits", is(3)));
+
+		String body = """
+				{
+				  "document_ids": [%d, %d]
+				}
+				""".formatted(publications.get(0).getId(), publications.get(1).getId());
+
+		mockMvc.perform(post("/api/v1/documents/extractions")
+						.header("Authorization", authorization)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(body))
+				.andExpect(status().isAccepted())
+				.andExpect(jsonPath("$.total", is(2)))
+				.andExpect(jsonPath("$.succes", is(2)))
+				.andExpect(jsonPath("$.echecs", is(0)))
+				.andExpect(jsonPath("$.resultats", hasSize(2)));
+
+		assertThat(institutionRepository.findById(user.getInstitution().getId()).orElseThrow().getCreditBalance()).isEqualTo(1);
+	}
+
+	@Test
 	void institutionOnlyPublicationIsHiddenFromOtherInstitutions() throws Exception {
 		DocumentEntity restrictedPublication = documentRepository.findAll().stream()
 				.filter(publication -> publication.getVisibility() == DocumentVisibility.INSTITUTION)

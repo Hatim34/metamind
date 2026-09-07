@@ -1,6 +1,9 @@
 package be.icc.metamind.extraction;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
@@ -119,6 +122,38 @@ public class ExtractionService {
 				metadata.keywords(),
 				institution.getCreditBalance()
 		);
+	}
+
+	@Transactional(noRollbackFor = ApiException.class)
+	public MetadataExtractionBatchResponse extractBatch(MetadataExtractionBatchRequest request, UserEntity user) {
+		List<Long> documentIds = cleanDocumentIds(request);
+		List<MetadataExtractionBatchItemResponse> results = new ArrayList<>();
+		for (Long documentId : documentIds) {
+			try {
+				results.add(MetadataExtractionBatchItemResponse.success(extract(documentId, user)));
+			}
+			catch (ApiException exception) {
+				results.add(MetadataExtractionBatchItemResponse.failure(documentId, exception.getMessage()));
+			}
+		}
+		return MetadataExtractionBatchResponse.from(results);
+	}
+
+	private List<Long> cleanDocumentIds(MetadataExtractionBatchRequest request) {
+		if (request == null || request.documentIds() == null || request.documentIds().isEmpty()) {
+			throw new ApiException(HttpStatus.BAD_REQUEST, "La liste des documents est obligatoire.");
+		}
+		List<Long> documentIds = request.documentIds().stream()
+				.filter(Objects::nonNull)
+				.filter(id -> id > 0)
+				.collect(Collectors.collectingAndThen(Collectors.toCollection(LinkedHashSet::new), ArrayList::new));
+		if (documentIds.isEmpty()) {
+			throw new ApiException(HttpStatus.BAD_REQUEST, "La liste des documents est invalide.");
+		}
+		if (documentIds.size() > 50) {
+			throw new ApiException(HttpStatus.BAD_REQUEST, "Le traitement groupe est limite a 50 documents.");
+		}
+		return documentIds;
 	}
 
 	private void saveSuggestions(EnrichmentEntity enrichment, MetadataExtractionData metadata) {
