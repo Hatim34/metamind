@@ -488,6 +488,51 @@ paths:
                   modele_llm: gemini-2.5-flash
                   taille_max_upload_mo: "128"
                   prix_credit_eur: "0.50"
+    patch:
+      tags: [Administration]
+      summary: Modifier la configuration de la plateforme (ADMIN)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: { type: string }
+              example:
+                modele_llm: gemini-2.5-flash-lite
+                url_dspace: https://dspace.institution-a.example/server/api
+                taille_max_upload_mo: "128"
+                langues: fr,nl,en
+      responses:
+        '200':
+          description: Configuration mise a jour
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: { type: string }
+        '400': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
+    put:
+      tags: [Administration]
+      summary: Remplacer des parametres de configuration (ADMIN)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: { type: string }
+      responses:
+        '200':
+          description: Configuration mise a jour
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: { type: string }
+        '400': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
 
   /admin/logs:
     get:

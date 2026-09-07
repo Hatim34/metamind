@@ -37,6 +37,12 @@ public class ConfigurationEntity {
 		this.modifiedBy = modifiedBy;
 	}
 
+	public void update(String valeur, UserEntity modifiedBy) {
+		this.valeur = valeur;
+		this.modifiedBy = modifiedBy;
+		this.modifiedAt = LocalDateTime.now();
+	}
+
 	public String getCle() {
 		return cle;
 	}

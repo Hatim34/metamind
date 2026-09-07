@@ -631,9 +631,25 @@ class ApiControllerTests {
 				.andExpect(jsonPath("$.prix_credit_eur", is("0.50")))
 				.andExpect(jsonPath("$.taille_max_upload_mo", is("128")));
 
+		String body = """
+				{
+				  "modele_llm": "gemini-2.5-flash-lite",
+				  "langues": "fr,nl,en"
+				}
+				""";
+
+		mockMvc.perform(patch("/api/v1/admin/config")
+						.header("Authorization", adminBearerToken())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(body))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.modele_llm", is("gemini-2.5-flash-lite")))
+				.andExpect(jsonPath("$.langues", is("fr,nl,en")));
+
 		mockMvc.perform(get("/api/v1/admin/logs")
 						.header("Authorization", adminBearerToken()))
-				.andExpect(status().isOk());
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.contenu[0].action", is("MODIFICATION_CONFIGURATION")));
 	}
 
 	@Test

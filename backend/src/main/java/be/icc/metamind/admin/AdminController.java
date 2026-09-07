@@ -14,6 +14,7 @@ import be.icc.metamind.user.UserResponse;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -58,6 +59,18 @@ public class AdminController {
 	public Map<String, String> configuration(@RequestHeader("Authorization") String authorization) {
 		accountService.authenticateAdmin(authorization);
 		return service.readConfiguration();
+	}
+
+	@PatchMapping("/config")
+	public Map<String, String> updateConfiguration(@RequestHeader("Authorization") String authorization, @RequestBody Map<String, String> values) {
+		UserEntity admin = accountService.authenticateAdmin(authorization);
+		return service.updateConfiguration(values, admin);
+	}
+
+	@PutMapping("/config")
+	public Map<String, String> replaceConfiguration(@RequestHeader("Authorization") String authorization, @RequestBody Map<String, String> values) {
+		UserEntity admin = accountService.authenticateAdmin(authorization);
+		return service.updateConfiguration(values, admin);
 	}
 
 	@GetMapping("/logs")
