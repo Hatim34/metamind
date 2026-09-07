@@ -4,6 +4,8 @@ import be.icc.metamind.user.AccountService;
 import be.icc.metamind.user.UserEntity;
 import jakarta.validation.Valid;
 
+import java.util.List;
+
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -27,6 +29,12 @@ public class MetadataController {
 	public MetadataResponse getMetadata(@PathVariable long documentId, @RequestHeader("Authorization") String authorization) {
 		UserEntity currentUser = accountService.authenticate(authorization);
 		return metadataService.getMetadata(documentId, currentUser);
+	}
+
+	@GetMapping("/historique")
+	public List<MetadataHistoryResponse> getMetadataHistory(@PathVariable long documentId, @RequestHeader("Authorization") String authorization) {
+		UserEntity currentUser = accountService.authenticate(authorization);
+		return metadataService.getMetadataHistory(documentId, currentUser);
 	}
 
 	@PutMapping

@@ -3,6 +3,7 @@ package be.icc.metamind.document;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import be.icc.metamind.api.ApiException;
 import be.icc.metamind.user.UserEntity;
@@ -20,6 +21,7 @@ public class MetadataService {
 	private final KeywordRepository keywordRepository;
 	private final DocumentAuthorRepository documentAuthorRepository;
 	private final DocumentKeywordRepository documentKeywordRepository;
+	private final AuditLogRepository auditLogRepository;
 
 	public MetadataService(
 			DocumentRepository documentRepository,
@@ -27,7 +29,8 @@ public class MetadataService {
 			AuthorRepository authorRepository,
 			KeywordRepository keywordRepository,
 			DocumentAuthorRepository documentAuthorRepository,
-			DocumentKeywordRepository documentKeywordRepository
+			DocumentKeywordRepository documentKeywordRepository,
+			AuditLogRepository auditLogRepository
 	) {
 		this.documentRepository = documentRepository;
 		this.metadataRepository = metadataRepository;
@@ -35,6 +38,7 @@ public class MetadataService {
 		this.keywordRepository = keywordRepository;
 		this.documentAuthorRepository = documentAuthorRepository;
 		this.documentKeywordRepository = documentKeywordRepository;
+		this.auditLogRepository = auditLogRepository;
 	}
 
 	@Transactional(readOnly = true)
@@ -43,6 +47,15 @@ public class MetadataService {
 		MetadataEntity metadata = metadataRepository.findByDocumentId(document.getId())
 				.orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Les metadonnees du document sont introuvables."));
 		return toResponse(metadata);
+	}
+
+	@Transactional(readOnly = true)
+	public List<MetadataHistoryResponse> getMetadataHistory(long documentId, UserEntity user) {
+		DocumentEntity document = findManageableDocument(documentId, user);
+		return auditLogRepository.findByActionAndEntityTypeAndEntityIdOrderByCreatedAtDesc("MODIFICATION_METADONNEE", "metadonnees", document.getId())
+				.stream()
+				.map(MetadataHistoryResponse::from)
+				.toList();
 	}
 
 	@Transactional
@@ -54,6 +67,14 @@ public class MetadataService {
 		MetadataEntity metadata = metadataRepository.findByDocumentId(document.getId())
 				.orElseGet(() -> metadataRepository.save(new MetadataEntity(document, document.getFileName(), null, null, null, MetadataStatus.EN_ATTENTE)));
 
+		String previousTitle = metadata.getTitre();
+		String previousSummary = metadata.getResume();
+		String previousPublicationDate = metadata.getPublicationDate() == null ? null : metadata.getPublicationDate().toString();
+		String previousClassification = metadata.getClassification();
+		String previousVisibility = document.getVisibility() == null ? null : document.getVisibility().name();
+		String previousAuthors = authorsValue(document);
+		String previousKeywords = keywordsValue(document);
+
 		String title = cleanRequired(request.title(), "Le titre est obligatoire.");
 		String summary = cleanOptional(request.summary());
 		String classification = cleanOptional(request.classification());
@@ -61,6 +82,13 @@ public class MetadataService {
 		replaceAuthors(document, request.authors());
 		replaceKeywords(document, request.keywords());
 		document.publish(request.visibility(), searchText(title, summary, classification, request.keywords()));
+		recordMetadataHistory(document, "titre", previousTitle, title, user);
+		recordMetadataHistory(document, "resume", previousSummary, summary, user);
+		recordMetadataHistory(document, "date_publication", previousPublicationDate, request.publicationDate() == null ? null : request.publicationDate().toString(), user);
+		recordMetadataHistory(document, "classification", previousClassification, classification, user);
+		recordMetadataHistory(document, "visibilite", previousVisibility, request.visibility().name(), user);
+		recordMetadataHistory(document, "auteurs", previousAuthors, authorsValue(document), user);
+		recordMetadataHistory(document, "mots_cles", previousKeywords, keywordsValue(document), user);
 		return toResponse(metadata);
 	}
 
@@ -101,6 +129,43 @@ public class MetadataService {
 				.map(keyword -> keywordRepository.findByLibelleIgnoreCase(keyword)
 						.orElseGet(() -> keywordRepository.save(new KeywordEntity(keyword))))
 				.forEach(keyword -> documentKeywordRepository.save(new DocumentKeywordEntity(document, keyword)));
+	}
+
+	private void recordMetadataHistory(DocumentEntity document, String field, String previousValue, String newValue, UserEntity user) {
+		String previous = historyValue(previousValue);
+		String current = historyValue(newValue);
+		if (Objects.equals(previous, current)) {
+			return;
+		}
+		auditLogRepository.save(new AuditLogEntity(
+				user,
+				"MODIFICATION_METADONNEE",
+				"metadonnees",
+				document.getId(),
+				field + "\n" + previous + "\n" + current,
+				"system"
+		));
+	}
+
+	private String historyValue(String value) {
+		if (value == null || value.trim().isBlank()) {
+			return "";
+		}
+		return value.trim().replaceAll("\\s+", " ");
+	}
+
+	private String authorsValue(DocumentEntity document) {
+		return documentAuthorRepository.findByDocument_IdOrderByAuthorOrderAsc(document.getId())
+				.stream()
+				.map(documentAuthor -> documentAuthor.getAuthor().getFullName())
+				.collect(Collectors.joining(", "));
+	}
+
+	private String keywordsValue(DocumentEntity document) {
+		return documentKeywordRepository.findByDocument_Id(document.getId())
+				.stream()
+				.map(documentKeyword -> documentKeyword.getKeyword().getLibelle())
+				.collect(Collectors.joining(", "));
 	}
 
 	private MetadataResponse toResponse(MetadataEntity metadata) {

@@ -282,6 +282,29 @@ paths:
         '200': { description: Metadonnees validees (statut VALIDE), $ref: '#/components/responses/Error' }
         '422': { $ref: '#/components/responses/Error' }
 
+  /documents/{id}/metadata/historique:
+    get:
+      tags: [Metadonnees]
+      summary: Consulter l'historique des corrections de metadonnees
+      parameters: [ { $ref: '#/components/parameters/id' } ]
+      responses:
+        '200':
+          description: Historique des champs modifies
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    champ: { type: string, example: titre }
+                    ancienne_valeur: { type: string }
+                    nouvelle_valeur: { type: string }
+                    utilisateur: { type: string, format: email }
+                    date_modification: { type: string, format: date-time }
+        '403': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
+
   /search:
     get:
       tags: [Recherche]

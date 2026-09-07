@@ -836,6 +836,13 @@ class ApiControllerTests {
 		assertThat(metadata.getValidatedAt()).isNotNull();
 		assertThat(publication.getStatus()).isEqualTo(DocumentStatus.PUBLIE);
 		assertThat(publication.getVisibility()).isEqualTo(DocumentVisibility.PUBLIC);
+
+		mockMvc.perform(get("/api/v1/documents/" + publication.getId() + "/metadata/historique")
+						.header("Authorization", bearerToken()))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$", hasSize(7)))
+				.andExpect(jsonPath("$[?(@.champ == 'titre')].ancienne_valeur", hasSize(1)))
+				.andExpect(jsonPath("$[?(@.champ == 'titre')].nouvelle_valeur", hasSize(1)));
 	}
 
 	@Test
