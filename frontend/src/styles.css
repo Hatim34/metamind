@@ -1,63 +1,46 @@
 /* ============================================================
-   Metamind - base globale
-   Couleurs, polices et typographie de l'identite visuelle.
+   Metamind - base editoriale (style revue scientifique)
+   Typo serif forte, filets fins, sobriete. Couleurs conservees.
    ============================================================ */
-@import url("https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,680&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap");
 
 :root {
-  /* Surfaces */
-  --ground: #f5f7f8;
-  --surface: #ffffff;
-  --surface-2: #edf1f2;
+  /* Surfaces (papier) */
+  --ground: #f6f4ef;
+  --surface: #fffdf8;
+  --surface-2: #efece4;
 
-  /* Texte */
-  --ink: #182a2b;
-  --ink-soft: #55676a;
-  --ink-faint: #93a2a4;
+  /* Encre */
+  --ink: #17201f;
+  --ink-soft: #4a5654;
+  --ink-faint: #8a938f;
 
-  /* Lignes */
-  --line: #dee6e6;
-  --line-strong: #c2cfcf;
+  /* Filets */
+  --line: #ddd8cd;
+  --line-strong: #c3bdae;
 
-  /* Accent teal Metamind */
+  /* Accent teal (usage tres parcimonieux) */
   --teal: #12787b;
   --teal-dark: #0b5456;
-  --teal-soft: #e1f0f0;
+  --teal-soft: #e1eeed;
   --teal-ink: #0b5456;
 
-  /* Etats semantiques */
+  /* Etats */
   --green: #2e7d46;
-  --green-soft: #e7f3eb;
   --amber: #9a6b12;
-  --amber-soft: #f6eeda;
-  --orange: #b4531b;
-  --orange-soft: #fbeee2;
   --red: #b23a3a;
-  --red-soft: #f7e6e6;
 
   /* Polices */
-  --f-display: "Fraunces", Georgia, serif;
-  --f-body: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-display: "Fraunces", Georgia, "Times New Roman", serif;
+  --f-body: "Inter", system-ui, -apple-system, sans-serif;
   --f-mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
 
-  /* Formes */
-  --radius: 14px;
-  --radius-sm: 9px;
-  --maxw: 1080px;
-
-  /* Ombres discretes */
-  --shadow-sm: 0 1px 2px rgba(24, 42, 43, 0.05);
-  --shadow-md: 0 6px 22px rgba(24, 42, 43, 0.08);
-  --ring: 0 0 0 3px rgba(18, 120, 123, 0.18);
-  --t: 150ms ease;
+  --measure: 68ch;
+  --maxw: 1000px;
 }
 
 * {
   box-sizing: border-box;
-}
-
-html {
-  -webkit-text-size-adjust: 100%;
 }
 
 body {
@@ -65,55 +48,58 @@ body {
   background: var(--ground);
   color: var(--ink);
   font-family: var(--f-body);
-  font-size: 15px;
-  line-height: 1.6;
+  font-size: 16px;
+  line-height: 1.65;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Titres en Fraunces (empattements) */
+/* Titres en Fraunces */
 h1,
 h2,
 h3 {
   font-family: var(--f-display);
   color: var(--ink);
-  font-weight: 600;
-  letter-spacing: 0;
-  margin: 0 0 0.4rem;
+  font-weight: 500;
+  line-height: 1.12;
+  margin: 0 0 0.5rem;
 }
 
 h1 {
-  font-size: clamp(1.9rem, 4vw, 2.6rem);
-  line-height: 1.08;
+  font-size: clamp(2rem, 4.5vw, 3rem);
+  font-weight: 600;
+  letter-spacing: -0.01em;
 }
 
 h2 {
-  font-size: 1.55rem;
-  margin-bottom: 1.1rem;
+  font-size: 1.5rem;
 }
 
 h3 {
-  font-size: 1.08rem;
-  margin-bottom: 0.5rem;
+  font-size: 1.15rem;
+  font-weight: 600;
 }
 
 p {
   margin: 0 0 1rem;
+  max-width: var(--measure);
 }
 
+/* Liens soulignes, a l'ancienne */
 a {
   color: var(--teal-ink);
+  text-underline-offset: 2px;
 }
 
-/* Libelle technique (donnees, statuts, codes) en chasse fixe */
+/* Intitules techniques : chasse fixe, petites capitales */
 .eyebrow {
-  margin: 0 0 0.5rem;
+  margin: 0 0 0.6rem;
   font-family: var(--f-mono);
-  font-size: 0.72rem;
-  font-weight: 600;
-  letter-spacing: 0;
+  font-size: 0.7rem;
+  font-weight: 500;
+  letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: var(--teal);
+  color: var(--ink-faint);
 }
 
 ::selection {
@@ -122,7 +108,6 @@ a {
 }
 
 :focus-visible {
-  outline: none;
-  box-shadow: var(--ring);
-  border-radius: var(--radius-sm);
+  outline: 2px solid var(--teal);
+  outline-offset: 2px;
 }

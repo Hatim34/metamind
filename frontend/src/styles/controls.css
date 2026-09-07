@@ -1,37 +1,30 @@
 /* ============================================================
-   Controles : boutons, champs, cartes, badges, encarts
-   Etats visuels des actions principales et secondaires.
+   Controles editoriaux : boutons sobres, champs a filet,
+   entrees de liste (sommaire de revue), badges discrets
    ============================================================ */
 
-/* --- Boutons --- */
+/* --- Boutons : rectangulaires, discrets --- */
 button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.45rem;
+  gap: 0.4rem;
   font-family: var(--f-body);
-  font-size: 0.9rem;
-  font-weight: 600;
-  padding: 0.6rem 1.1rem;
+  font-size: 0.88rem;
+  font-weight: 500;
+  padding: 0.5rem 0.95rem;
   border: 1px solid var(--line-strong);
-  border-radius: var(--radius-sm);
-  background: var(--surface);
+  border-radius: 2px;
+  background: transparent;
   color: var(--ink);
   cursor: pointer;
-  transition: background var(--t), border-color var(--t), color var(--t),
-    box-shadow var(--t), transform var(--t);
+  transition: border-color 120ms ease, color 120ms ease, background 120ms ease;
 }
 
 button:hover {
-  border-color: var(--teal);
-  color: var(--teal-ink);
+  border-color: var(--ink);
 }
 
-button:active {
-  transform: translateY(1px);
-}
-
-/* Primaire : action principale (teal plein) */
 button.primary {
   background: var(--teal);
   border-color: var(--teal);
@@ -41,71 +34,40 @@ button.primary {
 button.primary:hover {
   background: var(--teal-dark);
   border-color: var(--teal-dark);
-  color: #fff;
 }
 
-.button-link {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.45rem;
-  font-family: var(--f-body);
-  font-size: 0.9rem;
-  font-weight: 600;
-  padding: 0.6rem 1.1rem;
-  border: 1px solid var(--line-strong);
-  border-radius: var(--radius-sm);
-  background: var(--surface);
-  color: var(--ink);
-  text-decoration: none;
-  transition: background var(--t), border-color var(--t), color var(--t),
-    box-shadow var(--t), transform var(--t);
-}
-
-.button-link.primary {
-  background: var(--teal);
-  border-color: var(--teal);
-  color: #fff;
-}
-
-.button-link.primary:hover {
-  background: var(--teal-dark);
-  border-color: var(--teal-dark);
-  color: #fff;
-}
-
-/* Danger : action destructive */
 button.danger {
-  background: var(--red-soft);
-  border-color: var(--red);
+  border-color: color-mix(in srgb, var(--red) 55%, var(--line-strong));
   color: var(--red);
 }
 
 button.danger:hover {
-  background: color-mix(in srgb, var(--red) 14%, var(--surface));
-  color: var(--red);
+  border-color: var(--red);
 }
 
 button:disabled {
   cursor: not-allowed;
-  background: var(--surface-2);
-  border-color: var(--line);
-  color: var(--ink-faint);
-  transform: none;
+  opacity: 0.45;
 }
 
-/* --- Champs --- */
+/* --- Champs : filet fin, papier --- */
 input,
 textarea,
 select {
   width: 100%;
   font: inherit;
+  font-size: 0.95rem;
   color: var(--ink);
   background: var(--surface);
   border: 1px solid var(--line-strong);
-  border-radius: var(--radius-sm);
-  padding: 0.62rem 0.8rem;
-  transition: border-color var(--t), box-shadow var(--t);
+  border-radius: 2px;
+  padding: 0.5rem 0.7rem;
+  transition: border-color 120ms ease;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--ink-faint);
 }
 
 input:focus,
@@ -113,7 +75,6 @@ textarea:focus,
 select:focus {
   outline: none;
   border-color: var(--teal);
-  box-shadow: var(--ring);
 }
 
 textarea {
@@ -121,50 +82,47 @@ textarea {
   resize: vertical;
 }
 
-/* Recherche : champ en pilule */
 input[type="search"] {
-  border-radius: 999px;
-  padding-left: 1.1rem;
+  padding: 0.55rem 0.8rem;
 }
 
 input[type="file"] {
-  padding: 0.5rem 0.7rem;
-  background: var(--surface-2);
+  background: transparent;
   border-style: dashed;
   cursor: pointer;
 }
 
 label {
   display: grid;
-  gap: 0.4rem;
-  font-size: 0.85rem;
-  font-weight: 600;
+  gap: 0.35rem;
+  font-size: 0.8rem;
+  font-weight: 500;
   color: var(--ink-soft);
 }
 
 form {
   display: grid;
-  gap: 1rem;
+  gap: 1.1rem;
 }
 
-.actions {
+.actions,
+.quick-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 0.7rem;
-  margin-top: 1.1rem;
+  margin-top: 1.2rem;
 }
 
-/* --- Panneaux et cartes --- */
+/* --- Panneaux : pas de cartes, juste du contenu --- */
 .panel {
-  padding: clamp(1.3rem, 3vw, 2rem);
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
+  padding: 0;
+  background: transparent;
+  border: 0;
 }
 
+/* --- Liste des publications = sommaire de revue --- */
 .publication-list {
-  display: grid;
-  gap: 0.9rem;
+  display: block;
 }
 
 .publication-card {
@@ -172,126 +130,31 @@ form {
   flex-wrap: wrap;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 1.2rem;
-  padding: 1.2rem 1.3rem;
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  transition: border-color var(--t), box-shadow var(--t);
-}
-
-.publication-card:hover {
-  border-color: var(--line-strong);
-  box-shadow: var(--shadow-md);
-}
-
-.publication-card h3 {
-  margin-bottom: 0.25rem;
-}
-
-.publication-card p {
-  margin: 0;
-  color: var(--ink-soft);
-  font-size: 0.9rem;
-}
-
-.publication-card .pub-summary {
-  margin-top: 0.45rem;
-  max-width: 62ch;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-/* --- Etiquettes et badges de statut --- */
-.tags {
-  display: flex;
-  flex-wrap: wrap;
-  align-content: start;
-  gap: 0.4rem;
-  justify-content: flex-end;
-  max-width: 420px;
-}
-
-.tags span {
-  font-family: var(--f-mono);
-  font-size: 0.68rem;
-  padding: 0.18rem 0.5rem;
-  border-radius: 999px;
-  background: var(--surface-2);
-  border: 1px solid var(--line);
-  color: var(--ink-soft);
-}
-
-/* Badge de statut colore */
-.badge {
-  font-family: var(--f-mono);
-  font-size: 0.68rem;
-  font-weight: 600;
-  padding: 0.2rem 0.55rem;
-  border-radius: 999px;
-  background: var(--teal-soft);
-  color: var(--teal-ink);
-  white-space: nowrap;
-}
-
-.badge-green {
-  background: var(--green-soft);
-  color: var(--green);
-}
-
-.badge-amber {
-  background: var(--amber-soft);
-  color: var(--amber);
-}
-
-.badge-orange {
-  background: var(--orange-soft);
-  color: var(--orange);
-}
-
-.badge-red {
-  background: var(--red-soft);
-  color: var(--red);
-}
-
-.publication-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  justify-content: flex-end;
-  min-width: 240px;
-}
-
-/* --- Encart d'information --- */
-.notice {
-  margin-top: 1rem;
-  padding: 0.9rem 1.1rem;
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-left: 3px solid var(--teal);
-  border-radius: var(--radius-sm);
-  color: var(--ink-soft);
-  font-size: 0.9rem;
+  gap: 1.4rem;
+  padding: 1.5rem 0;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  border-radius: 0;
+  background: transparent;
 }
 
 .pub-main {
   display: flex;
   align-items: flex-start;
-  gap: 1rem;
+  gap: 1.2rem;
   flex: 1 1 340px;
   min-width: 0;
 }
 
+/* Vignette : petite figure carree, sobre */
 .pub-cover {
   flex: 0 0 auto;
-  width: 76px;
-  height: 92px;
-  border-radius: 10px;
-  border: 1px solid var(--line);
-  background: linear-gradient(160deg, var(--teal-soft), var(--surface-2));
-  color: var(--teal);
+  width: 58px;
+  height: 78px;
+  border: 1px solid var(--line-strong);
+  border-radius: 0;
+  background: var(--surface-2);
+  color: var(--ink-faint);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -299,8 +162,8 @@ form {
 }
 
 .pub-cover svg {
-  width: 30px;
-  height: 30px;
+  width: 22px;
+  height: 22px;
 }
 
 .pub-cover img {
@@ -313,104 +176,80 @@ form {
   min-width: 0;
 }
 
-.publication-detail {
-  display: grid;
-  gap: 1.4rem;
-}
-
-.detail-toolbar {
-  display: flex;
-  justify-content: flex-start;
-}
-
-.detail-layout {
-  display: grid;
-  grid-template-columns: 180px minmax(0, 1fr);
-  gap: 1.4rem;
-  align-items: start;
-}
-
-.detail-cover {
-  width: 180px;
-  aspect-ratio: 3 / 4;
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: linear-gradient(160deg, var(--teal-soft), var(--surface-2));
-  color: var(--teal);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-}
-
-.detail-cover svg {
-  width: 48px;
-  height: 48px;
-}
-
-.detail-cover img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.detail-content h2 {
-  margin-bottom: 0.45rem;
-}
-
-.detail-meta {
-  margin: 0 0 1rem;
-  color: var(--ink-soft);
-}
-
-.detail-summary {
-  max-width: 78ch;
-  color: var(--ink);
-}
-
-.detail-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
-  gap: 0.8rem;
-}
-
-.detail-grid div {
-  padding: 0.8rem 0.9rem;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-sm);
-  background: var(--surface-2);
-}
-
-.detail-grid dt {
+.pub-text h3 {
+  font-family: var(--f-display);
+  font-weight: 500;
+  font-size: 1.28rem;
+  line-height: 1.2;
   margin-bottom: 0.3rem;
+}
+
+.pub-text p {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 0.9rem;
+}
+
+/* --- Mots-cles et statut : texte discret, pas de pilules --- */
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  align-content: start;
+  gap: 0.2rem 0.9rem;
+  justify-content: flex-end;
+  max-width: 300px;
   font-family: var(--f-mono);
-  font-size: 0.68rem;
-  font-weight: 600;
-  text-transform: uppercase;
+  font-size: 0.7rem;
+}
+
+.tags span {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
   color: var(--ink-faint);
 }
 
-.detail-grid dd {
-  margin: 0;
-  color: var(--ink);
-  overflow-wrap: anywhere;
+/* Statut : petite capitale coloree, sans fond */
+.badge {
+  font-family: var(--f-mono);
+  font-size: 0.68rem;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 0;
+  background: transparent;
+  color: var(--ink-soft);
 }
 
-.detail-keywords {
+.badge-green {
+  color: var(--green);
+}
+
+.badge-amber {
+  color: var(--amber);
+}
+
+.badge-red {
+  color: var(--red);
+}
+
+.publication-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.4rem;
+  gap: 0.5rem;
+  justify-content: flex-end;
+  min-width: 0;
 }
 
-.detail-keywords span {
-  font-family: var(--f-mono);
-  font-size: 0.72rem;
-  padding: 0.2rem 0.55rem;
-  border-radius: 999px;
-  background: var(--teal-soft);
-  color: var(--teal-ink);
-}
-
-.detail-actions {
-  margin-top: 0;
+/* --- Encart : filet a gauche --- */
+.notice {
+  margin-top: 1.2rem;
+  padding: 0.4rem 0 0.4rem 1rem;
+  background: transparent;
+  border: 0;
+  border-left: 2px solid var(--teal);
+  border-radius: 0;
+  color: var(--ink-soft);
+  font-size: 0.92rem;
 }
