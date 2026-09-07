@@ -5,19 +5,19 @@
 @import url("https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap");
 
 :root {
-  /* Surfaces (papier) */
-  --ground: #f6f4ef;
-  --surface: #fffdf8;
-  --surface-2: #efece4;
+  /* Surfaces (fond clair neutre) */
+  --ground: #f5f7f8;
+  --surface: #ffffff;
+  --surface-2: #edf2f3;
 
   /* Encre */
-  --ink: #17201f;
-  --ink-soft: #4a5654;
-  --ink-faint: #8a938f;
+  --ink: #182a2b;
+  --ink-soft: #53666b;
+  --ink-faint: #718287;
 
   /* Filets */
-  --line: #ddd8cd;
-  --line-strong: #c3bdae;
+  --line: #dfe6e8;
+  --line-strong: #c3d0d3;
 
   /* Accent teal (usage tres parcimonieux) */
   --teal: #12787b;
@@ -35,8 +35,8 @@
   --f-body: "Inter", system-ui, -apple-system, sans-serif;
   --f-mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
 
-  --measure: 78ch;
-  --maxw: 1280px;
+  --measure: 76ch;
+  --maxw: 1180px;
 }
 
 * {
@@ -48,8 +48,8 @@ body {
   background: var(--ground);
   color: var(--ink);
   font-family: var(--f-body);
-  font-size: 16px;
-  line-height: 1.65;
+  font-size: 15px;
+  line-height: 1.55;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -66,9 +66,9 @@ h3 {
 }
 
 h1 {
-  font-size: clamp(2rem, 4.5vw, 3rem);
+  font-size: clamp(2rem, 4vw, 2.75rem);
   font-weight: 600;
-  letter-spacing: -0.01em;
+  letter-spacing: 0;
 }
 
 h2 {
