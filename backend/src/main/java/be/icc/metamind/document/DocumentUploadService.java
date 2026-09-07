@@ -68,7 +68,7 @@ public class DocumentUploadService {
 		String extractedText = textExtractor.extract(file);
 		String originalFileName = cleanOriginalFileName(file.getOriginalFilename());
 		Path storedPath = store(file, storageRoot, originalFileName);
-		return new ImportedDocument(originalFileName, storedPath.toString(), file.getSize(), normalizeMediaType(file), extractedText);
+		return new ImportedDocument(originalFileName, storedPath.toString(), file.getSize(), documentTypeCode(file), extractedText);
 	}
 
 	public String storeCoverImage(MultipartFile image) {
@@ -183,6 +183,15 @@ public class DocumentUploadService {
 	private String normalizeMediaType(MultipartFile file) {
 		String mediaType = file.getContentType();
 		return mediaType == null || mediaType.isBlank() ? null : mediaType.toLowerCase(Locale.ROOT);
+	}
+
+	private String documentTypeCode(MultipartFile file) {
+		return switch (extension(file.getOriginalFilename())) {
+			case "pdf" -> "PDF";
+			case "docx" -> "DOCX";
+			case "txt" -> "TXT";
+			default -> "TXT";
+		};
 	}
 
 	private MediaType mediaTypeFromPath(Path path, String probedType) {

@@ -147,7 +147,7 @@ public class DataInitializer implements ApplicationRunner {
 		String filePath = null;
 		String coverPath = null;
 		long fileSize = 0L;
-		String mediaType = "application/pdf";
+		String mediaType = "PDF";
 		try {
 			byte[] pdf = documentUploadService.buildTitlePagePdf(title, authorName, year, discipline, institution.getName());
 			filePath = documentUploadService.storeSeedDocumentPdf(pdf, fileName);

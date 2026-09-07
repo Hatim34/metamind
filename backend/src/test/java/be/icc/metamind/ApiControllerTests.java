@@ -257,6 +257,7 @@ class ApiControllerTests {
 				.findFirst()
 				.orElseThrow();
 		org.assertj.core.api.Assertions.assertThat(document.getExtractedText()).contains("Dublin Core");
+		org.assertj.core.api.Assertions.assertThat(document.getMimeType()).isEqualTo("TXT");
 		org.assertj.core.api.Assertions.assertThat(document.getInstitution().getName()).isEqualTo("Institution A");
 		org.assertj.core.api.Assertions.assertThat(document.getImportedBy().getEmail()).isEqualTo("sarah@institution-a.example");
 
