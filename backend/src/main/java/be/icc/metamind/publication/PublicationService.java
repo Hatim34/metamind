@@ -1,6 +1,7 @@
 package be.icc.metamind.publication;
 
 import java.time.LocalDate;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -77,6 +78,22 @@ public class PublicationService {
 
 	@Transactional(readOnly = true)
 	public PageResponse<PublicationResponse> findDocumentsPage(String search, DocumentStatus status, int page, int size, UserEntity currentUser) {
+		return findDocumentsPage(search, status, null, null, null, null, null, page, size, currentUser);
+	}
+
+	@Transactional(readOnly = true)
+	public PageResponse<PublicationResponse> findDocumentsPage(
+			String search,
+			DocumentStatus status,
+			LocalDate startDate,
+			LocalDate endDate,
+			Long institutionId,
+			String sort,
+			String direction,
+			int page,
+			int size,
+			UserEntity currentUser
+	) {
 		String value = Optional.ofNullable(search).orElse("").trim();
 		List<DocumentEntity> documents = value.isBlank()
 				? documentRepository.findAll()
@@ -84,10 +101,40 @@ public class PublicationService {
 
 		List<PublicationResponse> responses = documents.stream()
 				.filter(document -> isInManagementScope(document, currentUser))
+				.filter(document -> canFilterInstitution(document, institutionId, currentUser))
 				.filter(document -> status == null || document.getStatus() == status)
 				.map(this::toResponse)
+				.filter(publication -> startDate == null || publication.publicationDate() != null && !publication.publicationDate().isBefore(startDate))
+				.filter(publication -> endDate == null || publication.publicationDate() != null && !publication.publicationDate().isAfter(endDate))
+				.sorted(documentComparator(sort, direction))
 				.toList();
 		return PageResponse.from(responses, page, size);
+	}
+
+	private boolean canFilterInstitution(DocumentEntity document, Long institutionId, UserEntity currentUser) {
+		if (currentUser.getRole() != UserRole.ADMIN) {
+			return true;
+		}
+		return institutionId == null || document.getInstitution().getId().equals(institutionId);
+	}
+
+	private Comparator<PublicationResponse> documentComparator(String sort, String direction) {
+		Comparator<PublicationResponse> comparator = switch (Optional.ofNullable(sort).orElse("").trim().toLowerCase()) {
+			case "titre", "title" -> Comparator.comparing(publication -> cleanSortValue(publication.title()));
+			case "date", "date_publication", "publication_date" -> Comparator.comparing(
+					PublicationResponse::publicationDate,
+					Comparator.nullsLast(Comparator.naturalOrder())
+			);
+			default -> Comparator.comparing(PublicationResponse::id);
+		};
+		if ("desc".equalsIgnoreCase(Optional.ofNullable(direction).orElse(""))) {
+			return comparator.reversed();
+		}
+		return comparator;
+	}
+
+	private String cleanSortValue(String value) {
+		return value == null ? "" : value.toLowerCase();
 	}
 
 	@Transactional(readOnly = true)

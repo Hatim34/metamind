@@ -554,6 +554,45 @@ class ApiControllerTests {
 	}
 
 	@Test
+	void documentListCanBeFilteredAndSortedForAdministration() throws Exception {
+		InstitutionEntity institution = institutionRepository.findByCodeIgnoreCase("INST-B").orElseThrow();
+		new TestDocumentFactory(documentRepository, metadataRepository, authorRepository, keywordRepository, documentAuthorRepository, documentKeywordRepository).create(
+				"Catalogue des theses validees",
+				"Jan Peeters",
+				2025,
+				DocumentStatus.PUBLIE,
+				DocumentVisibility.PUBLIC,
+				List.of("these", "catalogue"),
+				institution,
+				null
+		);
+		new TestDocumentFactory(documentRepository, metadataRepository, authorRepository, keywordRepository, documentAuthorRepository, documentKeywordRepository).create(
+				"Archive scientifique en attente",
+				"Jan Peeters",
+				2026,
+				DocumentStatus.A_VALIDER,
+				DocumentVisibility.INSTITUTION,
+				List.of("archive", "validation"),
+				institution,
+				null
+		);
+
+		mockMvc.perform(get("/api/v1/documents")
+						.header("Authorization", adminBearerToken())
+						.param("institution_id", institution.getId().toString())
+						.param("statut", "PUBLIE")
+						.param("date_debut", "2025-01-01")
+						.param("date_fin", "2025-12-31")
+						.param("sort", "titre")
+						.param("direction", "desc"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.contenu", hasSize(1)))
+				.andExpect(jsonPath("$.total_elements", is(1)))
+				.andExpect(jsonPath("$.contenu[0].titre", is("Catalogue des theses validees")))
+				.andExpect(jsonPath("$.contenu[0].institution", is("Institution B")));
+	}
+
+	@Test
 	void administratorCanListUsersAndFilterByInstitution() throws Exception {
 		InstitutionEntity institution = institutionRepository.findByNameIgnoreCase("Institution B").orElseThrow();
 

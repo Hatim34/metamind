@@ -9,6 +9,8 @@ import be.icc.metamind.publication.Visibility;
 import be.icc.metamind.user.AccountService;
 import be.icc.metamind.user.UserEntity;
 
+import java.time.LocalDate;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -39,11 +41,20 @@ public class DocumentController {
 			@RequestHeader("Authorization") String authorization,
 			@RequestParam(value = "q", required = false) String query,
 			@RequestParam(value = "statut", required = false) DocumentStatus status,
+			@RequestParam(value = "date_debut", required = false) LocalDate startDate,
+			@RequestParam(value = "date_fin", required = false) LocalDate endDate,
+			@RequestParam(value = "institution_id", required = false) Long institutionId,
+			@RequestParam(value = "institutionId", required = false) Long legacyInstitutionId,
+			@RequestParam(value = "sort", required = false) String sort,
+			@RequestParam(value = "tri", required = false) String legacySort,
+			@RequestParam(value = "direction", required = false) String direction,
 			@RequestParam(defaultValue = "0") int page,
 			@RequestParam(defaultValue = "20") int size
 	) {
 		UserEntity currentUser = accountService.authenticate(authorization);
-		return publicationService.findDocumentsPage(query, status, page, size, currentUser);
+		Long selectedInstitutionId = institutionId == null ? legacyInstitutionId : institutionId;
+		String selectedSort = sort == null ? legacySort : sort;
+		return publicationService.findDocumentsPage(query, status, startDate, endDate, selectedInstitutionId, selectedSort, direction, page, size, currentUser);
 	}
 
 	@GetMapping("/{id}")
