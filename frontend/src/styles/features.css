@@ -8,9 +8,11 @@
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   gap: 0.9rem;
-  margin-top: 1.3rem;
-  padding-top: 1.3rem;
-  border-top: 1px solid var(--line);
+  margin-top: 1rem;
+  padding: 1rem;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--surface-2);
 }
 
 .filter-actions {
@@ -53,7 +55,7 @@
   align-items: start;
   padding-bottom: 1.6rem;
   margin-bottom: 1.6rem;
-  border-bottom: 2px solid var(--ink);
+  border-bottom: 1px solid var(--line);
 }
 
 .detail-cover {
@@ -80,7 +82,7 @@
 }
 
 .detail-content h2 {
-  font-size: clamp(1.7rem, 3.5vw, 2.2rem);
+  font-size: clamp(1.45rem, 3vw, 2rem);
   margin: 0.2rem 0 0.6rem;
   max-width: 24ch;
 }
