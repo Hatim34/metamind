@@ -101,6 +101,8 @@ const translations = {
     validateMetadataAction: 'Valider les métadonnées',
     editMetadata: 'Corriger les métadonnées',
     summary: 'Résumé',
+    extractedText: 'Texte extrait',
+    noExtractedText: 'Aucun texte extrait disponible.',
     publicationDate: 'Date de publication',
     classification: 'Classification',
     cancel: 'Annuler',
@@ -217,6 +219,8 @@ const translations = {
     validateMetadataAction: 'Metadata valideren',
     editMetadata: 'Metadata corrigeren',
     summary: 'Samenvatting',
+    extractedText: 'Geextraheerde tekst',
+    noExtractedText: 'Geen geextraheerde tekst beschikbaar.',
     publicationDate: 'Publicatiedatum',
     classification: 'Classificatie',
     cancel: 'Annuleren',
@@ -333,6 +337,8 @@ const translations = {
     validateMetadataAction: 'Validate metadata',
     editMetadata: 'Edit metadata',
     summary: 'Summary',
+    extractedText: 'Extracted text',
+    noExtractedText: 'No extracted text available.',
     publicationDate: 'Publication date',
     classification: 'Classification',
     cancel: 'Cancel',
@@ -419,7 +425,8 @@ export class AppComponent implements OnInit {
     classification: '',
     visibility: 'PUBLIC' as 'PUBLIC' | 'INSTITUTION',
     authors: '',
-    keywords: ''
+    keywords: '',
+    extractedText: ''
   };
 
   profileForm = {
@@ -775,7 +782,8 @@ export class AppComponent implements OnInit {
           classification: '',
           visibility: publication.visibility,
           authors: publication.author,
-          keywords: publication.keywords.join(', ')
+          keywords: publication.keywords.join(', '),
+          extractedText: ''
         };
         this.selectedMetadataPublicationId = publication.id;
       }
@@ -824,7 +832,8 @@ export class AppComponent implements OnInit {
       classification: '',
       visibility: 'PUBLIC',
       authors: '',
-      keywords: ''
+      keywords: '',
+      extractedText: ''
     };
   }
 
@@ -1088,7 +1097,8 @@ export class AppComponent implements OnInit {
       classification: metadata.classification || '',
       visibility: metadata.visibilite || publication.visibility,
       authors: metadata.auteurs.length > 0 ? metadata.auteurs.map((author) => author.nom_complet).join(', ') : publication.author,
-      keywords: metadata.mots_cles.length > 0 ? metadata.mots_cles.join(', ') : publication.keywords.join(', ')
+      keywords: metadata.mots_cles.length > 0 ? metadata.mots_cles.join(', ') : publication.keywords.join(', '),
+      extractedText: metadata.texte_extrait || ''
     };
     this.selectedMetadataPublicationId = publication.id;
   }

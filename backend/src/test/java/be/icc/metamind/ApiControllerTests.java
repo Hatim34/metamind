@@ -805,6 +805,7 @@ class ApiControllerTests {
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.document_id", is(publication.getId().intValue())))
 				.andExpect(jsonPath("$.titre", is("Rapport interne reserve a l institution")))
+				.andExpect(jsonPath("$.texte_extrait", is("Rapport interne reserve a l institution")))
 				.andExpect(jsonPath("$.visibilite", is("INSTITUTION")))
 				.andExpect(jsonPath("$.statut", is("EN_ATTENTE")));
 	}

@@ -295,7 +295,8 @@ describe('AppComponent', () => {
       classification: 'Sciences de l information',
       visibility: 'PUBLIC',
       authors: 'Sarah Lemaire',
-      keywords: 'Dublin Core'
+      keywords: 'Dublin Core',
+      extractedText: ''
     };
 
     component.validateMetadata();

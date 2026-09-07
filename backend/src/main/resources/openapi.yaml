@@ -687,6 +687,7 @@ components:
         document_id: { type: integer, example: 1 }
         titre: { type: string, example: Etude de la corrosion des aciers inoxydables }
         resume: { type: string }
+        texte_extrait: { type: string, description: Texte extrait du fichier pour la validation cote a cote }
         date_publication: { type: string, format: date, example: "2023-05-12" }
         classification: { type: string, example: Chimie }
         langue: { type: string, example: fr }

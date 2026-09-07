@@ -40,7 +40,10 @@ public record MetadataResponse(
 		List<MetadataAuthorResponse> authors,
 
 		@JsonProperty("mots_cles")
-		List<String> keywords
+		List<String> keywords,
+
+		@JsonProperty("texte_extrait")
+		String extractedText
 ) {
 	public static MetadataResponse from(MetadataEntity metadata, List<DocumentAuthorEntity> authors, List<DocumentKeywordEntity> keywords) {
 		return new MetadataResponse(
@@ -59,7 +62,8 @@ public record MetadataResponse(
 						.toList(),
 				keywords.stream()
 						.map(keyword -> keyword.getKeyword().getLibelle())
-						.toList()
+						.toList(),
+				metadata.getDocument().getExtractedText()
 		);
 	}
 }

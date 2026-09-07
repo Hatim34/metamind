@@ -112,6 +112,7 @@ export interface MetadataDetails {
   validee_par: number | null;
   auteurs: MetadataAuthor[];
   mots_cles: string[];
+  texte_extrait?: string | null;
 }
 
 export interface MetadataValidationRequest {
