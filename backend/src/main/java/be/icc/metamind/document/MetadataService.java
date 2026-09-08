@@ -8,6 +8,7 @@ import java.util.stream.Collectors;
 import be.icc.metamind.api.ApiException;
 import be.icc.metamind.user.UserEntity;
 import be.icc.metamind.user.UserRole;
+import be.icc.metamind.opendata.DspacePublisher;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -22,6 +23,7 @@ public class MetadataService {
 	private final DocumentAuthorRepository documentAuthorRepository;
 	private final DocumentKeywordRepository documentKeywordRepository;
 	private final AuditLogRepository auditLogRepository;
+	private final DspacePublisher dspacePublisher;
 
 	public MetadataService(
 			DocumentRepository documentRepository,
@@ -30,7 +32,8 @@ public class MetadataService {
 			KeywordRepository keywordRepository,
 			DocumentAuthorRepository documentAuthorRepository,
 			DocumentKeywordRepository documentKeywordRepository,
-			AuditLogRepository auditLogRepository
+			AuditLogRepository auditLogRepository,
+			DspacePublisher dspacePublisher
 	) {
 		this.documentRepository = documentRepository;
 		this.metadataRepository = metadataRepository;
@@ -39,6 +42,7 @@ public class MetadataService {
 		this.documentAuthorRepository = documentAuthorRepository;
 		this.documentKeywordRepository = documentKeywordRepository;
 		this.auditLogRepository = auditLogRepository;
+		this.dspacePublisher = dspacePublisher;
 	}
 
 	@Transactional(readOnly = true)
@@ -89,6 +93,11 @@ public class MetadataService {
 		recordMetadataHistory(document, "visibilite", previousVisibility, request.visibility().name(), user);
 		recordMetadataHistory(document, "auteurs", previousAuthors, authorsValue(document), user);
 		recordMetadataHistory(document, "mots_cles", previousKeywords, keywordsValue(document), user);
+		dspacePublisher.publish(document, metadata,
+				documentAuthorRepository.findByDocument_IdOrderByAuthorOrderAsc(document.getId()),
+				documentKeywordRepository.findByDocument_Id(document.getId()).stream()
+						.map(item -> item.getKeyword().getLibelle())
+						.toList());
 		return toResponse(metadata);
 	}
 
