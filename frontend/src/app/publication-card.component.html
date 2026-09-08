@@ -20,6 +20,7 @@
     <button type="button" class="primary" *ngIf="allowExtract" (click)="extract.emit(publication)">{{ labels.extract }}</button>
     <button type="button" *ngIf="allowEdit" (click)="edit.emit(publication)">{{ labels.edit }}</button>
     <button type="button" class="danger" *ngIf="allowDelete" (click)="remove.emit(publication)">{{ labels.delete }}</button>
+    <button type="button" *ngIf="allowRetry" (click)="retry.emit(publication)">{{ labels.retry }}</button>
   </div>
   <ng-content></ng-content>
 </article>

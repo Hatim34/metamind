@@ -1,5 +1,6 @@
 package be.icc.metamind.document;
 
+import be.icc.metamind.api.ApiException;
 import be.icc.metamind.api.PageResponse;
 import be.icc.metamind.document.DocumentUploadService.StoredFile;
 import be.icc.metamind.document.DocumentUploadService.StoredImage;
@@ -30,10 +31,14 @@ import org.springframework.web.multipart.MultipartFile;
 public class DocumentController {
 	private final PublicationService publicationService;
 	private final AccountService accountService;
+	private final DocumentRepository documentRepository;
+	private final DocumentProcessingService documentProcessingService;
 
-	public DocumentController(PublicationService publicationService, AccountService accountService) {
+	public DocumentController(PublicationService publicationService, AccountService accountService, DocumentRepository documentRepository, DocumentProcessingService documentProcessingService) {
 		this.publicationService = publicationService;
 		this.accountService = accountService;
+		this.documentRepository = documentRepository;
+		this.documentProcessingService = documentProcessingService;
 	}
 
 	@GetMapping
@@ -77,6 +82,23 @@ public class DocumentController {
 	) {
 		UserEntity currentUser = accountService.authenticate(authorization);
 		return publicationService.importDocument(fichier == null ? file : fichier, visibility, image, currentUser);
+	}
+
+	@PostMapping("/{id}/processing")
+	@ResponseStatus(HttpStatus.ACCEPTED)
+	public PublicationResponse retryProcessing(@PathVariable long id, @RequestHeader("Authorization") String authorization) {
+		UserEntity currentUser = accountService.authenticate(authorization);
+		DocumentEntity document = documentRepository.findById(id)
+				.orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Le document demande est introuvable."));
+		if (currentUser.getRole() != be.icc.metamind.user.UserRole.ADMIN
+				&& !document.getInstitution().getId().equals(currentUser.getInstitution().getId())) {
+			throw new ApiException(HttpStatus.FORBIDDEN, "Ce document appartient a une autre institution.");
+		}
+		if (document.getFilePath() == null || document.getFilePath().isBlank()) {
+			throw new ApiException(HttpStatus.BAD_REQUEST, "Aucun fichier n'est disponible pour ce document.");
+		}
+		documentProcessingService.retry(document.getId(), document.getFilePath());
+		return publicationService.findPublication(id, currentUser);
 	}
 
 	@GetMapping("/{id}/image")

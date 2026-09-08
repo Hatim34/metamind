@@ -113,10 +113,12 @@
         [allowExtract]="canExtractPublication(publication)"
         [allowEdit]="canPublishPublication(publication)"
         [allowDelete]="canDeletePublication(publication)"
+        [allowRetry]="publication.status === 'EN_ATTENTE'"
         (consult)="openPublication($event)"
         (extract)="extractMetadata($event)"
         (edit)="startMetadataValidation($event)"
-        (remove)="deletePublication($event)">
+        (remove)="deletePublication($event)"
+        (retry)="retryDocumentProcessing($event)">
         <div class="metadata-review" *ngIf="selectedMetadataPublicationId === publication.id">
           <form class="metadata-form" (ngSubmit)="validateMetadata()">
             <label>
@@ -184,10 +186,12 @@
         [allowExtract]="canExtractPublication(publication)"
         [allowEdit]="canPublishPublication(publication)"
         [allowDelete]="canDeletePublication(publication)"
+        [allowRetry]="publication.status === 'EN_ATTENTE'"
         (consult)="openPublication($event)"
         (extract)="extractMetadata($event)"
         (edit)="startMetadataValidation($event)"
-        (remove)="deletePublication($event)">
+        (remove)="deletePublication($event)"
+        (retry)="retryDocumentProcessing($event)">
         <p class="notice" *ngIf="isExtracting(publication.id)">{{ t('processing') }}</p>
         <div class="metadata-review" *ngIf="selectedMetadataPublicationId === publication.id">
           <form class="metadata-form" (ngSubmit)="validateMetadata()">

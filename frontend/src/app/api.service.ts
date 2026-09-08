@@ -233,6 +233,11 @@ export class ApiService {
     });
   }
 
+  retryDocumentProcessing(publicationId: number): Observable<Publication> {
+    return this.http.post<unknown>(`${this.baseUrl}/documents/${publicationId}/processing`, {}, { headers: this.authHeaders() })
+      .pipe(map((response) => this.toPublication(response)));
+  }
+
   requestPasswordReset(email: string): Observable<void> {
     return this.http.post<void>(`${this.baseUrl}/auth/password-reset/request`, { email });
   }

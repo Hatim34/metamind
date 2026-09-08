@@ -49,6 +49,7 @@ const translations = {
     publicationDetails: 'Fiche publication',
     backToCatalogue: 'Retour au catalogue',
     downloadFile: 'Consulter le fichier',
+    retryProcessing: 'Relancer le traitement',
     downloadFailed: 'Le fichier ne peut pas être consulté avec ce compte.',
     noFile: 'Fichier non disponible.',
     noSummary: 'Aucun résumé disponible.',
@@ -195,6 +196,7 @@ const translations = {
     publicationDetails: 'Publicatiefiche',
     backToCatalogue: 'Terug naar catalogus',
     downloadFile: 'Bestand bekijken',
+    retryProcessing: 'Verwerking opnieuw starten',
     downloadFailed: 'Het bestand kan niet met deze account worden bekeken.',
     noFile: 'Bestand niet beschikbaar.',
     noSummary: 'Geen samenvatting beschikbaar.',
@@ -341,6 +343,7 @@ const translations = {
     publicationDetails: 'Publication record',
     backToCatalogue: 'Back to catalogue',
     downloadFile: 'View file',
+    retryProcessing: 'Retry processing',
     downloadFailed: 'The file cannot be viewed with this account.',
     noFile: 'File not available.',
     noSummary: 'No summary available.',
@@ -650,7 +653,8 @@ export class AppComponent implements OnInit {
       extract: this.t('extract'),
       edit: this.t('editMetadata'),
       delete: this.t('deletePublication'),
-      processing: this.t('processing')
+      processing: this.t('processing'),
+      retry: this.t('retryProcessing')
     };
   }
 
@@ -1138,6 +1142,22 @@ export class AppComponent implements OnInit {
         this.extractingPublicationIds.delete(publication.id);
         this.message = this.describeError(err, 'extractionFailed');
         this.loadValidationQueue();
+      }
+    });
+  }
+
+  retryDocumentProcessing(publication: Publication): void {
+    this.message = this.t('processing');
+    this.api.retryDocumentProcessing(publication.id).subscribe({
+      next: (updated) => {
+        const index = this.validationQueue.findIndex((item) => item.id === publication.id);
+        if (index >= 0) {
+          this.validationQueue[index] = updated;
+        }
+        this.refreshImportStatus(publication.id);
+      },
+      error: (err) => {
+        this.message = this.describeError(err, 'extractionFailed');
       }
     });
   }

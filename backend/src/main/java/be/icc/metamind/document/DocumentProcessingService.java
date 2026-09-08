@@ -29,6 +29,11 @@ public class DocumentProcessingService {
 		self.process(event.documentId(), event.filePath());
 	}
 
+	@Async
+	public void retry(long documentId, String filePath) {
+		self.process(documentId, filePath);
+	}
+
 	@Transactional
 	public void process(long documentId, String filePath) {
 		DocumentEntity document = documentRepository.findById(documentId).orElse(null);

@@ -50,6 +50,7 @@ describe('AppComponent', () => {
       'getManagedDocuments',
       'createPublication',
       'importDocument',
+      'retryDocumentProcessing',
       'getInstitutions',
       'createInstitution',
       'deactivateInstitution',

@@ -9,6 +9,7 @@ export interface PublicationCardLabels {
   edit: string;
   delete: string;
   processing: string;
+  retry: string;
 }
 
 @Component({
@@ -23,9 +24,11 @@ export class PublicationCardComponent {
   @Input() allowExtract = false;
   @Input() allowEdit = false;
   @Input() allowDelete = false;
+  @Input() allowRetry = false;
 
   @Output() consult = new EventEmitter<Publication>();
   @Output() extract = new EventEmitter<Publication>();
   @Output() edit = new EventEmitter<Publication>();
   @Output() remove = new EventEmitter<Publication>();
+  @Output() retry = new EventEmitter<Publication>();
 }
