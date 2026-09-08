@@ -204,7 +204,8 @@
         {{ t('coverImage') }}
         <input name="publicationImage" type="file" accept="image/png,image/jpeg,image/webp" (change)="onPublicationImageSelected($event)" />
       </label>
-      <button class="primary" type="submit" [disabled]="!isPublicationFormValid()">{{ t('addToCatalogue') }}</button>
+      <button class="primary" type="submit" [disabled]="!isPublicationFormValid() || publicationSubmitting">{{ publicationSubmitting ? t('sending') : t('addToCatalogue') }}</button>
+      <p class="notice" *ngIf="publicationFeedback" [class.notice-error]="publicationFeedback.type === 'error'" [class.notice-success]="publicationFeedback.type === 'success'">{{ publicationFeedback.text }}</p>
     </form>
 
     <form *ngIf="session" class="import-form" (ngSubmit)="importDocument()">
@@ -226,7 +227,8 @@
       </label>
       <p class="notice" *ngIf="importForm.file">{{ importForm.file.name }}</p>
       <p class="notice" *ngIf="importing">{{ t('importing') }}</p>
-      <button class="primary" type="submit" [disabled]="!importForm.file || importing">{{ t('sendFile') }}</button>
+      <p class="notice notice-error" *ngIf="importFeedback?.type === 'error'">{{ importFeedback?.text }}</p>
+      <button class="primary" type="submit" [disabled]="!importForm.file || importing">{{ importing ? t('importing') : t('sendFile') }}</button>
     </form>
 
     <ng-template #publicationLoginRequired>

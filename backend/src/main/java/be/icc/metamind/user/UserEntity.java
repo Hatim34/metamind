@@ -45,7 +45,7 @@ public class UserEntity {
 	@Column(nullable = false, length = 30)
 	private UserStatus status = UserStatus.ACTIF;
 
-	@ManyToOne(fetch = FetchType.LAZY, optional = false)
+	@ManyToOne(fetch = FetchType.EAGER, optional = false)
 	@JoinColumn(name = "institution_id", nullable = false)
 	private InstitutionEntity institution;
 

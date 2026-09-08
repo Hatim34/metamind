@@ -146,7 +146,14 @@ const translations = {
     deactivateInstitutionFailed: "Desactivation de l'institution impossible.",
     extractedMetadataPrefix: 'Métadonnées extraites pour',
     language: 'Langue',
-    invalidForm: 'Veuillez compléter correctement les champs obligatoires.'
+    invalidForm: 'Veuillez compléter correctement les champs obligatoires.',
+    sending: 'Envoi en cours...',
+    publicationAdded: 'Publication ajoutée au catalogue.',
+    fileTooLarge: 'Fichier trop volumineux (128 Mo maximum).',
+    imageTooLarge: 'Image trop volumineuse (5 Mo maximum).',
+    unsupportedFileType: 'Format non pris en charge. Formats acceptés : PDF, DOCX, TXT.',
+    unsupportedImageType: 'Image non prise en charge. Formats acceptés : PNG, JPG, WEBP.',
+    sessionExpired: 'Session expirée. Reconnectez-vous.'
   },
   nl: {
     title: 'Beheer van academische metadata',
@@ -283,7 +290,14 @@ const translations = {
     deactivateInstitutionFailed: 'Instelling deactiveren is onmogelijk.',
     extractedMetadataPrefix: 'Metadata geextraheerd voor',
     language: 'Taal',
-    invalidForm: 'Vul de verplichte velden correct in.'
+    invalidForm: 'Vul de verplichte velden correct in.',
+    sending: 'Bezig met verzenden...',
+    publicationAdded: 'Publicatie toegevoegd aan de catalogus.',
+    fileTooLarge: 'Bestand te groot (max. 128 MB).',
+    imageTooLarge: 'Afbeelding te groot (max. 5 MB).',
+    unsupportedFileType: 'Formaat niet ondersteund. Toegestaan: PDF, DOCX, TXT.',
+    unsupportedImageType: 'Afbeelding niet ondersteund. Toegestaan: PNG, JPG, WEBP.',
+    sessionExpired: 'Sessie verlopen. Meld u opnieuw aan.'
   },
   en: {
     title: 'Academic metadata management',
@@ -420,7 +434,14 @@ const translations = {
     deactivateInstitutionFailed: 'Institution deactivation failed.',
     extractedMetadataPrefix: 'Metadata extracted for',
     language: 'Language',
-    invalidForm: 'Please complete the required fields correctly.'
+    invalidForm: 'Please complete the required fields correctly.',
+    sending: 'Sending...',
+    publicationAdded: 'Publication added to the catalogue.',
+    fileTooLarge: 'File too large (128 MB maximum).',
+    imageTooLarge: 'Image too large (5 MB maximum).',
+    unsupportedFileType: 'Unsupported format. Accepted: PDF, DOCX, TXT.',
+    unsupportedImageType: 'Unsupported image. Accepted: PNG, JPG, WEBP.',
+    sessionExpired: 'Session expired. Please sign in again.'
   }
 } as const;
 
@@ -522,9 +543,17 @@ export class AppComponent implements OnInit {
   creditBalance: number | null = null;
   creditMovements: CreditMovement[] = [];
   importing = false;
+  publicationSubmitting = false;
+  publicationFeedback: { type: 'success' | 'error'; text: string } | null = null;
+  importFeedback: { type: 'success' | 'error'; text: string } | null = null;
   statistics: DashboardStatistics | null = null;
   extractionResult: MetadataExtraction | null = null;
   selectedMetadataPublicationId: number | null = null;
+
+  private readonly maxFileSize = 128 * 1024 * 1024;
+  private readonly maxImageSize = 5 * 1024 * 1024;
+  private readonly allowedFileExtensions = ['pdf', 'docx', 'txt'];
+  private readonly allowedImageTypes = ['image/png', 'image/jpeg', 'image/webp'];
 
   constructor(private readonly api: ApiService) {}
 
@@ -761,14 +790,16 @@ export class AppComponent implements OnInit {
 
   createPublication(): void {
     if (!this.session) {
-      this.message = this.t('loginRequiredPublication');
+      this.publicationFeedback = { type: 'error', text: this.t('loginRequiredPublication') };
       return;
     }
     if (!this.isPublicationFormValid()) {
-      this.message = this.t('invalidForm');
+      this.publicationFeedback = { type: 'error', text: this.t('invalidForm') };
       return;
     }
 
+    this.publicationSubmitting = true;
+    this.publicationFeedback = null;
     this.api.createPublication({
       title: this.publicationForm.title,
       author: this.publicationForm.author,
@@ -779,6 +810,7 @@ export class AppComponent implements OnInit {
       image: this.publicationForm.image
     }).subscribe({
       next: () => {
+        this.publicationSubmitting = false;
         this.publicationForm = {
           title: '',
           author: '',
@@ -787,53 +819,127 @@ export class AppComponent implements OnInit {
           keywords: '',
           image: null
         };
+        this.publicationFeedback = null;
+        this.message = this.t('publicationAdded');
         this.page = 'catalogue';
         this.loadPublications();
       },
-      error: () => {
-        this.message = this.t('createPublicationFailed');
+      error: (err) => {
+        this.publicationSubmitting = false;
+        this.publicationFeedback = { type: 'error', text: this.describeError(err, 'createPublicationFailed') };
       }
     });
   }
 
   onFileSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
-    this.importForm.file = input.files?.[0] ?? null;
-    this.message = this.importForm.file ? this.importForm.file.name : '';
+    const file = input.files?.[0] ?? null;
+    this.importFeedback = null;
+    if (file) {
+      const validationError = this.validateDocumentFile(file);
+      if (validationError) {
+        this.importForm.file = null;
+        input.value = '';
+        this.importFeedback = { type: 'error', text: validationError };
+        return;
+      }
+    }
+    this.importForm.file = file;
   }
 
   onPublicationImageSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
-    this.publicationForm.image = input.files?.[0] ?? null;
+    const file = input.files?.[0] ?? null;
+    if (file) {
+      const validationError = this.validateImageFile(file);
+      if (validationError) {
+        this.publicationForm.image = null;
+        input.value = '';
+        this.publicationFeedback = { type: 'error', text: validationError };
+        return;
+      }
+    }
+    this.publicationForm.image = file;
   }
 
   onImportImageSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
-    this.importForm.image = input.files?.[0] ?? null;
+    const file = input.files?.[0] ?? null;
+    if (file) {
+      const validationError = this.validateImageFile(file);
+      if (validationError) {
+        this.importForm.image = null;
+        input.value = '';
+        this.importFeedback = { type: 'error', text: validationError };
+        return;
+      }
+    }
+    this.importForm.image = file;
   }
 
   importDocument(): void {
-    if (!this.session || !this.importForm.file) {
-      this.message = this.t('invalidForm');
+    if (!this.session) {
+      this.importFeedback = { type: 'error', text: this.t('loginRequiredPublication') };
+      return;
+    }
+    if (!this.importForm.file) {
+      this.importFeedback = { type: 'error', text: this.t('invalidForm') };
       return;
     }
 
     this.importing = true;
-    this.message = this.t('importing');
+    this.importFeedback = null;
     this.api.importDocument(this.importForm.file, this.importForm.visibility, this.importForm.image).subscribe({
       next: (publication) => {
         this.importing = false;
         this.importForm = { file: null, image: null, visibility: 'INSTITUTION' };
+        this.importFeedback = null;
         this.page = 'catalogue';
         this.message = this.t('importCompleted') + ' ' + this.t('importQueued');
         this.loadPublications();
         this.refreshImportStatus(publication.id);
       },
-      error: () => {
+      error: (err) => {
         this.importing = false;
-        this.message = this.t('importFailed');
+        this.importFeedback = { type: 'error', text: this.describeError(err, 'importFailed') };
       }
     });
+  }
+
+  private validateDocumentFile(file: File): string | null {
+    const extension = file.name.includes('.') ? file.name.split('.').pop()!.toLowerCase() : '';
+    if (!this.allowedFileExtensions.includes(extension)) {
+      return this.t('unsupportedFileType');
+    }
+    if (file.size > this.maxFileSize) {
+      return this.t('fileTooLarge');
+    }
+    return null;
+  }
+
+  private validateImageFile(file: File): string | null {
+    if (!this.allowedImageTypes.includes(file.type)) {
+      return this.t('unsupportedImageType');
+    }
+    if (file.size > this.maxImageSize) {
+      return this.t('imageTooLarge');
+    }
+    return null;
+  }
+
+  private describeError(error: unknown, fallbackKey: TranslationKey): string {
+    const httpError = error as { status?: number; error?: { message?: unknown } };
+    if (httpError?.status === 0) {
+      return this.t('apiUnavailable');
+    }
+    if (httpError?.status === 401) {
+      return this.t('sessionExpired');
+    }
+    const serverMessage = httpError?.error?.message;
+    if (typeof serverMessage === 'string' && serverMessage.trim().length > 0) {
+      return serverMessage;
+    }
+    return this.t(fallbackKey);
   }
 
   private refreshImportStatus(publicationId: number, attempts = 0): void {
@@ -963,8 +1069,8 @@ export class AppComponent implements OnInit {
         this.loadPublications();
         this.startMetadataValidation(publication);
       },
-      error: () => {
-        this.message = this.t('extractionFailed');
+      error: (err) => {
+        this.message = this.describeError(err, 'extractionFailed');
       }
     });
   }

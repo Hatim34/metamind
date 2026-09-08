@@ -38,11 +38,12 @@ class DocumentProcessingServiceTests {
 		when(documentUploadService.extractText(any(Path.class))).thenReturn("Texte extrait");
 		when(documentUploadService.storePdfThumbnail(any(Path.class))).thenReturn("/tmp/cover.jpg");
 
-		new DocumentProcessingService(documentRepository, documentUploadService).process(7L, "/tmp/article.pdf");
+		new DocumentProcessingService(documentRepository, documentUploadService, null).process(7L, "/tmp/article.pdf");
 
 		assertEquals(DocumentStatus.EN_ATTENTE, document.getStatus());
 		assertEquals("Texte extrait", document.getExtractedText());
 		assertEquals("/tmp/cover.jpg", document.getCoverImagePath());
 		verify(documentRepository).findById(7L);
+		verify(documentRepository).save(document);
 	}
 }

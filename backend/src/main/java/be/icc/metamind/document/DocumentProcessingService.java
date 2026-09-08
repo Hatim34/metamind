@@ -4,6 +4,7 @@ import java.nio.file.Path;
 
 import be.icc.metamind.api.ApiException;
 
+import org.springframework.context.annotation.Lazy;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,16 +15,18 @@ import org.springframework.transaction.event.TransactionalEventListener;
 public class DocumentProcessingService {
 	private final DocumentRepository documentRepository;
 	private final DocumentUploadService documentUploadService;
+	private final DocumentProcessingService self;
 
-	public DocumentProcessingService(DocumentRepository documentRepository, DocumentUploadService documentUploadService) {
+	public DocumentProcessingService(DocumentRepository documentRepository, DocumentUploadService documentUploadService, @Lazy DocumentProcessingService self) {
 		this.documentRepository = documentRepository;
 		this.documentUploadService = documentUploadService;
+		this.self = self;
 	}
 
 	@Async
 	@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
 	public void processAfterImport(DocumentImportedEvent event) {
-		process(event.documentId(), event.filePath());
+		self.process(event.documentId(), event.filePath());
 	}
 
 	@Transactional
@@ -47,5 +50,6 @@ public class DocumentProcessingService {
 		catch (RuntimeException exception) {
 			document.markExtractionFailed();
 		}
+		documentRepository.save(document);
 	}
 }
