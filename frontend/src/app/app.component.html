@@ -246,6 +246,31 @@
       </label>
       <button class="primary" type="submit">{{ t('signIn') }}</button>
     </form>
+    <button type="button" (click)="openPasswordReset()">{{ t('forgotPassword') }}</button>
+  </section>
+
+  <section *ngIf="page === 'password-reset'" class="panel form-panel">
+    <p class="eyebrow">{{ t('resetPassword') }}</p>
+    <h2>{{ t('resetPassword') }}</h2>
+    <form (ngSubmit)="requestPasswordReset()">
+      <label>
+        {{ t('resetEmail') }}
+        <input name="resetEmail" type="email" [(ngModel)]="passwordResetForm.email" required maxlength="160" />
+      </label>
+      <button class="primary" type="submit">{{ t('sendResetLink') }}</button>
+    </form>
+    <p class="notice" *ngIf="passwordResetRequested">{{ t('resetRequestSent') }}</p>
+    <form (ngSubmit)="confirmPasswordReset()">
+      <label>
+        {{ t('resetToken') }}
+        <input name="resetToken" [(ngModel)]="passwordResetForm.token" required />
+      </label>
+      <label>
+        {{ t('newPassword') }}
+        <input name="resetPassword" type="password" [(ngModel)]="passwordResetForm.password" required minlength="8" />
+      </label>
+      <button class="primary" type="submit" [disabled]="passwordResetForm.token.trim().length === 0 || passwordResetForm.password.length < 8">{{ t('confirmPasswordReset') }}</button>
+    </form>
   </section>
 
   <section *ngIf="page === 'inscription'" class="panel form-panel">

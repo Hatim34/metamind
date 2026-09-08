@@ -226,6 +226,14 @@ export class ApiService {
       .pipe(map((response) => this.toPublication(response)));
   }
 
+  requestPasswordReset(email: string): Observable<void> {
+    return this.http.post<void>(`${this.baseUrl}/auth/password-reset/request`, { email });
+  }
+
+  confirmPasswordReset(token: string, password: string): Observable<void> {
+    return this.http.post<void>(`${this.baseUrl}/auth/password-reset/confirm`, { token, password });
+  }
+
   searchPublications(search = '', filters: SearchFilters = {}): Observable<Publication[]> {
     let params = new HttpParams();
     if (search.trim()) {

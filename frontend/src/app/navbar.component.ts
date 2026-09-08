@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 
-export type NavigationPage = 'catalogue' | 'profil' | 'publication' | 'administration' | 'connexion' | 'inscription';
+export type NavigationPage = 'catalogue' | 'profil' | 'publication' | 'administration' | 'connexion' | 'inscription' | 'password-reset';
 export type NavigationLanguage = 'fr' | 'nl' | 'en';
 
 export interface NavigationLabels {

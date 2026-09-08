@@ -7,7 +7,7 @@ import { NavigationLabels, NavbarComponent } from './navbar.component';
 import { PublicationCardLabels, PublicationCardComponent } from './publication-card.component';
 import { PublicationDetailComponent, PublicationDetailLabels } from './publication-detail.component';
 
-type Page = 'catalogue' | 'detail' | 'connexion' | 'inscription' | 'profil' | 'publication' | 'administration';
+type Page = 'catalogue' | 'detail' | 'connexion' | 'inscription' | 'profil' | 'publication' | 'administration' | 'password-reset';
 type Language = 'fr' | 'nl' | 'en';
 
 const translations = {
@@ -64,6 +64,15 @@ const translations = {
     email: 'Email',
     password: 'Mot de passe',
     signIn: 'Se connecter',
+    forgotPassword: 'Mot de passe oublie',
+    resetPassword: 'Reinitialiser le mot de passe',
+    resetEmail: 'Adresse e-mail',
+    sendResetLink: 'Envoyer le lien',
+    resetToken: 'Code de reinitialisation',
+    newPassword: 'Nouveau mot de passe',
+    confirmPasswordReset: 'Modifier le mot de passe',
+    resetRequestSent: 'Si le compte existe, un lien de reinitialisation a ete envoye.',
+    passwordResetDone: 'Mot de passe modifie. Vous pouvez vous connecter.',
     librarianAccount: 'Compte bibliothécaire',
     adminAccount: 'Compte administrateur',
     createLibrarianAccount: 'Créer un compte bibliothécaire',
@@ -188,6 +197,15 @@ const translations = {
     email: 'E-mail',
     password: 'Wachtwoord',
     signIn: 'Aanmelden',
+    forgotPassword: 'Wachtwoord vergeten',
+    resetPassword: 'Wachtwoord opnieuw instellen',
+    resetEmail: 'E-mailadres',
+    sendResetLink: 'Link versturen',
+    resetToken: 'Herstelcode',
+    newPassword: 'Nieuw wachtwoord',
+    confirmPasswordReset: 'Wachtwoord wijzigen',
+    resetRequestSent: 'Als het account bestaat, is een herstelbericht verzonden.',
+    passwordResetDone: 'Wachtwoord gewijzigd. U kunt zich aanmelden.',
     librarianAccount: 'Bibliothecarisaccount',
     adminAccount: 'Beheerdersaccount',
     createLibrarianAccount: 'Een bibliothecarisaccount maken',
@@ -312,6 +330,15 @@ const translations = {
     email: 'Email',
     password: 'Password',
     signIn: 'Sign in',
+    forgotPassword: 'Forgot password',
+    resetPassword: 'Reset password',
+    resetEmail: 'Email address',
+    sendResetLink: 'Send link',
+    resetToken: 'Reset token',
+    newPassword: 'New password',
+    confirmPasswordReset: 'Change password',
+    resetRequestSent: 'If the account exists, a reset link was sent.',
+    passwordResetDone: 'Password changed. You can sign in.',
     librarianAccount: 'Librarian account',
     adminAccount: 'Administrator account',
     createLibrarianAccount: 'Create a librarian account',
@@ -414,6 +441,13 @@ export class AppComponent implements OnInit {
     email: '',
     password: ''
   };
+
+  passwordResetForm = {
+    email: '',
+    token: '',
+    password: ''
+  };
+  passwordResetRequested = false;
 
   registerForm = {
     firstName: '',
@@ -592,6 +626,36 @@ export class AppComponent implements OnInit {
   backToCatalogue(): void {
     this.page = 'catalogue';
     this.selectedPublication = null;
+  }
+
+  openPasswordReset(): void {
+    this.page = 'password-reset';
+    this.passwordResetRequested = false;
+    this.message = '';
+  }
+
+  requestPasswordReset(): void {
+    this.api.requestPasswordReset(this.passwordResetForm.email).subscribe({
+      next: () => {
+        this.passwordResetRequested = true;
+      },
+      error: () => {
+        this.message = this.t('apiUnavailable');
+      }
+    });
+  }
+
+  confirmPasswordReset(): void {
+    this.api.confirmPasswordReset(this.passwordResetForm.token, this.passwordResetForm.password).subscribe({
+      next: () => {
+        this.page = 'connexion';
+        this.passwordResetForm = { email: '', token: '', password: '' };
+        this.message = this.t('passwordResetDone');
+      },
+      error: () => {
+        this.message = this.t('apiUnavailable');
+      }
+    });
   }
 
   login(): void {
