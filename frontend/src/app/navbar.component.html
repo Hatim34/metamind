@@ -21,6 +21,10 @@
         <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
         <span>{{ labels.newPublication }}</span>
       </button>
+      <button type="button" *ngIf="authenticated" [class.active]="page === 'validation'" (click)="navigate('validation')">
+        <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16M4 12h16M4 19h10" /><path d="m17 17 2 2 4-4" /></svg>
+        <span>{{ labels.validationQueue }}</span>
+      </button>
       <button type="button" *ngIf="administrator" [class.active]="page === 'administration'" (click)="navigate('administration')">
         <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v18h18" /><path d="M7 14l4-4 3 3 5-6" /></svg>
         <span>{{ labels.administration }}</span>

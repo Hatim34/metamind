@@ -7,7 +7,7 @@ import { NavigationLabels, NavbarComponent } from './navbar.component';
 import { PublicationCardLabels, PublicationCardComponent } from './publication-card.component';
 import { PublicationDetailComponent, PublicationDetailLabels } from './publication-detail.component';
 
-type Page = 'catalogue' | 'detail' | 'connexion' | 'inscription' | 'profil' | 'publication' | 'administration' | 'password-reset';
+type Page = 'catalogue' | 'detail' | 'connexion' | 'inscription' | 'profil' | 'publication' | 'validation' | 'administration' | 'password-reset';
 type Language = 'fr' | 'nl' | 'en';
 
 const translations = {
@@ -18,6 +18,7 @@ const translations = {
     register: 'Inscription',
     profile: 'Profil',
     newPublication: 'Nouvelle publication',
+    validationQueue: 'File de validation',
     administration: 'Administration',
     indicators: 'Indicateurs',
     publications: 'Publications',
@@ -162,6 +163,7 @@ const translations = {
     register: 'Registreren',
     profile: 'Profiel',
     newPublication: 'Nieuwe publicatie',
+    validationQueue: 'Validatiewachtrij',
     administration: 'Beheer',
     indicators: 'Indicatoren',
     publications: 'Publicaties',
@@ -306,6 +308,7 @@ const translations = {
     register: 'Register',
     profile: 'Profile',
     newPublication: 'New publication',
+    validationQueue: 'Validation queue',
     administration: 'Administration',
     indicators: 'Indicators',
     publications: 'Publications',
@@ -533,6 +536,7 @@ export class AppComponent implements OnInit {
   session: UserSession | null = null;
   token = '';
   publications: Publication[] = [];
+  validationQueue: Publication[] = [];
   selectedPublication: Publication | null = null;
   institutions: Institution[] = [];
   adminUsers: UserSession[] = [];
@@ -549,6 +553,7 @@ export class AppComponent implements OnInit {
   statistics: DashboardStatistics | null = null;
   extractionResult: MetadataExtraction | null = null;
   selectedMetadataPublicationId: number | null = null;
+  extractingPublicationIds = new Set<number>();
 
   private readonly maxFileSize = 128 * 1024 * 1024;
   private readonly maxImageSize = 5 * 1024 * 1024;
@@ -590,6 +595,7 @@ export class AppComponent implements OnInit {
         this.loadInstitutions();
         this.loadAdminData();
       }
+      this.loadValidationQueue();
     } catch {
       localStorage.removeItem(AppComponent.sessionStorageKey);
     }
@@ -604,6 +610,9 @@ export class AppComponent implements OnInit {
 
   navigate(page: Page): void {
     this.page = page;
+    if (page === 'validation') {
+      this.loadValidationQueue();
+    }
     if (page === 'administration') {
       this.loadInstitutions();
       this.loadAdminData();
@@ -623,6 +632,7 @@ export class AppComponent implements OnInit {
       title: this.t('title'),
       catalogue: this.t('catalogue'),
       newPublication: this.t('newPublication'),
+      validationQueue: this.t('validationQueue'),
       administration: this.t('administration'),
       profile: this.t('profile'),
       login: this.t('login'),
@@ -677,6 +687,21 @@ export class AppComponent implements OnInit {
       error: () => {
         this.loading = false;
         this.message = this.t('apiUnavailable');
+      }
+    });
+  }
+
+  loadValidationQueue(): void {
+    if (!this.session) {
+      this.validationQueue = [];
+      return;
+    }
+    this.api.getManagedDocuments().subscribe({
+      next: (documents) => {
+        this.validationQueue = documents.filter((document) => document.status !== 'PUBLIE' && document.status !== 'SUPPRIME');
+      },
+      error: () => {
+        this.validationQueue = [];
       }
     });
   }
@@ -795,6 +820,7 @@ export class AppComponent implements OnInit {
     }
     if (!this.isPublicationFormValid()) {
       this.publicationFeedback = { type: 'error', text: this.t('invalidForm') };
+      this.message = this.t('invalidForm');
       return;
     }
 
@@ -821,8 +847,9 @@ export class AppComponent implements OnInit {
         };
         this.publicationFeedback = null;
         this.message = this.t('publicationAdded');
-        this.page = 'catalogue';
-        this.loadPublications();
+        this.page = 'validation';
+        this.loadPublications(false);
+        this.loadValidationQueue();
       },
       error: (err) => {
         this.publicationSubmitting = false;
@@ -894,9 +921,10 @@ export class AppComponent implements OnInit {
         this.importing = false;
         this.importForm = { file: null, image: null, visibility: 'INSTITUTION' };
         this.importFeedback = null;
-        this.page = 'catalogue';
+        this.page = 'validation';
         this.message = this.t('importCompleted') + ' ' + this.t('importQueued');
-        this.loadPublications();
+        this.loadPublications(false);
+        this.loadValidationQueue();
         this.refreshImportStatus(publication.id);
       },
       error: (err) => {
@@ -943,7 +971,7 @@ export class AppComponent implements OnInit {
   }
 
   private refreshImportStatus(publicationId: number, attempts = 0): void {
-    if (attempts >= 5) {
+    if (attempts >= 30) {
       return;
     }
     window.setTimeout(() => {
@@ -1059,18 +1087,28 @@ export class AppComponent implements OnInit {
       return;
     }
 
+    if (this.extractingPublicationIds.has(publication.id)) {
+      return;
+    }
+    this.extractingPublicationIds.add(publication.id);
+    this.message = this.t('processing');
     this.api.extractMetadata(publication.id).subscribe({
       next: (result) => {
+        this.extractingPublicationIds.delete(publication.id);
         this.extractionResult = result;
         this.creditBalance = result.creditBalance;
-        this.message = '';
+        this.message = this.t('metadataLoaded');
         this.loadCreditMovements();
         this.loadStatistics();
         this.loadPublications();
+        this.loadValidationQueue();
+        this.page = 'validation';
         this.startMetadataValidation(publication);
       },
       error: (err) => {
+        this.extractingPublicationIds.delete(publication.id);
         this.message = this.describeError(err, 'extractionFailed');
+        this.loadValidationQueue();
       }
     });
   }
@@ -1390,11 +1428,15 @@ export class AppComponent implements OnInit {
   }
 
   canExtractPublication(publication: Publication): boolean {
-    return !!this.session && publication.institution === this.session.institution && publication.status !== 'SUPPRIME';
+    return !!this.session && publication.institution === this.session.institution && publication.status === 'A_VALIDER';
   }
 
   canPublishPublication(publication: Publication): boolean {
-    return this.canManagePublication(publication) && publication.status !== 'PUBLIE' && publication.status !== 'SUPPRIME';
+    return this.canManagePublication(publication) && publication.status === 'A_VALIDER';
+  }
+
+  isExtracting(publicationId: number): boolean {
+    return this.extractingPublicationIds.has(publicationId);
   }
 
   canDeletePublication(publication: Publication): boolean {

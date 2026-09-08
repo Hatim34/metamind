@@ -47,6 +47,7 @@ describe('AppComponent', () => {
       'getPublications',
       'getPublication',
       'searchPublications',
+      'getManagedDocuments',
       'createPublication',
       'importDocument',
       'getInstitutions',
@@ -79,6 +80,7 @@ describe('AppComponent', () => {
     api.getPublications.and.returnValue(of(publications));
     api.getPublication.and.returnValue(of(publications[0]));
     api.searchPublications.and.returnValue(of(publications));
+    api.getManagedDocuments.and.returnValue(of([]));
     api.getCreditPacks.and.returnValue(of([
       { id: 1, credits: 20, amount: 0, currency: 'EUR', label: 'Pack decouverte' }
     ]));
@@ -141,6 +143,19 @@ describe('AppComponent', () => {
   it('charge le catalogue au demarrage', () => {
     expect(api.getPublications).toHaveBeenCalled();
     expect(component.publications).toEqual(publications);
+  });
+
+  it('redirige un import termine vers la file de validation', () => {
+    const imported = { ...publications[0], id: 42, status: 'EN_ATTENTE' as const };
+    api.importDocument.and.returnValue(of(imported));
+    component.session = authResponse.user;
+    component.importForm.file = new File(['document'], 'publication.pdf', { type: 'application/pdf' });
+
+    component.importDocument();
+
+    expect(component.page).toBe('validation');
+    expect(component.message).toContain(component.t('importCompleted'));
+    expect(api.importDocument).toHaveBeenCalled();
   });
 
   it('ouvre la fiche publique d une publication', () => {
@@ -339,9 +354,10 @@ describe('AppComponent', () => {
 
   it('limite l extraction aux publications de son institution', () => {
     component.session = authResponse.user;
+    const pendingPublication = { ...publications[0], status: 'A_VALIDER' as const };
 
-    expect(component.canExtractPublication(publications[0])).toBeTrue();
-    expect(component.canExtractPublication({ ...publications[0], institution: 'Institution B' })).toBeFalse();
+    expect(component.canExtractPublication(pendingPublication)).toBeTrue();
+    expect(component.canExtractPublication({ ...pendingPublication, institution: 'Institution B' })).toBeFalse();
   });
 
   it('refuse une inscription avec un mot de passe trop court', () => {

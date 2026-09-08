@@ -1,13 +1,14 @@
 import { CommonModule } from '@angular/common';
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 
-export type NavigationPage = 'catalogue' | 'profil' | 'publication' | 'administration' | 'connexion' | 'inscription' | 'password-reset';
+export type NavigationPage = 'catalogue' | 'profil' | 'publication' | 'validation' | 'administration' | 'connexion' | 'inscription' | 'password-reset';
 export type NavigationLanguage = 'fr' | 'nl' | 'en';
 
 export interface NavigationLabels {
   title: string;
   catalogue: string;
   newPublication: string;
+  validationQueue: string;
   administration: string;
   profile: string;
   login: string;

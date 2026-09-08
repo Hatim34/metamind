@@ -165,6 +165,46 @@
     </section>
   </ng-container>
 
+  <section *ngIf="page === 'validation'" class="panel">
+    <div class="section-heading">
+      <div>
+        <p class="eyebrow">{{ t('validationQueue') }}</p>
+        <h1>{{ t('pendingValidation') }}</h1>
+      </div>
+      <button type="button" (click)="loadValidationQueue()">{{ t('filters') }}</button>
+    </div>
+    <p class="notice" *ngIf="!session">{{ t('loginRequiredPublication') }}</p>
+    <p class="notice" *ngIf="session && validationQueue.length === 0">{{ t('noSummary') }}</p>
+    <div class="publication-list" *ngIf="validationQueue.length > 0">
+      <app-publication-card
+        *ngFor="let publication of validationQueue"
+        [publication]="publication"
+        [labels]="publicationCardLabels"
+        [allowExtract]="canExtractPublication(publication)"
+        [allowEdit]="canPublishPublication(publication)"
+        [allowDelete]="canDeletePublication(publication)"
+        (consult)="openPublication($event)"
+        (extract)="extractMetadata($event)"
+        (edit)="startMetadataValidation($event)"
+        (remove)="deletePublication($event)">
+        <p class="notice" *ngIf="isExtracting(publication.id)">{{ t('processing') }}</p>
+        <div class="metadata-review" *ngIf="selectedMetadataPublicationId === publication.id">
+          <form class="metadata-form" (ngSubmit)="validateMetadata()">
+            <label>{{ t('titleLabel') }}<input name="queueTitle{{ publication.id }}" [(ngModel)]="metadataForm.title" required maxlength="500" /></label>
+            <label>{{ t('author') }}<input name="queueAuthors{{ publication.id }}" [(ngModel)]="metadataForm.authors" required maxlength="500" /></label>
+            <label>{{ t('summary') }}<textarea name="queueSummary{{ publication.id }}" [(ngModel)]="metadataForm.summary" maxlength="5000"></textarea></label>
+            <label>{{ t('publicationDate') }}<input name="queueDate{{ publication.id }}" type="date" [(ngModel)]="metadataForm.publicationDate" /></label>
+            <label>{{ t('classification') }}<input name="queueClassification{{ publication.id }}" [(ngModel)]="metadataForm.classification" maxlength="255" /></label>
+            <label>{{ t('visibility') }}<select name="queueVisibility{{ publication.id }}" [(ngModel)]="metadataForm.visibility"><option value="PUBLIC">{{ t('publicVisibility') }}</option><option value="INSTITUTION">{{ t('institutionOnly') }}</option></select></label>
+            <label>{{ t('keywords') }}<input name="queueKeywords{{ publication.id }}" [(ngModel)]="metadataForm.keywords" required maxlength="500" /></label>
+            <div class="actions"><button class="primary" type="submit" [disabled]="!isMetadataFormValid()">{{ t('validateMetadataAction') }}</button><button type="button" (click)="cancelMetadataValidation()">{{ t('cancel') }}</button></div>
+          </form>
+          <aside class="metadata-source"><h3>{{ t('extractedText') }}</h3><pre>{{ metadataForm.extractedText || t('noExtractedText') }}</pre></aside>
+        </div>
+      </app-publication-card>
+    </div>
+  </section>
+
   <app-publication-detail
     *ngIf="page === 'detail' && selectedPublication as publication"
     [publication]="publication"

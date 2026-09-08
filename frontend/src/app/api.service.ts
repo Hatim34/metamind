@@ -258,6 +258,15 @@ export class ApiService {
       .pipe(map((response) => response.contenu.map((item) => this.toPublication(item))));
   }
 
+  getManagedDocuments(status?: PublicationStatus): Observable<Publication[]> {
+    let params = new HttpParams().set('size', '100');
+    if (status) {
+      params = params.set('statut', status);
+    }
+    return this.http.get<PageResponse<unknown>>(`${this.baseUrl}/documents`, { params, headers: this.authHeaders() })
+      .pipe(map((response) => response.contenu.map((item) => this.toPublication(item))));
+  }
+
   createPublication(request: CreatePublicationRequest): Observable<Publication> {
     const data = new FormData();
     data.append('title', request.title);
