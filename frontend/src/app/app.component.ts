@@ -90,6 +90,9 @@ const translations = {
     coverImage: 'Image de couverture',
     sendFile: 'Importer le fichier',
     importQueued: 'Import en cours de traitement.',
+    importing: 'Import du fichier en cours...',
+    importCompleted: 'Le fichier a été importé. Le traitement peut commencer.',
+    importFailed: 'Import du fichier impossible.',
     adminUsers: 'Utilisateurs',
     configuration: 'Configuration',
     saveConfiguration: 'Enregistrer la configuration',
@@ -224,6 +227,9 @@ const translations = {
     coverImage: 'Omslagafbeelding',
     sendFile: 'Bestand importeren',
     importQueued: 'De import wordt verwerkt.',
+    importing: 'Het bestand wordt geïmporteerd...',
+    importCompleted: 'Het bestand is geïmporteerd. De verwerking kan starten.',
+    importFailed: 'Het bestand kan niet worden geïmporteerd.',
     adminUsers: 'Gebruikers',
     configuration: 'Configuratie',
     saveConfiguration: 'Configuratie opslaan',
@@ -358,6 +364,9 @@ const translations = {
     coverImage: 'Cover image',
     sendFile: 'Import file',
     importQueued: 'The import is being processed.',
+    importing: 'The file is being imported...',
+    importCompleted: 'The file was imported. Processing can start.',
+    importFailed: 'The file could not be imported.',
     adminUsers: 'Users',
     configuration: 'Configuration',
     saveConfiguration: 'Save configuration',
@@ -512,6 +521,7 @@ export class AppComponent implements OnInit {
   creditPacks: CreditPackOption[] = [];
   creditBalance: number | null = null;
   creditMovements: CreditMovement[] = [];
+  importing = false;
   statistics: DashboardStatistics | null = null;
   extractionResult: MetadataExtraction | null = null;
   selectedMetadataPublicationId: number | null = null;
@@ -789,6 +799,7 @@ export class AppComponent implements OnInit {
   onFileSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
     this.importForm.file = input.files?.[0] ?? null;
+    this.message = this.importForm.file ? this.importForm.file.name : '';
   }
 
   onPublicationImageSelected(event: Event): void {
@@ -807,16 +818,20 @@ export class AppComponent implements OnInit {
       return;
     }
 
+    this.importing = true;
+    this.message = this.t('importing');
     this.api.importDocument(this.importForm.file, this.importForm.visibility, this.importForm.image).subscribe({
       next: (publication) => {
+        this.importing = false;
         this.importForm = { file: null, image: null, visibility: 'INSTITUTION' };
         this.page = 'catalogue';
-        this.message = this.t('importQueued');
+        this.message = this.t('importCompleted') + ' ' + this.t('importQueued');
         this.loadPublications();
         this.refreshImportStatus(publication.id);
       },
       error: () => {
-        this.message = this.t('createPublicationFailed');
+        this.importing = false;
+        this.message = this.t('importFailed');
       }
     });
   }

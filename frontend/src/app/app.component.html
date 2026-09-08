@@ -224,7 +224,9 @@
           <option value="INSTITUTION">{{ t('institutionOnly') }}</option>
         </select>
       </label>
-      <button class="primary" type="submit" [disabled]="!importForm.file">{{ t('sendFile') }}</button>
+      <p class="notice" *ngIf="importForm.file">{{ importForm.file.name }}</p>
+      <p class="notice" *ngIf="importing">{{ t('importing') }}</p>
+      <button class="primary" type="submit" [disabled]="!importForm.file || importing">{{ t('sendFile') }}</button>
     </form>
 
     <ng-template #publicationLoginRequired>
