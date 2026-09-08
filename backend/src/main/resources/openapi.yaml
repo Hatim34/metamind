@@ -93,6 +93,44 @@ paths:
                   utilisateur: { $ref: '#/components/schemas/User' }
         '401': { description: Identifiants invalides, $ref: '#/components/responses/Error' }
 
+  /auth/password-reset/request:
+    post:
+      tags: [Auth]
+      summary: Demander un lien de reinitialisation
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email: { type: string, format: email, example: sarah@institution-a.example }
+      responses:
+        '200': { description: Demande prise en compte }
+        '422': { description: Donnees invalides, $ref: '#/components/responses/Error' }
+
+  /auth/password-reset/confirm:
+    post:
+      tags: [Auth]
+      summary: Definir un nouveau mot de passe avec un jeton
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token, password]
+              properties:
+                token: { type: string }
+                password: { type: string, format: password, minLength: 8 }
+      responses:
+        '200': { description: Mot de passe modifie }
+        '400': { description: Jeton invalide ou expire, $ref: '#/components/responses/Error' }
+        '422': { description: Donnees invalides, $ref: '#/components/responses/Error' }
+
   /documents:
     get:
       tags: [Documents]

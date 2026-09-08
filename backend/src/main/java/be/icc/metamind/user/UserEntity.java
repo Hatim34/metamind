@@ -122,4 +122,8 @@ public class UserEntity {
 		email = "compte-supprime-" + id + "@metamind.example";
 		passwordHash = "compte-desactive";
 	}
+
+	public void changePassword(String passwordHash) {
+		this.passwordHash = passwordHash;
+	}
 }

@@ -359,6 +359,27 @@ class ApiControllerTests {
 	}
 
 	@Test
+	void passwordResetRequestDoesNotExposeAccountExistence() throws Exception {
+		mockMvc.perform(post("/api/v1/auth/password-reset/request")
+					.contentType(MediaType.APPLICATION_JSON)
+					.content("{\"email\":\"sarah@institution-a.example\"}"))
+				.andExpect(status().isOk());
+
+		mockMvc.perform(post("/api/v1/auth/password-reset/request")
+					.contentType(MediaType.APPLICATION_JSON)
+					.content("{\"email\":\"unknown@institution-a.example\"}"))
+				.andExpect(status().isOk());
+	}
+
+	@Test
+	void passwordResetRejectsUnknownToken() throws Exception {
+		mockMvc.perform(post("/api/v1/auth/password-reset/confirm")
+					.contentType(MediaType.APPLICATION_JSON)
+					.content("{\"token\":\"invalid\",\"password\":\"NouveauMot123\"}"))
+				.andExpect(status().isBadRequest());
+	}
+
+	@Test
 	void repeatedInvalidLoginAttemptsAreBlocked() throws Exception {
 		String body = """
 				{
