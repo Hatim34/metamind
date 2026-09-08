@@ -98,12 +98,12 @@ class CreditServiceTests {
 	}
 
 	@Test
-	void paidCheckoutIsUnavailableWithoutStripeConfiguration() {
+	void checkoutUsesLocalConfirmationForTesting() {
 		UserEntity user = saveUser();
 
-		assertThatThrownBy(() -> creditService.startCheckout(user, new CreditCheckoutRequest(2, true)))
-				.isInstanceOf(ApiException.class)
-				.hasMessage("Le paiement Stripe n'est pas configure.");
+		CreditCheckoutResponse checkout = creditService.startCheckout(user, new CreditCheckoutRequest(2, true));
+
+		assertThat(checkout.checkoutUrl()).contains("/paiement/confirmation");
 		assertThat(creditService.getBalance(user.getId()).balance()).isZero();
 	}
 
