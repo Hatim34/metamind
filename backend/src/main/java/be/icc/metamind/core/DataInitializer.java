@@ -29,6 +29,7 @@ import be.icc.metamind.user.UserRole;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationArguments;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -46,6 +47,8 @@ public class DataInitializer implements ApplicationRunner {
 	private final DocumentUploadService documentUploadService;
 	private final PasswordService passwordService;
 	private final boolean enabled;
+	private final boolean resetSeed;
+	private final JdbcTemplate jdbcTemplate;
 
 	public DataInitializer(
 			InstitutionRepository institutionRepository,
@@ -58,7 +61,9 @@ public class DataInitializer implements ApplicationRunner {
 			DocumentKeywordRepository documentKeywordRepository,
 			DocumentUploadService documentUploadService,
 			PasswordService passwordService,
-			@Value("${metamind.seed-data:true}") boolean enabled
+			JdbcTemplate jdbcTemplate,
+			@Value("${metamind.seed-data:true}") boolean enabled,
+			@Value("${metamind.seed-reset:false}") boolean resetSeed
 	) {
 		this.institutionRepository = institutionRepository;
 		this.userRepository = userRepository;
@@ -70,7 +75,9 @@ public class DataInitializer implements ApplicationRunner {
 		this.documentKeywordRepository = documentKeywordRepository;
 		this.documentUploadService = documentUploadService;
 		this.passwordService = passwordService;
+		this.jdbcTemplate = jdbcTemplate;
 		this.enabled = enabled;
+		this.resetSeed = resetSeed;
 	}
 
 	@Override
@@ -90,6 +97,9 @@ public class DataInitializer implements ApplicationRunner {
 		UserEntity sarah = createUserIfMissing("Sarah", "Lemaire", "sarah@institution-a.example", password, UserRole.LIBRARIAN, institutionA);
 		UserEntity jan = createUserIfMissing("Jan", "Peeters", "jan@institution-b.example", password, UserRole.LIBRARIAN, institutionB);
 		createUserIfMissing("Nadia", "Benali", "admin@metamind.example", password, UserRole.ADMIN, platform);
+		if (resetSeed) {
+			jdbcTemplate.execute("TRUNCATE TABLE documents CASCADE");
+		}
 		createDocumentsIfMissing(institutionA, institutionB, sarah, jan);
 	}
 
@@ -110,10 +120,6 @@ public class DataInitializer implements ApplicationRunner {
 	}
 
 	private void createDocumentsIfMissing(InstitutionEntity institutionA, InstitutionEntity institutionB, UserEntity sarah, UserEntity jan) {
-		if (documentRepository.count() > 0) {
-			return;
-		}
-
 		createDocument("Etude de la corrosion des aciers inoxydables en milieu marin", "Sarah Mertens", 2023, "Chimie",
 				DocumentStatus.PUBLIE, DocumentVisibility.PUBLIC, List.of("electrochimie", "corrosion", "materiaux"), institutionA, sarah);
 		createDocument("Apprentissage profond pour la segmentation d'images medicales", "Yassine El Amrani", 2024, "Informatique",
@@ -141,6 +147,9 @@ public class DataInitializer implements ApplicationRunner {
 	}
 
 	private void createDocument(String title, String authorName, int year, String discipline, DocumentStatus status, DocumentVisibility visibility, List<String> keywords, InstitutionEntity institution, UserEntity importedBy) {
+		if (metadataRepository.existsByTitreIgnoreCase(title)) {
+			return;
+		}
 		String summary = "Publication de recherche en " + discipline.toLowerCase(Locale.ROOT) + " : " + title + ".";
 		String slug = title.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]+", "-").replaceAll("(^-|-$)", "");
 		String fileName = slug + ".pdf";
