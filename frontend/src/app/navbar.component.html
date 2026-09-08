@@ -1,0 +1,43 @@
+<nav class="navbar">
+  <div class="navbar-inner">
+    <button type="button" class="nav-brand" (click)="navigate('catalogue')" [attr.aria-label]="labels.title">
+      <span class="nav-logo" aria-hidden="true">
+        <svg width="32" height="32" viewBox="0 0 42 42" role="img" aria-label="Metamind">
+          <rect x="3" y="3" width="36" height="36" rx="10" fill="#12787B" />
+          <circle cx="14" cy="15" r="3" fill="#fff" />
+          <circle cx="28" cy="13" r="3" fill="#fff" />
+          <circle cx="21" cy="28" r="3" fill="#fff" />
+          <path d="M14,15 L28,13 M14,15 L21,28 M28,13 L21,28" stroke="#fff" stroke-width="1.6" fill="none" opacity="0.85" />
+        </svg>
+      </span>
+      <span class="nav-word">Metamind</span>
+    </button>
+    <div class="nav-links" role="navigation" aria-label="Navigation principale">
+      <button type="button" [class.active]="page === 'catalogue'" (click)="navigate('catalogue')">
+        <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="M21 21l-4.3-4.3" /></svg>
+        <span>{{ labels.catalogue }}</span>
+      </button>
+      <button type="button" *ngIf="authenticated" [class.active]="page === 'publication'" (click)="navigate('publication')">
+        <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
+        <span>{{ labels.newPublication }}</span>
+      </button>
+      <button type="button" *ngIf="administrator" [class.active]="page === 'administration'" (click)="navigate('administration')">
+        <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v18h18" /><path d="M7 14l4-4 3 3 5-6" /></svg>
+        <span>{{ labels.administration }}</span>
+      </button>
+      <button type="button" [class.active]="page === 'profil'" (click)="navigate('profil')">
+        <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4" /><path d="M4 21c0-4 4-6 8-6s8 2 8 6" /></svg>
+        <span>{{ labels.profile }}</span>
+      </button>
+      <button type="button" *ngIf="!authenticated" [class.active]="page === 'connexion'" (click)="navigate('connexion')">{{ labels.login }}</button>
+      <button type="button" *ngIf="!authenticated" [class.active]="page === 'inscription'" (click)="navigate('inscription')">{{ labels.register }}</button>
+    </div>
+    <div class="nav-actions">
+      <div class="language-switch" [attr.aria-label]="labels.language">
+        <button type="button" [class.active]="language === 'fr'" (click)="changeLanguage('fr')">FR</button>
+        <button type="button" [class.active]="language === 'nl'" (click)="changeLanguage('nl')">NL</button>
+        <button type="button" [class.active]="language === 'en'" (click)="changeLanguage('en')">EN</button>
+      </div>
+    </div>
+  </div>
+</nav>

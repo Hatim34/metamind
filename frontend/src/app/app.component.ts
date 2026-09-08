@@ -3,6 +3,7 @@ import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
 import { ApiService, AuditLog, CreditMovement, CreditPackOption, DashboardStatistics, Institution, MetadataDetails, MetadataExtraction, Publication, PublicationStatus, SearchFilters, UserSession } from './api.service';
+import { NavigationLabels, NavbarComponent } from './navbar.component';
 
 type Page = 'catalogue' | 'detail' | 'connexion' | 'inscription' | 'profil' | 'publication' | 'administration';
 type Language = 'fr' | 'nl' | 'en';
@@ -387,7 +388,7 @@ type TranslationKey = keyof typeof translations.fr;
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, NavbarComponent],
   templateUrl: './app.component.html',
   styleUrl: './app.component.css'
 })
@@ -496,6 +497,19 @@ export class AppComponent implements OnInit {
 
   t(key: TranslationKey): string {
     return translations[this.language][key];
+  }
+
+  get navigationLabels(): NavigationLabels {
+    return {
+      title: this.t('title'),
+      catalogue: this.t('catalogue'),
+      newPublication: this.t('newPublication'),
+      administration: this.t('administration'),
+      profile: this.t('profile'),
+      login: this.t('login'),
+      register: this.t('register'),
+      language: this.t('language')
+    };
   }
 
   loadPublications(clearMessage = true): void {
