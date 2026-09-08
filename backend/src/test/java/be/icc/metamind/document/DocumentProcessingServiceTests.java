@@ -22,7 +22,7 @@ class DocumentProcessingServiceTests {
 	private DocumentUploadService documentUploadService;
 
 	@Test
-	void processExtractsTextAndReturnsDocumentToWaitingStatus() {
+	void processExtractsTextAndMakesDocumentReadyForMetadataExtraction() {
 		DocumentEntity document = new DocumentEntity(
 				"article.pdf",
 				"/tmp/article.pdf",
@@ -40,7 +40,7 @@ class DocumentProcessingServiceTests {
 
 		new DocumentProcessingService(documentRepository, documentUploadService, null).process(7L, "/tmp/article.pdf");
 
-		assertEquals(DocumentStatus.EN_ATTENTE, document.getStatus());
+		assertEquals(DocumentStatus.A_VALIDER, document.getStatus());
 		assertEquals("Texte extrait", document.getExtractedText());
 		assertEquals("/tmp/cover.jpg", document.getCoverImagePath());
 		verify(documentRepository).findById(7L);

@@ -981,6 +981,12 @@ export class AppComponent implements OnInit {
           if (index >= 0) {
             this.publications[index] = publication;
           }
+          const queueIndex = this.validationQueue.findIndex((item) => item.id === publicationId);
+          if (queueIndex >= 0) {
+            this.validationQueue[queueIndex] = publication;
+          } else if (publication.status !== 'PUBLIE' && publication.status !== 'SUPPRIME') {
+            this.validationQueue = [...this.validationQueue, publication];
+          }
           if (publication.status === 'EN_ATTENTE' || publication.status === 'EXTRACTION') {
             this.refreshImportStatus(publicationId, attempts + 1);
           }

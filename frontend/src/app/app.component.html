@@ -175,6 +175,7 @@
     </div>
     <p class="notice" *ngIf="!session">{{ t('loginRequiredPublication') }}</p>
     <p class="notice" *ngIf="session && validationQueue.length === 0">{{ t('noSummary') }}</p>
+    <p class="notice" *ngIf="message">{{ message }}</p>
     <div class="publication-list" *ngIf="validationQueue.length > 0">
       <app-publication-card
         *ngFor="let publication of validationQueue"

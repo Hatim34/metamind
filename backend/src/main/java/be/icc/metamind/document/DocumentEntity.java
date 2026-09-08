@@ -144,7 +144,7 @@ public class DocumentEntity {
 	public void completeImportProcessing(String extractedText, String coverImagePath) {
 		this.extractedText = extractedText;
 		this.coverImagePath = coverImagePath;
-		this.status = DocumentStatus.EN_ATTENTE;
+		this.status = DocumentStatus.A_VALIDER;
 	}
 
 	public void markImportProcessing() {
