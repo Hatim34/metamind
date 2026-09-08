@@ -62,7 +62,7 @@ class CreditServiceTests {
 	void checkoutWaitsForPaymentConfirmationBeforeCreditingInstitution() {
 		UserEntity user = saveUser();
 
-		CreditCheckoutResponse checkout = creditService.startCheckout(user, new CreditCheckoutRequest(2, true));
+		CreditCheckoutResponse checkout = creditService.startCheckout(user, new CreditCheckoutRequest(1, true));
 
 		assertThat(checkout.reference()).startsWith("pay_");
 		assertThat(checkout.checkoutUrl()).contains(checkout.reference());
@@ -71,7 +71,7 @@ class CreditServiceTests {
 
 		CreditBalanceResponse confirmed = creditService.confirmStripePayment(new StripeWebhookRequest(checkout.reference(), "checkout.session.completed"));
 
-		assertThat(confirmed.balance()).isEqualTo(100);
+		assertThat(confirmed.balance()).isEqualTo(20);
 		assertThat(movementRepository.count()).isEqualTo(1);
 		assertThat(packRepository.findByPaymentReference(checkout.reference()).orElseThrow().getStatus()).isEqualTo(CreditPackStatus.PAYE);
 	}
@@ -79,12 +79,12 @@ class CreditServiceTests {
 	@Test
 	void webhookConfirmationIsIdempotent() {
 		UserEntity user = saveUser();
-		CreditCheckoutResponse checkout = creditService.startCheckout(user, new CreditCheckoutRequest(3, true));
+		CreditCheckoutResponse checkout = creditService.startCheckout(user, new CreditCheckoutRequest(1, true));
 
 		creditService.confirmStripePayment(new StripeWebhookRequest(checkout.reference(), "checkout.session.completed"));
 		creditService.confirmStripePayment(new StripeWebhookRequest(checkout.reference(), "checkout.session.completed"));
 
-		assertThat(creditService.getBalance(user.getId()).balance()).isEqualTo(500);
+		assertThat(creditService.getBalance(user.getId()).balance()).isEqualTo(20);
 		assertThat(movementRepository.count()).isEqualTo(1);
 	}
 
@@ -95,6 +95,16 @@ class CreditServiceTests {
 		assertThatThrownBy(() -> creditService.startCheckout(user, new CreditCheckoutRequest(99, true)))
 				.isInstanceOf(ApiException.class)
 				.hasMessage("Le pack de credits est introuvable.");
+	}
+
+	@Test
+	void paidCheckoutIsUnavailableWithoutStripeConfiguration() {
+		UserEntity user = saveUser();
+
+		assertThatThrownBy(() -> creditService.startCheckout(user, new CreditCheckoutRequest(2, true)))
+				.isInstanceOf(ApiException.class)
+				.hasMessage("Le paiement Stripe n'est pas configure.");
+		assertThat(creditService.getBalance(user.getId()).balance()).isZero();
 	}
 
 	private UserEntity saveUser() {

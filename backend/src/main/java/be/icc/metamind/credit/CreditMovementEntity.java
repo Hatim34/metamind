@@ -38,10 +38,10 @@ public class CreditMovementEntity {
 	@Column(name = "quantite", nullable = false)
 	private int amount;
 
-	@jakarta.persistence.Transient
+	@Column(name = "solde_apres")
 	private int balanceAfter;
 
-	@jakarta.persistence.Transient
+	@Column(name = "description", length = 255)
 	private String description;
 
 	@ManyToOne(fetch = FetchType.LAZY)

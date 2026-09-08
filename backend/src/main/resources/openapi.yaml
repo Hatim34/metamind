@@ -397,10 +397,9 @@ paths:
       tags: [Credits]
       summary: Demarrer l'achat d'un pack de credits
       description: >
-        Cree une reference de paiement et retourne une URL Checkout. Si
-        STRIPE_SECRET_KEY est configuree, l'URL provient de Stripe Checkout.
-        Sans cle Stripe, l'application conserve un parcours local pour les
-        tests et la validation fonctionnelle.
+        Cree une reference de paiement et retourne une URL Checkout Stripe pour
+        les packs payants. Le pack decouverte gratuit peut etre confirme dans
+        l'application. Une cle Stripe est obligatoire pour les packs payants.
       requestBody:
         required: true
         content:
@@ -422,6 +421,7 @@ paths:
                   checkout_url: { type: string, example: https://metamind-app.duckdns.org/paiement/confirmation?reference=pay_abc123 }
                   reference: { type: string, example: pay_abc123 }
         '400': { description: CGV non acceptees, $ref: '#/components/responses/Error' }
+        '503': { description: Paiement Stripe non configure, $ref: '#/components/responses/Error' }
 
   /credits/packs:
     get:

@@ -137,8 +137,11 @@ public class CreditService {
 	}
 
 	private String createCheckoutUrl(CreditPackOptionResponse option, String reference, long packId) {
-		if (!isStripeEnabled() || option.amount().compareTo(BigDecimal.ZERO) == 0) {
+		if (option.amount().compareTo(BigDecimal.ZERO) == 0) {
 			return publicUrl + "/paiement/confirmation?reference=" + reference + "&pack=" + packId;
+		}
+		if (!isStripeEnabled()) {
+			throw new ApiException(HttpStatus.SERVICE_UNAVAILABLE, "Le paiement Stripe n'est pas configure.");
 		}
 		Stripe.apiKey = stripeSecretKey;
 		try {

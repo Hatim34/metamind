@@ -475,7 +475,7 @@ class ApiControllerTests {
 	void creditCheckoutRequiresPaymentConfirmation() throws Exception {
 		String body = """
 				{
-				  "pack_id": 2,
+				  "pack_id": 1,
 				  "cgv_acceptees": true
 				}
 				""";
@@ -498,7 +498,7 @@ class ApiControllerTests {
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("{\"reference\":\"" + reference + "\",\"type\":\"checkout.session.completed\"}"))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.solde_credits", is(100)));
+				.andExpect(jsonPath("$.solde_credits", is(20)));
 	}
 
 	@Test
@@ -506,7 +506,7 @@ class ApiControllerTests {
 		String response = mockMvc.perform(post("/api/v1/credits")
 						.header("Authorization", bearerToken())
 						.contentType(MediaType.APPLICATION_JSON)
-						.content("{\"pack_id\":2,\"cgv_acceptees\":true}"))
+						.content("{\"pack_id\":1,\"cgv_acceptees\":true}"))
 				.andExpect(status().isOk())
 				.andReturn()
 				.getResponse()
@@ -528,7 +528,7 @@ class ApiControllerTests {
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(event))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.solde_credits", is(100)));
+				.andExpect(jsonPath("$.solde_credits", is(20)));
 	}
 
 	@Test

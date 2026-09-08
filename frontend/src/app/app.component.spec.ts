@@ -80,7 +80,7 @@ describe('AppComponent', () => {
     api.getPublication.and.returnValue(of(publications[0]));
     api.searchPublications.and.returnValue(of(publications));
     api.getCreditPacks.and.returnValue(of([
-      { id: 2, credits: 100, amount: 50, currency: 'EUR', label: 'Pack standard' }
+      { id: 1, credits: 20, amount: 0, currency: 'EUR', label: 'Pack decouverte' }
     ]));
     api.getCreditAccount.and.returnValue(of({
       balance: { institutionId: 1, institution: 'Institution A', balance: 20 },
@@ -215,9 +215,9 @@ describe('AppComponent', () => {
     }));
     component.session = authResponse.user;
 
-    component.purchaseCredits(2);
+    component.purchaseCredits(1);
 
-    expect(api.startCreditCheckout).toHaveBeenCalledWith(2);
+    expect(api.startCreditCheckout).toHaveBeenCalledWith(1);
     expect(api.confirmCreditPayment).toHaveBeenCalledWith('pay_123');
     expect(api.getCreditMovements).toHaveBeenCalledWith(10);
     expect(component.creditBalance).toBe(30);
