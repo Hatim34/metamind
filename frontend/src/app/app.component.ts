@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 
 import { ApiService, AuditLog, CreditMovement, CreditPackOption, DashboardStatistics, Institution, MetadataDetails, MetadataExtraction, Publication, PublicationStatus, SearchFilters, UserSession } from './api.service';
 import { NavigationLabels, NavbarComponent } from './navbar.component';
+import { PublicationCardLabels, PublicationCardComponent } from './publication-card.component';
 
 type Page = 'catalogue' | 'detail' | 'connexion' | 'inscription' | 'profil' | 'publication' | 'administration';
 type Language = 'fr' | 'nl' | 'en';
@@ -388,7 +389,7 @@ type TranslationKey = keyof typeof translations.fr;
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, FormsModule, NavbarComponent],
+  imports: [CommonModule, FormsModule, NavbarComponent, PublicationCardComponent],
   templateUrl: './app.component.html',
   styleUrl: './app.component.css'
 })
@@ -509,6 +510,16 @@ export class AppComponent implements OnInit {
       login: this.t('login'),
       register: this.t('register'),
       language: this.t('language')
+    };
+  }
+
+  get publicationCardLabels(): PublicationCardLabels {
+    return {
+      consult: this.t('consult'),
+      extract: this.t('extract'),
+      edit: this.t('editMetadata'),
+      delete: this.t('deletePublication'),
+      processing: this.t('processing')
     };
   }
 

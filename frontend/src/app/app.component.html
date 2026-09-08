@@ -106,37 +106,17 @@
     </p>
 
     <div class="publication-list">
-      <article class="publication-card" *ngFor="let publication of publications">
-        <div class="pub-main">
-          <div class="pub-cover" aria-hidden="true">
-            <img *ngIf="publication.imageUrl" [src]="publication.imageUrl" alt="" />
-            <svg *ngIf="!publication.imageUrl" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3v4a1 1 0 0 0 1 1h4" /><path d="M17 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2z" /></svg>
-          </div>
-          <div class="pub-text">
-            <h3>{{ publication.title }}</h3>
-            <p>{{ publication.author }} · {{ publication.institution }} · {{ publication.publicationDate || publication.year }}</p>
-            <p class="pub-summary" *ngIf="publication.summary">{{ publication.summary }}</p>
-          </div>
-        </div>
-        <div class="tags">
-          <span class="badge" [class.badge-green]="publication.status === 'PUBLIE'" [class.badge-amber]="publication.status === 'A_VALIDER' || publication.status === 'EXTRACTION'" [class.badge-red]="publication.status === 'SUPPRIME'">{{ publication.status === 'EXTRACTION' ? t('processing') : publication.status }}</span>
-          <span>{{ publication.visibility }}</span>
-          <span *ngFor="let keyword of publication.keywords">{{ keyword }}</span>
-        </div>
-        <div class="publication-actions">
-          <button type="button" (click)="openPublication(publication)">
-            {{ t('consult') }}
-          </button>
-          <button type="button" class="primary" *ngIf="canExtractPublication(publication)" (click)="extractMetadata(publication)">
-            {{ t('extract') }}
-          </button>
-          <button type="button" *ngIf="canPublishPublication(publication)" (click)="startMetadataValidation(publication)">
-            {{ t('editMetadata') }}
-          </button>
-          <button type="button" class="danger" *ngIf="canDeletePublication(publication)" (click)="deletePublication(publication)">
-            {{ t('deletePublication') }}
-          </button>
-        </div>
+      <app-publication-card
+        *ngFor="let publication of publications"
+        [publication]="publication"
+        [labels]="publicationCardLabels"
+        [allowExtract]="canExtractPublication(publication)"
+        [allowEdit]="canPublishPublication(publication)"
+        [allowDelete]="canDeletePublication(publication)"
+        (consult)="openPublication($event)"
+        (extract)="extractMetadata($event)"
+        (edit)="startMetadataValidation($event)"
+        (remove)="deletePublication($event)">
         <div class="metadata-review" *ngIf="selectedMetadataPublicationId === publication.id">
           <form class="metadata-form" (ngSubmit)="validateMetadata()">
             <label>
@@ -180,7 +160,7 @@
             <pre>{{ metadataForm.extractedText || t('noExtractedText') }}</pre>
           </aside>
         </div>
-      </article>
+      </app-publication-card>
     </div>
     </section>
   </ng-container>
