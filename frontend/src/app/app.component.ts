@@ -49,6 +49,7 @@ const translations = {
     publicationDetails: 'Fiche publication',
     backToCatalogue: 'Retour au catalogue',
     downloadFile: 'Consulter le fichier',
+    downloadFailed: 'Le fichier ne peut pas être consulté avec ce compte.',
     noFile: 'Fichier non disponible.',
     noSummary: 'Aucun résumé disponible.',
     documentType: 'Type de document',
@@ -194,6 +195,7 @@ const translations = {
     publicationDetails: 'Publicatiefiche',
     backToCatalogue: 'Terug naar catalogus',
     downloadFile: 'Bestand bekijken',
+    downloadFailed: 'Het bestand kan niet met deze account worden bekeken.',
     noFile: 'Bestand niet beschikbaar.',
     noSummary: 'Geen samenvatting beschikbaar.',
     documentType: 'Documenttype',
@@ -339,6 +341,7 @@ const translations = {
     publicationDetails: 'Publication record',
     backToCatalogue: 'Back to catalogue',
     downloadFile: 'View file',
+    downloadFailed: 'The file cannot be viewed with this account.',
     noFile: 'File not available.',
     noSummary: 'No summary available.',
     documentType: 'Document type',
@@ -727,6 +730,26 @@ export class AppComponent implements OnInit {
       },
       error: () => {
         this.message = this.t('apiUnavailable');
+      }
+    });
+  }
+
+  downloadPublicationFile(publication: Publication): void {
+    if (!publication.fileUrl) {
+      this.message = this.t('noFile');
+      return;
+    }
+    this.api.downloadPublicationFile(publication.id).subscribe({
+      next: (file) => {
+        const url = URL.createObjectURL(file);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `${publication.title || 'document'}.pdf`;
+        link.click();
+        URL.revokeObjectURL(url);
+      },
+      error: () => {
+        this.message = this.t('downloadFailed');
       }
     });
   }

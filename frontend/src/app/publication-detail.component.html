@@ -30,7 +30,7 @@
   </div>
 
   <div class="actions detail-actions">
-    <a *ngIf="publication.fileUrl" class="button-link primary" [href]="publication.fileUrl" target="_blank" rel="noopener">{{ labels.downloadFile }}</a>
+    <button *ngIf="publication.fileUrl" type="button" class="primary" (click)="download.emit(publication)">{{ labels.downloadFile }}</button>
     <p class="notice" *ngIf="!publication.fileUrl">{{ labels.noFile }}</p>
   </div>
 </section>

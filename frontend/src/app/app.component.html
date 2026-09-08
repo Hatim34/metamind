@@ -210,7 +210,8 @@
     *ngIf="page === 'detail' && selectedPublication as publication"
     [publication]="publication"
     [labels]="publicationDetailLabels"
-    (back)="backToCatalogue()">
+    (back)="backToCatalogue()"
+    (download)="downloadPublicationFile($event)">
   </app-publication-detail>
 
   <section *ngIf="page === 'publication'" class="panel form-panel">

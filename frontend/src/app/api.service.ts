@@ -226,6 +226,13 @@ export class ApiService {
       .pipe(map((response) => this.toPublication(response)));
   }
 
+  downloadPublicationFile(publicationId: number): Observable<Blob> {
+    return this.http.get(`${this.baseUrl}/documents/${publicationId}/file`, {
+      headers: this.authHeaders(),
+      responseType: 'blob'
+    });
+  }
+
   requestPasswordReset(email: string): Observable<void> {
     return this.http.post<void>(`${this.baseUrl}/auth/password-reset/request`, { email });
   }

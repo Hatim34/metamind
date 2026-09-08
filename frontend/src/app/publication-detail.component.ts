@@ -28,4 +28,5 @@ export class PublicationDetailComponent {
   @Input({ required: true }) labels!: PublicationDetailLabels;
 
   @Output() back = new EventEmitter<void>();
+  @Output() download = new EventEmitter<Publication>();
 }
