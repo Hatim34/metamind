@@ -5,6 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { ApiService, AuditLog, CreditMovement, CreditPackOption, DashboardStatistics, Institution, MetadataDetails, MetadataExtraction, Publication, PublicationStatus, SearchFilters, UserSession } from './api.service';
 import { NavigationLabels, NavbarComponent } from './navbar.component';
 import { PublicationCardLabels, PublicationCardComponent } from './publication-card.component';
+import { PublicationDetailComponent, PublicationDetailLabels } from './publication-detail.component';
 
 type Page = 'catalogue' | 'detail' | 'connexion' | 'inscription' | 'profil' | 'publication' | 'administration';
 type Language = 'fr' | 'nl' | 'en';
@@ -389,7 +390,7 @@ type TranslationKey = keyof typeof translations.fr;
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, FormsModule, NavbarComponent, PublicationCardComponent],
+  imports: [CommonModule, FormsModule, NavbarComponent, PublicationCardComponent, PublicationDetailComponent],
   templateUrl: './app.component.html',
   styleUrl: './app.component.css'
 })
@@ -520,6 +521,22 @@ export class AppComponent implements OnInit {
       edit: this.t('editMetadata'),
       delete: this.t('deletePublication'),
       processing: this.t('processing')
+    };
+  }
+
+  get publicationDetailLabels(): PublicationDetailLabels {
+    return {
+      publicationDetails: this.t('publicationDetails'),
+      backToCatalogue: this.t('backToCatalogue'),
+      noSummary: this.t('noSummary'),
+      publicationDate: this.t('publicationDate'),
+      language: this.t('language'),
+      documentType: this.t('documentType'),
+      classification: this.t('classification'),
+      status: this.t('status'),
+      visibility: this.t('visibility'),
+      downloadFile: this.t('downloadFile'),
+      noFile: this.t('noFile')
     };
   }
 

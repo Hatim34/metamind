@@ -1,0 +1,36 @@
+<section class="panel publication-detail">
+  <div class="detail-toolbar">
+    <button type="button" (click)="back.emit()">{{ labels.backToCatalogue }}</button>
+  </div>
+
+  <div class="detail-layout">
+    <div class="detail-cover" aria-hidden="true">
+      <img *ngIf="publication.imageUrl" [src]="publication.imageUrl" alt="" />
+      <svg *ngIf="!publication.imageUrl" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3v4a1 1 0 0 0 1 1h4" /><path d="M17 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2z" /></svg>
+    </div>
+    <div class="detail-content">
+      <p class="eyebrow">{{ labels.publicationDetails }}</p>
+      <h2>{{ publication.title }}</h2>
+      <p class="detail-meta">{{ publication.author }} · {{ publication.institution }}</p>
+      <p class="detail-summary">{{ publication.summary || labels.noSummary }}</p>
+    </div>
+  </div>
+
+  <dl class="detail-grid">
+    <div><dt>{{ labels.publicationDate }}</dt><dd>{{ publication.publicationDate || publication.year }}</dd></div>
+    <div><dt>{{ labels.language }}</dt><dd>{{ publication.language || '-' }}</dd></div>
+    <div><dt>{{ labels.documentType }}</dt><dd>{{ publication.documentType || '-' }}</dd></div>
+    <div><dt>{{ labels.classification }}</dt><dd>{{ publication.classification || '-' }}</dd></div>
+    <div><dt>{{ labels.status }}</dt><dd>{{ publication.status }}</dd></div>
+    <div><dt>{{ labels.visibility }}</dt><dd>{{ publication.visibility }}</dd></div>
+  </dl>
+
+  <div class="detail-keywords" *ngIf="publication.keywords.length > 0">
+    <span *ngFor="let keyword of publication.keywords">{{ keyword }}</span>
+  </div>
+
+  <div class="actions detail-actions">
+    <a *ngIf="publication.fileUrl" class="button-link primary" [href]="publication.fileUrl" target="_blank" rel="noopener">{{ labels.downloadFile }}</a>
+    <p class="notice" *ngIf="!publication.fileUrl">{{ labels.noFile }}</p>
+  </div>
+</section>
