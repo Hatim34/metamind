@@ -38,7 +38,7 @@ services:
       - key: METAMIND_JWT_SECRET
         generateValue: true
       - key: METAMIND_LLM_PROVIDER
-        value: local
+        value: gemini
       - key: JAVA_OPTS
         value: -Xmx384m
       - key: METAMIND_PUBLIC_URL
