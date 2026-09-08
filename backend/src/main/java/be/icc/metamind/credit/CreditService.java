@@ -34,8 +34,8 @@ import org.springframework.transaction.annotation.Transactional;
 public class CreditService {
 	private static final List<CreditPackOptionResponse> PACK_OPTIONS = List.of(
 			new CreditPackOptionResponse(1, 20, new BigDecimal("0.00"), "EUR", "Pack decouverte"),
-			new CreditPackOptionResponse(2, 100, new BigDecimal("0.00"), "EUR", "Pack standard"),
-			new CreditPackOptionResponse(3, 500, new BigDecimal("0.00"), "EUR", "Pack volume")
+			new CreditPackOptionResponse(2, 100, new BigDecimal("50.00"), "EUR", "Pack standard"),
+			new CreditPackOptionResponse(3, 500, new BigDecimal("200.00"), "EUR", "Pack volume")
 	);
 
 	private final UserRepository userRepository;
@@ -137,7 +137,35 @@ public class CreditService {
 	}
 
 	private String createCheckoutUrl(CreditPackOptionResponse option, String reference, long packId) {
-		return publicUrl + "/paiement/confirmation?reference=" + reference + "&pack=" + packId;
+		if (option.amount().compareTo(BigDecimal.ZERO) == 0) {
+			return publicUrl + "/paiement/confirmation?reference=" + reference + "&pack=" + packId;
+		}
+		if (!isStripeEnabled()) {
+			throw new ApiException(HttpStatus.SERVICE_UNAVAILABLE, "Le paiement Stripe n'est pas configure.");
+		}
+		Stripe.apiKey = stripeSecretKey;
+		try {
+			SessionCreateParams params = SessionCreateParams.builder()
+					.setMode(SessionCreateParams.Mode.PAYMENT)
+					.setClientReferenceId(reference)
+					.setSuccessUrl(publicUrl + "/paiement/succes?session_id={CHECKOUT_SESSION_ID}")
+					.setCancelUrl(publicUrl + "/credits")
+					.addLineItem(SessionCreateParams.LineItem.builder()
+							.setQuantity(1L)
+							.setPriceData(SessionCreateParams.LineItem.PriceData.builder()
+									.setCurrency(option.currency().toLowerCase())
+									.setUnitAmount(option.amount().multiply(new BigDecimal("100")).longValueExact())
+									.setProductData(SessionCreateParams.LineItem.PriceData.ProductData.builder()
+											.setName(option.label())
+											.build())
+									.build())
+							.build())
+					.build();
+			Session session = Session.create(params);
+			return session.getUrl();
+		} catch (StripeException | ArithmeticException exception) {
+			throw new ApiException(HttpStatus.BAD_GATEWAY, "La session de paiement n'a pas pu etre creee.");
+		}
 	}
 
 	private StripeWebhookRequest parseWebhookPayload(String payload, String signature) {

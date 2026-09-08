@@ -397,9 +397,9 @@ paths:
       tags: [Credits]
       summary: Demarrer l'achat d'un pack de credits
       description: >
-        Cree une reference de test et retourne une URL de confirmation locale.
-        Le parcours de credits est utilise sans paiement externe pour les tests
-        de l'application.
+        Cree une reference de paiement et retourne une URL Checkout Stripe pour
+        les packs payants. Le pack decouverte gratuit peut etre confirme dans
+        l'application. Une cle Stripe est obligatoire pour les packs payants.
       requestBody:
         required: true
         content:
@@ -421,6 +421,7 @@ paths:
                   checkout_url: { type: string, example: https://metamind-app.duckdns.org/paiement/confirmation?reference=pay_abc123 }
                   reference: { type: string, example: pay_abc123 }
         '400': { description: CGV non acceptees, $ref: '#/components/responses/Error' }
+        '503': { description: Paiement Stripe non configure, $ref: '#/components/responses/Error' }
 
   /credits/packs:
     get:
@@ -778,7 +779,7 @@ components:
       properties:
         id: { type: integer, example: 2 }
         quantite: { type: integer, example: 500 }
-        montant_paye: { type: number, format: float, example: 0.00 }
+        montant_paye: { type: number, format: float, example: 200.00 }
         devise: { type: string, example: EUR }
         libelle: { type: string, example: Pack 500 credits }
 
