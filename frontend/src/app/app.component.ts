@@ -89,6 +89,7 @@ const translations = {
     selectedFile: 'Fichier sélectionné',
     coverImage: 'Image de couverture',
     sendFile: 'Importer le fichier',
+    importQueued: 'Import en cours de traitement.',
     adminUsers: 'Utilisateurs',
     configuration: 'Configuration',
     saveConfiguration: 'Enregistrer la configuration',
@@ -222,6 +223,7 @@ const translations = {
     selectedFile: 'Geselecteerd bestand',
     coverImage: 'Omslagafbeelding',
     sendFile: 'Bestand importeren',
+    importQueued: 'De import wordt verwerkt.',
     adminUsers: 'Gebruikers',
     configuration: 'Configuratie',
     saveConfiguration: 'Configuratie opslaan',
@@ -355,6 +357,7 @@ const translations = {
     selectedFile: 'Selected file',
     coverImage: 'Cover image',
     sendFile: 'Import file',
+    importQueued: 'The import is being processed.',
     adminUsers: 'Users',
     configuration: 'Configuration',
     saveConfiguration: 'Save configuration',
@@ -515,6 +518,11 @@ export class AppComponent implements OnInit {
   constructor(private readonly api: ApiService) {}
 
   ngOnInit(): void {
+    const resetToken = new URLSearchParams(window.location.search).get('token');
+    if (resetToken) {
+      this.passwordResetForm.token = resetToken;
+      this.page = 'password-reset';
+    }
     this.loadPublications();
     this.loadCreditPacks();
   }
@@ -768,15 +776,37 @@ export class AppComponent implements OnInit {
     }
 
     this.api.importDocument(this.importForm.file, this.importForm.visibility, this.importForm.image).subscribe({
-      next: () => {
+      next: (publication) => {
         this.importForm = { file: null, image: null, visibility: 'INSTITUTION' };
         this.page = 'catalogue';
+        this.message = this.t('importQueued');
         this.loadPublications();
+        this.refreshImportStatus(publication.id);
       },
       error: () => {
         this.message = this.t('createPublicationFailed');
       }
     });
+  }
+
+  private refreshImportStatus(publicationId: number, attempts = 0): void {
+    if (attempts >= 5) {
+      return;
+    }
+    window.setTimeout(() => {
+      this.api.getPublication(publicationId).subscribe({
+        next: (publication) => {
+          const index = this.publications.findIndex((item) => item.id === publicationId);
+          if (index >= 0) {
+            this.publications[index] = publication;
+          }
+          if (publication.status === 'EN_ATTENTE' || publication.status === 'EXTRACTION') {
+            this.refreshImportStatus(publicationId, attempts + 1);
+          }
+        },
+        error: () => undefined
+      });
+    }, 2000);
   }
 
   loadCredits(): void {
