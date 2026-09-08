@@ -2,7 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
-import { ApiService, AuditLog, CreditMovement, CreditPackOption, DashboardStatistics, Institution, MetadataDetails, MetadataExtraction, Publication, PublicationStatus, SearchFilters, UserSession } from './api.service';
+import { ApiService, AuditLog, AuthResponse, CreditMovement, CreditPackOption, DashboardStatistics, Institution, MetadataDetails, MetadataExtraction, Publication, PublicationStatus, SearchFilters, UserSession } from './api.service';
 import { NavigationLabels, NavbarComponent } from './navbar.component';
 import { PublicationCardLabels, PublicationCardComponent } from './publication-card.component';
 import { PublicationDetailComponent, PublicationDetailLabels } from './publication-detail.component';
@@ -425,6 +425,7 @@ type TranslationKey = keyof typeof translations.fr;
   styleUrl: './app.component.css'
 })
 export class AppComponent implements OnInit {
+  private static readonly sessionStorageKey = 'metamind.session';
   page: Page = 'catalogue';
   language: Language = 'fr';
   search = '';
@@ -518,6 +519,7 @@ export class AppComponent implements OnInit {
   constructor(private readonly api: ApiService) {}
 
   ngOnInit(): void {
+    this.restoreSession();
     const resetToken = new URLSearchParams(window.location.search).get('token');
     if (resetToken) {
       this.passwordResetForm.token = resetToken;
@@ -525,6 +527,40 @@ export class AppComponent implements OnInit {
     }
     this.loadPublications();
     this.loadCreditPacks();
+  }
+
+  private restoreSession(): void {
+    const stored = localStorage.getItem(AppComponent.sessionStorageKey);
+    if (!stored) {
+      return;
+    }
+    try {
+      const value = JSON.parse(stored) as { token?: string; user?: UserSession };
+      if (!value.token || !value.user) {
+        localStorage.removeItem(AppComponent.sessionStorageKey);
+        return;
+      }
+      this.token = value.token;
+      this.session = value.user;
+      this.api.setToken(value.token);
+      this.fillProfileForm(value.user);
+      this.loadCredits();
+      this.loadCreditMovements();
+      this.loadStatistics();
+      if (this.isAdmin) {
+        this.loadInstitutions();
+        this.loadAdminData();
+      }
+    } catch {
+      localStorage.removeItem(AppComponent.sessionStorageKey);
+    }
+  }
+
+  private storeSession(response: AuthResponse): void {
+    this.token = response.token;
+    this.api.setToken(response.token);
+    this.session = response.user;
+    localStorage.setItem(AppComponent.sessionStorageKey, JSON.stringify(response));
   }
 
   navigate(page: Page): void {
@@ -669,9 +705,7 @@ export class AppComponent implements OnInit {
   login(): void {
     this.api.login(this.loginForm).subscribe({
       next: (response) => {
-        this.token = response.token;
-        this.api.setToken(response.token);
-        this.session = response.user;
+        this.storeSession(response);
         this.fillProfileForm(response.user);
         this.deletionRequested = false;
         this.profileSaved = false;
@@ -699,9 +733,7 @@ export class AppComponent implements OnInit {
 
     this.api.register(this.registerForm).subscribe({
       next: (response) => {
-        this.token = response.token;
-        this.api.setToken(response.token);
-        this.session = response.user;
+        this.storeSession(response);
         this.fillProfileForm(response.user);
         this.deletionRequested = false;
         this.profileSaved = false;
@@ -1127,6 +1159,7 @@ export class AppComponent implements OnInit {
     this.session = null;
     this.token = '';
     this.api.setToken('');
+    localStorage.removeItem(AppComponent.sessionStorageKey);
     this.institutions = [];
     this.adminUsers = [];
     this.adminConfig = {};
