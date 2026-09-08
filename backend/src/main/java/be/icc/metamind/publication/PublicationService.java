@@ -21,6 +21,7 @@ import be.icc.metamind.document.DocumentUploadService;
 import be.icc.metamind.document.DocumentUploadService.ImportedDocument;
 import be.icc.metamind.document.DocumentUploadService.StoredFile;
 import be.icc.metamind.document.DocumentUploadService.StoredImage;
+import be.icc.metamind.document.DocumentImportedEvent;
 import be.icc.metamind.document.DocumentVisibility;
 import be.icc.metamind.document.KeywordEntity;
 import be.icc.metamind.document.KeywordRepository;
@@ -32,6 +33,7 @@ import be.icc.metamind.user.UserRole;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -44,6 +46,7 @@ public class PublicationService {
 	private final DocumentAuthorRepository documentAuthorRepository;
 	private final DocumentKeywordRepository documentKeywordRepository;
 	private final DocumentUploadService documentUploadService;
+	private final ApplicationEventPublisher eventPublisher;
 
 	public PublicationService(
 			DocumentRepository documentRepository,
@@ -52,7 +55,8 @@ public class PublicationService {
 			KeywordRepository keywordRepository,
 			DocumentAuthorRepository documentAuthorRepository,
 			DocumentKeywordRepository documentKeywordRepository,
-			DocumentUploadService documentUploadService
+			DocumentUploadService documentUploadService,
+			ApplicationEventPublisher eventPublisher
 	) {
 		this.documentRepository = documentRepository;
 		this.metadataRepository = metadataRepository;
@@ -61,6 +65,7 @@ public class PublicationService {
 		this.documentAuthorRepository = documentAuthorRepository;
 		this.documentKeywordRepository = documentKeywordRepository;
 		this.documentUploadService = documentUploadService;
+		this.eventPublisher = eventPublisher;
 	}
 
 	@Transactional(readOnly = true)
@@ -266,6 +271,7 @@ public class PublicationService {
 				null,
 				MetadataStatus.EN_ATTENTE
 		));
+		eventPublisher.publishEvent(new DocumentImportedEvent(document.getId(), imported.filePath()));
 		return toResponse(document);
 	}
 

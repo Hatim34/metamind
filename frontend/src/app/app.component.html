@@ -153,7 +153,7 @@
           </div>
         </div>
         <div class="tags">
-          <span class="badge" [class.badge-green]="publication.status === 'PUBLIE'" [class.badge-amber]="publication.status === 'A_VALIDER'" [class.badge-red]="publication.status === 'SUPPRIME'">{{ publication.status }}</span>
+          <span class="badge" [class.badge-green]="publication.status === 'PUBLIE'" [class.badge-amber]="publication.status === 'A_VALIDER' || publication.status === 'EXTRACTION'" [class.badge-red]="publication.status === 'SUPPRIME'">{{ publication.status === 'EXTRACTION' ? t('processing') : publication.status }}</span>
           <span>{{ publication.visibility }}</span>
           <span *ngFor="let keyword of publication.keywords">{{ keyword }}</span>
         </div>

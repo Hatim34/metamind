@@ -31,6 +31,14 @@
 
 /* --- Mobile --- */
 @media (max-width: 720px) {
+  .hero {
+    grid-template-columns: 1fr;
+  }
+
+  .hero-visual {
+    display: none;
+  }
+
   .navbar-inner {
     gap: 0.5rem 1rem;
   }

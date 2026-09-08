@@ -65,10 +65,25 @@ public class DocumentUploadService {
 
 	public ImportedDocument importFile(MultipartFile file) {
 		validate(file);
-		String extractedText = textExtractor.extract(file);
 		String originalFileName = cleanOriginalFileName(file.getOriginalFilename());
 		Path storedPath = store(file, storageRoot, originalFileName);
-		return new ImportedDocument(originalFileName, storedPath.toString(), file.getSize(), documentTypeCode(file), extractedText);
+		return new ImportedDocument(originalFileName, storedPath.toString(), file.getSize(), documentTypeCode(file), null);
+	}
+
+	public String extractText(Path path) {
+		return textExtractor.extract(path);
+	}
+
+	public String storePdfThumbnail(Path path) {
+		if (path == null || !"pdf".equals(extension(path.getFileName().toString()))) {
+			return null;
+		}
+		try {
+			return storePdfThumbnailFromBytes(Files.readAllBytes(path));
+		}
+		catch (IOException exception) {
+			return null;
+		}
 	}
 
 	public String storeCoverImage(MultipartFile image) {

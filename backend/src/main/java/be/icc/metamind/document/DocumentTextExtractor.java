@@ -2,6 +2,8 @@ package be.icc.metamind.document;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 import be.icc.metamind.api.ApiException;
 
@@ -27,6 +29,20 @@ public class DocumentTextExtractor {
 		BodyContentHandler handler = new BodyContentHandler(-1);
 
 		try (InputStream input = file.getInputStream()) {
+			parser.parse(input, handler, metadata, new ParseContext());
+			return normalize(handler.toString());
+		}
+		catch (IOException | TikaException | SAXException exception) {
+			throw new ApiException(HttpStatus.BAD_REQUEST, "Le contenu du fichier n'a pas pu etre lu.");
+		}
+	}
+
+	public String extract(Path path) {
+		Metadata metadata = new Metadata();
+		metadata.set(TikaCoreProperties.RESOURCE_NAME_KEY, path.getFileName().toString());
+		BodyContentHandler handler = new BodyContentHandler(-1);
+
+		try (InputStream input = Files.newInputStream(path)) {
 			parser.parse(input, handler, metadata, new ParseContext());
 			return normalize(handler.toString());
 		}
