@@ -14,6 +14,7 @@ export interface NavigationLabels {
   login: string;
   register: string;
   language: string;
+  signOut: string;
 }
 
 @Component({
@@ -27,11 +28,13 @@ export class NavbarComponent {
   @Input({ required: true }) page: NavigationPage | 'detail' = 'catalogue';
   @Input() authenticated = false;
   @Input() administrator = false;
+  @Input() userName = '';
   @Input({ required: true }) language: NavigationLanguage = 'fr';
   @Input({ required: true }) labels!: NavigationLabels;
 
   @Output() pageChange = new EventEmitter<NavigationPage>();
   @Output() languageChange = new EventEmitter<NavigationLanguage>();
+  @Output() signOut = new EventEmitter<void>();
 
   navigate(page: NavigationPage): void {
     this.pageChange.emit(page);

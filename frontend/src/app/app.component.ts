@@ -161,7 +161,8 @@ const translations = {
     noValidationDocuments: 'Aucun document à traiter pour le moment.',
     refresh: 'Actualiser',
     allStatuses: 'Tous les statuts',
-    statusPending: 'En attente'
+    statusPending: 'En attente',
+    noAuditLog: "Aucune entrée dans le journal d'audit."
   },
   nl: {
     title: 'Beheer van academische metadata',
@@ -313,7 +314,8 @@ const translations = {
     noValidationDocuments: 'Voorlopig geen documenten om te verwerken.',
     refresh: 'Vernieuwen',
     allStatuses: 'Alle statussen',
-    statusPending: 'In afwachting'
+    statusPending: 'In afwachting',
+    noAuditLog: 'Geen vermelding in het auditlogboek.'
   },
   en: {
     title: 'Academic metadata management',
@@ -465,7 +467,8 @@ const translations = {
     noValidationDocuments: 'No documents to process right now.',
     refresh: 'Refresh',
     allStatuses: 'All statuses',
-    statusPending: 'Pending'
+    statusPending: 'Pending',
+    noAuditLog: 'No audit log entry.'
   }
 } as const;
 
@@ -702,7 +705,8 @@ export class AppComponent implements OnInit {
       profile: this.t('profile'),
       login: this.t('login'),
       register: this.t('register'),
-      language: this.t('language')
+      language: this.t('language'),
+      signOut: this.t('logout')
     };
   }
 
@@ -1331,11 +1335,12 @@ export class AppComponent implements OnInit {
     }
 
     this.api.deletePublication(publication.id).subscribe({
-      next: (updatedPublication) => {
-        this.publications = this.publications.map((item) => item.id === updatedPublication.id ? updatedPublication : item);
+      next: () => {
         this.message = this.t('publicationDeleted');
+        this.selectedMetadataPublicationId = null;
         this.loadStatistics();
         this.loadPublications(false);
+        this.loadValidationQueue();
       },
       error: () => {
         this.message = this.t('statusUpdateFailed');

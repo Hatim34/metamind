@@ -2,10 +2,12 @@
   [page]="page"
   [authenticated]="!!session"
   [administrator]="isAdmin"
+  [userName]="session ? session.firstName + ' ' + session.lastName : ''"
   [language]="language"
   [labels]="navigationLabels"
   (pageChange)="navigate($event)"
-  (languageChange)="setLanguage($event)">
+  (languageChange)="setLanguage($event)"
+  (signOut)="logout()">
 </app-navbar>
 
 <main class="app-shell">
@@ -559,7 +561,7 @@
       </section>
       <section>
         <h3>{{ t('auditLogs') }}</h3>
-        <p class="notice" *ngIf="auditLogs.length === 0">{{ t('noCreditMovement') }}</p>
+        <p class="notice" *ngIf="auditLogs.length === 0">{{ t('noAuditLog') }}</p>
         <ul>
           <li *ngFor="let log of auditLogs">
             <strong>{{ log.action }}</strong>

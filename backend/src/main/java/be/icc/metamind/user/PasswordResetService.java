@@ -78,11 +78,17 @@ public class PasswordResetService {
 			log.info("Lien de reinitialisation genere pour {} : {}", email, resetUrl);
 			return;
 		}
-		SimpleMailMessage message = new SimpleMailMessage();
-		message.setTo(email);
-		message.setSubject("Reinitialisation du mot de passe Metamind");
-		message.setText("Utilisez ce lien avant son expiration : " + resetUrl);
-		mailSender.send(message);
+		try {
+			SimpleMailMessage message = new SimpleMailMessage();
+			message.setTo(email);
+			message.setSubject("Reinitialisation du mot de passe Metamind");
+			message.setText("Utilisez ce lien avant son expiration : " + resetUrl);
+			mailSender.send(message);
+		}
+		catch (RuntimeException exception) {
+			// SMTP non configure ou indisponible : la demande ne doit pas echouer, on journalise le lien.
+			log.warn("Envoi de l'email de reinitialisation impossible pour {}. Lien : {}", email, resetUrl);
+		}
 	}
 
 	private String createToken() {

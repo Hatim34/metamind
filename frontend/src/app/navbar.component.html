@@ -42,6 +42,13 @@
         <button type="button" [class.active]="language === 'nl'" (click)="changeLanguage('nl')">NL</button>
         <button type="button" [class.active]="language === 'en'" (click)="changeLanguage('en')">EN</button>
       </div>
+      <div class="nav-account" *ngIf="authenticated">
+        <span class="nav-user" [title]="userName">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4" /><path d="M4 21c0-4 4-6 8-6s8 2 8 6" /></svg>
+          <span class="nav-user-name">{{ userName }}</span>
+        </span>
+        <button type="button" class="nav-signout" (click)="signOut.emit()">{{ labels.signOut }}</button>
+      </div>
     </div>
   </div>
 </nav>
