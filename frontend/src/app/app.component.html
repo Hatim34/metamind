@@ -171,16 +171,27 @@
     <div class="section-heading">
       <div>
         <p class="eyebrow">{{ t('validationQueue') }}</p>
-        <h1>{{ t('pendingValidation') }}</h1>
+        <h1>{{ t('documentsToProcess') }}</h1>
       </div>
-      <button type="button" (click)="loadValidationQueue()">{{ t('filters') }}</button>
+      <div class="queue-controls">
+        <label class="queue-filter">
+          {{ t('status') }}
+          <select name="validationFilter" [(ngModel)]="validationFilter">
+            <option value="all">{{ t('allStatuses') }}</option>
+            <option value="A_VALIDER">{{ t('pendingValidation') }}</option>
+            <option value="EN_ATTENTE">{{ t('statusPending') }}</option>
+            <option value="EXTRACTION">{{ t('processing') }}</option>
+          </select>
+        </label>
+        <button type="button" (click)="loadValidationQueue()">{{ t('refresh') }}</button>
+      </div>
     </div>
     <p class="notice" *ngIf="!session">{{ t('loginRequiredPublication') }}</p>
-    <p class="notice" *ngIf="session && validationQueue.length === 0">{{ t('noSummary') }}</p>
+    <p class="notice" *ngIf="session && filteredValidationQueue.length === 0">{{ t('noValidationDocuments') }}</p>
     <p class="notice" *ngIf="message">{{ message }}</p>
-    <div class="publication-list" *ngIf="validationQueue.length > 0">
+    <div class="publication-list" *ngIf="filteredValidationQueue.length > 0">
       <app-publication-card
-        *ngFor="let publication of validationQueue"
+        *ngFor="let publication of filteredValidationQueue"
         [publication]="publication"
         [labels]="publicationCardLabels"
         [allowExtract]="canExtractPublication(publication)"

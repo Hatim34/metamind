@@ -1,13 +1,13 @@
 <article class="publication-card">
-  <div class="pub-main">
-    <div class="pub-cover" aria-hidden="true">
-      <img *ngIf="publication.imageUrl" [src]="publication.imageUrl" alt="" />
-      <svg *ngIf="!publication.imageUrl" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3v4a1 1 0 0 0 1 1h4" /><path d="M17 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2z" /></svg>
+  <div class="doc-main">
+    <div class="doc-cover" aria-hidden="true">
+      <img *ngIf="coverUrl" [src]="coverUrl" alt="" />
+      <svg *ngIf="!coverUrl" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3v4a1 1 0 0 0 1 1h4" /><path d="M17 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2z" /></svg>
     </div>
-    <div class="pub-text">
+    <div class="doc-text">
       <h3>{{ publication.title }}</h3>
       <p>{{ publication.author }} · {{ publication.institution }} · {{ publication.publicationDate || publication.year }}</p>
-      <p class="pub-summary" *ngIf="publication.summary">{{ publication.summary }}</p>
+      <p class="doc-summary" *ngIf="publication.summary">{{ publication.summary }}</p>
     </div>
   </div>
   <div class="tags">

@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { Component, HostListener, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
 import { ApiService, AuditLog, AuthResponse, CreditMovement, CreditPackOption, DashboardStatistics, Institution, MetadataDetails, MetadataExtraction, Publication, PublicationStatus, SearchFilters, UserSession } from './api.service';
@@ -156,7 +156,12 @@ const translations = {
     imageTooLarge: 'Image trop volumineuse (5 Mo maximum).',
     unsupportedFileType: 'Format non pris en charge. Formats acceptés : PDF, DOCX, TXT.',
     unsupportedImageType: 'Image non prise en charge. Formats acceptés : PNG, JPG, WEBP.',
-    sessionExpired: 'Session expirée. Reconnectez-vous.'
+    sessionExpired: 'Session expirée. Reconnectez-vous.',
+    documentsToProcess: 'Documents à traiter',
+    noValidationDocuments: 'Aucun document à traiter pour le moment.',
+    refresh: 'Actualiser',
+    allStatuses: 'Tous les statuts',
+    statusPending: 'En attente'
   },
   nl: {
     title: 'Beheer van academische metadata',
@@ -303,7 +308,12 @@ const translations = {
     imageTooLarge: 'Afbeelding te groot (max. 5 MB).',
     unsupportedFileType: 'Formaat niet ondersteund. Toegestaan: PDF, DOCX, TXT.',
     unsupportedImageType: 'Afbeelding niet ondersteund. Toegestaan: PNG, JPG, WEBP.',
-    sessionExpired: 'Sessie verlopen. Meld u opnieuw aan.'
+    sessionExpired: 'Sessie verlopen. Meld u opnieuw aan.',
+    documentsToProcess: 'Te verwerken documenten',
+    noValidationDocuments: 'Voorlopig geen documenten om te verwerken.',
+    refresh: 'Vernieuwen',
+    allStatuses: 'Alle statussen',
+    statusPending: 'In afwachting'
   },
   en: {
     title: 'Academic metadata management',
@@ -450,7 +460,12 @@ const translations = {
     imageTooLarge: 'Image too large (5 MB maximum).',
     unsupportedFileType: 'Unsupported format. Accepted: PDF, DOCX, TXT.',
     unsupportedImageType: 'Unsupported image. Accepted: PNG, JPG, WEBP.',
-    sessionExpired: 'Session expired. Please sign in again.'
+    sessionExpired: 'Session expired. Please sign in again.',
+    documentsToProcess: 'Documents to process',
+    noValidationDocuments: 'No documents to process right now.',
+    refresh: 'Refresh',
+    allStatuses: 'All statuses',
+    statusPending: 'Pending'
   }
 } as const;
 
@@ -543,6 +558,7 @@ export class AppComponent implements OnInit {
   token = '';
   publications: Publication[] = [];
   validationQueue: Publication[] = [];
+  validationFilter: 'all' | 'A_VALIDER' | 'EN_ATTENTE' | 'EXTRACTION' = 'all';
   selectedPublication: Publication | null = null;
   institutions: Institution[] = [];
   adminUsers: UserSession[] = [];
@@ -577,6 +593,11 @@ export class AppComponent implements OnInit {
     }
     this.loadPublications();
     this.loadCreditPacks();
+    try {
+      window.history.replaceState({ page: this.page }, '', '#/' + this.page);
+    } catch {
+      // history indisponible : navigation en memoire uniquement
+    }
   }
 
   private restoreSession(): void {
@@ -615,6 +636,11 @@ export class AppComponent implements OnInit {
   }
 
   navigate(page: Page): void {
+    this.applyPage(page);
+    this.pushHistory({ page });
+  }
+
+  private applyPage(page: Page): void {
     this.page = page;
     if (page === 'validation') {
       this.loadValidationQueue();
@@ -623,6 +649,39 @@ export class AppComponent implements OnInit {
       this.loadInstitutions();
       this.loadAdminData();
     }
+  }
+
+  private pushHistory(state: { page: Page; publicationId?: number }): void {
+    try {
+      window.history.pushState(state, '', '#/' + state.page);
+    } catch {
+      // history indisponible : navigation en memoire uniquement
+    }
+  }
+
+  @HostListener('window:popstate', ['$event'])
+  onPopState(event: PopStateEvent): void {
+    const state = (event.state ?? null) as { page?: Page; publicationId?: number } | null;
+    const page = state?.page ?? 'catalogue';
+    if (page === 'detail' && state?.publicationId) {
+      if (this.selectedPublication?.id === state.publicationId) {
+        this.page = 'detail';
+        return;
+      }
+      this.api.getPublication(state.publicationId).subscribe({
+        next: (details) => {
+          this.selectedPublication = details;
+          this.page = 'detail';
+        },
+        error: () => this.applyPage('catalogue')
+      });
+      return;
+    }
+    if (page === 'detail') {
+      this.applyPage('catalogue');
+      return;
+    }
+    this.applyPage(page);
   }
 
   setLanguage(language: Language): void {
@@ -713,6 +772,13 @@ export class AppComponent implements OnInit {
     });
   }
 
+  get filteredValidationQueue(): Publication[] {
+    if (this.validationFilter === 'all') {
+      return this.validationQueue;
+    }
+    return this.validationQueue.filter((document) => document.status === this.validationFilter);
+  }
+
   clearSearchFilters(): void {
     this.searchFilters = {
       author: '',
@@ -728,6 +794,7 @@ export class AppComponent implements OnInit {
     this.selectedPublication = publication;
     this.page = 'detail';
     this.message = '';
+    this.pushHistory({ page: 'detail', publicationId: publication.id });
     this.api.getPublication(publication.id).subscribe({
       next: (details) => {
         this.selectedPublication = details;
@@ -759,8 +826,9 @@ export class AppComponent implements OnInit {
   }
 
   backToCatalogue(): void {
-    this.page = 'catalogue';
     this.selectedPublication = null;
+    this.applyPage('catalogue');
+    this.pushHistory({ page: 'catalogue' });
   }
 
   openPasswordReset(): void {

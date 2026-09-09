@@ -233,6 +233,13 @@ export class ApiService {
     });
   }
 
+  loadCoverImage(publicationId: number): Observable<Blob> {
+    return this.http.get(`${this.baseUrl}/documents/${publicationId}/image`, {
+      headers: this.optionalAuthHeaders(),
+      responseType: 'blob'
+    });
+  }
+
   retryDocumentProcessing(publicationId: number): Observable<Publication> {
     return this.http.post<unknown>(`${this.baseUrl}/documents/${publicationId}/processing`, {}, { headers: this.authHeaders() })
       .pipe(map((response) => this.toPublication(response)));

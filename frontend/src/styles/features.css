@@ -3,6 +3,18 @@
    filtres de recherche, fiche detail d'une publication
    ============================================================ */
 
+/* --- Controles de la file de validation (filtre + actualiser) --- */
+.queue-controls {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.7rem;
+  flex-wrap: wrap;
+}
+
+.queue-filter {
+  min-width: 190px;
+}
+
 /* --- Filtres de recherche (dans le hero) --- */
 .search-filters {
   display: grid;
