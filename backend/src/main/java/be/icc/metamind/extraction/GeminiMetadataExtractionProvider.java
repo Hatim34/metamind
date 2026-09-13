@@ -40,13 +40,21 @@ public class GeminiMetadataExtractionProvider implements MetadataExtractionProvi
 		}
 
 		String prompt = """
-				Extrais des metadonnees Dublin Core depuis cette publication.
-				Reponds uniquement en JSON avec les champs title, author, summary, classification et keywords.
-				Titre existant : %s
-				Texte extrait : %s
+				Tu es un bibliothecaire. Analyse le texte de la publication ci-dessous et genere ses metadonnees.
+				Reponds UNIQUEMENT avec un objet JSON valide, sans aucun texte autour, avec exactement ces champs :
+				"title" (un titre clair et informatif deduit du contenu, jamais le nom du fichier),
+				"author" (le ou les auteurs si mentionnes, sinon "Auteur non renseigne"),
+				"summary" (un resume de 2 a 3 phrases en francais),
+				"classification" (la discipline scientifique principale),
+				"keywords" (un tableau de 4 a 6 mots-cles pertinents).
+				Nom du fichier : %s
+				Texte : %s
 				""".formatted(document.getFileName(), document.getExtractedText());
 
-		GeminiRequest request = new GeminiRequest(List.of(new GeminiContent(List.of(new GeminiPart(prompt)))));
+		GeminiRequest request = new GeminiRequest(
+				List.of(new GeminiContent(List.of(new GeminiPart(prompt)))),
+				new GenerationConfig("application/json")
+		);
 
 		JsonNode response = restClient.post()
 				.uri("/v1beta/models/{model}:generateContent?key={apiKey}", model, apiKey)
@@ -58,13 +66,14 @@ public class GeminiMetadataExtractionProvider implements MetadataExtractionProvi
 	}
 
 	private MetadataExtractionData parseResponse(DocumentEntity document, JsonNode response) {
-		String text = response.path("candidates")
-				.path(0)
-				.path("content")
-				.path("parts")
-				.path(0)
-				.path("text")
-				.asText("");
+		JsonNode parts = response.path("candidates").path(0).path("content").path("parts");
+		StringBuilder builder = new StringBuilder();
+		if (parts.isArray()) {
+			for (JsonNode part : parts) {
+				builder.append(part.path("text").asText(""));
+			}
+		}
+		String text = builder.toString();
 
 		if (text.isBlank()) {
 			throw new ApiException(HttpStatus.BAD_GATEWAY, "La reponse Gemini est vide.");
@@ -102,12 +111,15 @@ public class GeminiMetadataExtractionProvider implements MetadataExtractionProvi
 				.toList();
 	}
 
-	private record GeminiRequest(List<GeminiContent> contents) {
+	private record GeminiRequest(List<GeminiContent> contents, GenerationConfig generationConfig) {
 	}
 
 	private record GeminiContent(List<GeminiPart> parts) {
 	}
 
 	private record GeminiPart(String text) {
+	}
+
+	private record GenerationConfig(String responseMimeType) {
 	}
 }

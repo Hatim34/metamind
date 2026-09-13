@@ -37,6 +37,7 @@ public class ExtractionService {
 	private final MetadataSuggestionRepository suggestionRepository;
 	private final CreditMovementRepository movementRepository;
 	private final MetadataExtractionProvider extractionProvider;
+	private final MetadataExtractionProvider fallbackProvider = new LocalMetadataExtractionProvider();
 
 	public ExtractionService(
 			DocumentRepository documentRepository,
@@ -87,15 +88,22 @@ public class ExtractionService {
 		try {
 			metadata = extractionProvider.extract(document);
 		}
-		catch (ApiException exception) {
-			enrichment.markFailed(exception.getMessage());
-			document.markExtractionFailed();
-			throw exception;
-		}
-		catch (RuntimeException exception) {
-			enrichment.markFailed("Extraction interrompue.");
-			document.markExtractionFailed();
-			throw new ApiException(HttpStatus.BAD_GATEWAY, "L'extraction des metadonnees a echoue.");
+		catch (RuntimeException primaryException) {
+			if (extractionProvider instanceof LocalMetadataExtractionProvider) {
+				// Le mode local a echoue : il n'y a rien de plus a tenter.
+				enrichment.markFailed(failureMessage(primaryException));
+				document.markExtractionFailed();
+				throw toApiException(primaryException);
+			}
+			// Le fournisseur IA (ex. Gemini) est indisponible : repli sur l'extraction locale pour ne pas bloquer le flux.
+			try {
+				metadata = fallbackProvider.extract(document);
+			}
+			catch (RuntimeException fallbackException) {
+				enrichment.markFailed("Extraction interrompue.");
+				document.markExtractionFailed();
+				throw new ApiException(HttpStatus.BAD_GATEWAY, "L'extraction des metadonnees a echoue.");
+			}
 		}
 
 		document.markExtractionCompleted(String.join(",", metadata.keywords()));
@@ -122,6 +130,17 @@ public class ExtractionService {
 				metadata.keywords(),
 				institution.getCreditBalance()
 		);
+	}
+
+	private String failureMessage(RuntimeException exception) {
+		return exception instanceof ApiException ? exception.getMessage() : "Extraction interrompue.";
+	}
+
+	private ApiException toApiException(RuntimeException exception) {
+		if (exception instanceof ApiException apiException) {
+			return apiException;
+		}
+		return new ApiException(HttpStatus.BAD_GATEWAY, "L'extraction des metadonnees a echoue.");
 	}
 
 	@Transactional(noRollbackFor = ApiException.class)

@@ -1,7 +1,6 @@
 package be.icc.metamind.extraction;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.util.List;
 
@@ -77,7 +76,7 @@ class ExtractionFailureServiceTests {
 	private EnrichmentRepository enrichmentRepository;
 
 	@Test
-	void failedExtractionDoesNotConsumeCredit() {
+	void failingProviderFallsBackToLocalExtraction() {
 		InstitutionEntity institution = institutionRepository.save(new InstitutionEntity("INST-A", "Institution A", "institution-a.example"));
 		institution.addCredits(2);
 		UserEntity user = userRepository.save(new UserEntity(
@@ -99,20 +98,16 @@ class ExtractionFailureServiceTests {
 				user
 		);
 
-		assertThatThrownBy(() -> extractionService.extract(document.getId(), user))
-				.isInstanceOf(ApiException.class)
-				.hasMessageContaining("indisponible");
+		MetadataExtractionResponse response = extractionService.extract(document.getId(), user);
 
-		assertThat(institution.getCreditBalance()).isEqualTo(2);
-		assertThat(document.getStatus()).isEqualTo(DocumentStatus.EN_ATTENTE);
-		assertThat(movementRepository.findByInstitutionIdOrderByCreatedAtDesc(institution.getId())).isEmpty();
+		assertThat(response.title()).isNotBlank();
+		assertThat(institution.getCreditBalance()).isEqualTo(1);
+		assertThat(document.getStatus()).isEqualTo(DocumentStatus.A_VALIDER);
+		assertThat(movementRepository.findByInstitutionIdOrderByCreatedAtDesc(institution.getId())).hasSize(1);
 		assertThat(enrichmentRepository.findAll())
 				.filteredOn(enrichment -> enrichment.getDocument().getId().equals(document.getId()))
 				.singleElement()
-				.satisfies(enrichment -> {
-					assertThat(enrichment.getStatus()).isEqualTo(EnrichmentStatus.ECHEC);
-					assertThat(enrichment.getErrorMessage()).contains("indisponible");
-				});
+				.satisfies(enrichment -> assertThat(enrichment.getStatus()).isEqualTo(EnrichmentStatus.TERMINE));
 	}
 
 	@TestConfiguration
