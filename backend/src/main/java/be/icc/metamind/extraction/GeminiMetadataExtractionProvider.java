@@ -25,7 +25,7 @@ public class GeminiMetadataExtractionProvider implements MetadataExtractionProvi
 			RestClient.Builder restClientBuilder,
 			ObjectMapper objectMapper,
 			@Value("${metamind.gemini.api-key:}") String apiKey,
-			@Value("${metamind.gemini.model:gemini-2.5-flash-lite}") String model
+			@Value("${metamind.gemini.model:gemini-3.5-flash-lite}") String model
 	) {
 		this.restClient = restClientBuilder.baseUrl("https://generativelanguage.googleapis.com").build();
 		this.objectMapper = objectMapper;

@@ -110,6 +110,7 @@
     <div class="publication-list">
       <app-publication-card
         *ngFor="let publication of publications"
+        [class.card-editing]="selectedMetadataPublicationId === publication.id"
         [publication]="publication"
         [labels]="publicationCardLabels"
         [allowExtract]="canExtractPublication(publication)"
@@ -194,6 +195,7 @@
     <div class="publication-list" *ngIf="filteredValidationQueue.length > 0">
       <app-publication-card
         *ngFor="let publication of filteredValidationQueue"
+        [class.card-editing]="selectedMetadataPublicationId === publication.id"
         [publication]="publication"
         [labels]="publicationCardLabels"
         [allowExtract]="canExtractPublication(publication)"

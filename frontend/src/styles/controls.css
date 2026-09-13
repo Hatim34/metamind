@@ -129,6 +129,15 @@ form {
   gap: 1rem;
 }
 
+/* Carte en cours de validation : occupe toute la largeur pour un formulaire lisible */
+app-publication-card.card-editing {
+  grid-column: 1 / -1;
+}
+
+app-publication-card.card-editing .doc-cover {
+  display: none;
+}
+
 .publication-card {
   display: flex;
   flex-direction: column;

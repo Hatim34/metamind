@@ -99,7 +99,7 @@ public class AdminService {
 	public Map<String, String> readConfiguration() {
 		Map<String, String> values = configurationRepository.findAll().stream()
 				.collect(Collectors.toMap(item -> item.getCle(), item -> item.getValeur() == null ? "" : item.getValeur()));
-		values.putIfAbsent("modele_llm", "gemini-2.5-flash-lite");
+		values.putIfAbsent("modele_llm", "gemini-3.5-flash-lite");
 		values.putIfAbsent("taille_max_upload_mo", "128");
 		values.putIfAbsent("prix_credit_eur", "0.50");
 		return values;

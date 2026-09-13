@@ -1287,6 +1287,7 @@ export class AppComponent implements OnInit {
         this.message = this.t('publicationPublished');
         this.loadStatistics();
         this.loadPublications(false);
+        this.loadValidationQueue();
       },
       error: () => {
         this.message = this.t('statusUpdateFailed');
