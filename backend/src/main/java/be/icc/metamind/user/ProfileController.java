@@ -26,6 +26,12 @@ public class ProfileController {
 		return service.getProfile(id);
 	}
 
+	@GetMapping("/{id}/data-export")
+	public PersonalDataExportResponse exportPersonalData(@PathVariable long id, @RequestHeader("Authorization") String authorization) {
+		service.authenticateSelfOrAdmin(id, authorization);
+		return service.exportPersonalData(id);
+	}
+
 	@PutMapping("/{id}/profile")
 	public UserResponse updateProfile(@PathVariable long id, @RequestHeader("Authorization") String authorization, @Valid @RequestBody UpdateProfileRequest request) {
 		service.authenticateSelfOrAdmin(id, authorization);

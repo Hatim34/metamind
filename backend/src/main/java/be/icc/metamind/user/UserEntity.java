@@ -115,6 +115,10 @@ public class UserEntity {
 		status = UserStatus.DESACTIVE;
 	}
 
+	public void markPendingValidation() {
+		status = UserStatus.EN_ATTENTE;
+	}
+
 	public void anonymizeAndDeactivate() {
 		status = UserStatus.DESACTIVE;
 		firstName = "Compte";

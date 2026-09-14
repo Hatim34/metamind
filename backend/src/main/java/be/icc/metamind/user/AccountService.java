@@ -6,6 +6,7 @@ import be.icc.metamind.auth.JwtService;
 import be.icc.metamind.auth.LoginAttemptService;
 import be.icc.metamind.auth.LoginRequest;
 import be.icc.metamind.auth.RegisterRequest;
+import be.icc.metamind.auth.RegistrationResponse;
 import be.icc.metamind.institution.InstitutionEntity;
 import be.icc.metamind.institution.InstitutionRepository;
 
@@ -50,7 +51,7 @@ public class AccountService {
 	}
 
 	@Transactional
-	public AuthResponse register(RegisterRequest request) {
+	public RegistrationResponse register(RegisterRequest request) {
 		String email = normalizeEmail(request.email());
 		if (userRepository.existsByEmailIgnoreCase(email)) {
 			throw new ApiException(HttpStatus.CONFLICT, "Un compte existe deja avec cet email.");
@@ -67,9 +68,14 @@ public class AccountService {
 				UserRole.LIBRARIAN,
 				institution
 		);
+		user.markPendingValidation();
 
 		UserEntity saved = userRepository.save(user);
-		return new AuthResponse(jwtService.createToken(saved), 3600, UserResponse.from(saved));
+		return new RegistrationResponse(
+				saved.getStatus().name(),
+				"Votre compte a ete cree. Il doit etre valide par un administrateur avant que vous puissiez vous connecter.",
+				UserResponse.from(saved)
+		);
 	}
 
 	@Transactional(readOnly = true)
@@ -102,6 +108,11 @@ public class AccountService {
 	@Transactional(readOnly = true)
 	public UserResponse getProfile(long id) {
 		return UserResponse.from(findUser(id));
+	}
+
+	@Transactional(readOnly = true)
+	public PersonalDataExportResponse exportPersonalData(long id) {
+		return PersonalDataExportResponse.from(findUser(id));
 	}
 
 	@Transactional

@@ -12,6 +12,7 @@ import be.icc.metamind.api.ApiException;
 import be.icc.metamind.auth.AuthResponse;
 import be.icc.metamind.auth.LoginRequest;
 import be.icc.metamind.auth.RegisterRequest;
+import be.icc.metamind.auth.RegistrationResponse;
 import be.icc.metamind.publication.Publication;
 import be.icc.metamind.publication.PublicationResponse;
 import be.icc.metamind.publication.PublicationStatus;
@@ -65,7 +66,7 @@ public class MetamindService {
 		return new AuthResponse(localToken(user.id()), 3600, UserResponse.from(user));
 	}
 
-	public AuthResponse register(RegisterRequest request) {
+	public RegistrationResponse register(RegisterRequest request) {
 		boolean emailExists = users.values()
 				.stream()
 				.anyMatch(user -> user.email().equalsIgnoreCase(request.email()));
@@ -75,7 +76,11 @@ public class MetamindService {
 		}
 
 		UserAccount user = createUser(request.firstName(), request.lastName(), request.email(), request.institution());
-		return new AuthResponse(localToken(user.id()), 3600, UserResponse.from(user));
+		return new RegistrationResponse(
+				user.status().name(),
+				"Votre compte a ete cree. Il doit etre valide par un administrateur avant que vous puissiez vous connecter.",
+				UserResponse.from(user)
+		);
 	}
 
 	public UserResponse getProfile(long id) {
@@ -122,7 +127,7 @@ public class MetamindService {
 
 	private UserAccount createUser(String firstName, String lastName, String email, String institution) {
 		long id = userIds.incrementAndGet();
-		UserAccount user = new UserAccount(id, firstName, lastName, email, "Bibliothecaire", institution, UserStatus.ACTIF);
+		UserAccount user = new UserAccount(id, firstName, lastName, email, "Bibliothecaire", institution, UserStatus.EN_ATTENTE);
 		users.put(id, user);
 		return user;
 	}

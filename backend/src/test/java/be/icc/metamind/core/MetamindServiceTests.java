@@ -6,9 +6,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import java.util.List;
 
 import be.icc.metamind.api.ApiException;
-import be.icc.metamind.auth.AuthResponse;
 import be.icc.metamind.auth.LoginRequest;
 import be.icc.metamind.auth.RegisterRequest;
+import be.icc.metamind.auth.RegistrationResponse;
 import be.icc.metamind.publication.PublicationResponse;
 import be.icc.metamind.publication.PublicationStatus;
 import be.icc.metamind.user.UpdateProfileRequest;
@@ -55,11 +55,11 @@ class MetamindServiceTests {
 				"558435"
 		);
 
-		AuthResponse response = service.register(request);
+		RegistrationResponse response = service.register(request);
 
 		assertThat(response.user().email()).isEqualTo("amal@institution-a.example");
-		assertThat(response.user().status()).isEqualTo(UserStatus.ACTIF);
-		assertThat(response.token()).startsWith("eyJ");
+		assertThat(response.user().status()).isEqualTo(UserStatus.EN_ATTENTE);
+		assertThat(response.statut()).isEqualTo("EN_ATTENTE");
 	}
 
 	@Test
