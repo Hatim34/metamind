@@ -380,6 +380,10 @@ export class ApiService {
       .pipe(map((response) => this.toMetadataExtraction(response)));
   }
 
+  exportPersonalData(userId: number): Observable<unknown> {
+    return this.http.get<unknown>(`${this.baseUrl}/users/${userId}/data-export`, { headers: this.authHeaders() });
+  }
+
   getMetadata(publicationId: number): Observable<MetadataDetails> {
     return this.http.get<MetadataDetails>(`${this.baseUrl}/documents/${publicationId}/metadata`, { headers: this.authHeaders() });
   }
@@ -393,9 +397,8 @@ export class ApiService {
       .pipe(map((response) => this.toAuthResponse(response)));
   }
 
-  register(request: RegisterRequest): Observable<AuthResponse> {
-    return this.http.post<unknown>(`${this.baseUrl}/auth/register`, request)
-      .pipe(map((response) => this.toAuthResponse(response)));
+  register(request: RegisterRequest): Observable<{ statut: string; message: string }> {
+    return this.http.post<{ statut: string; message: string }>(`${this.baseUrl}/auth/register`, request);
   }
 
   updateProfile(userId: number, request: UpdateProfileRequest): Observable<UserSession> {

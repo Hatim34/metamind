@@ -7,7 +7,7 @@ import { NavigationLabels, NavbarComponent } from './navbar.component';
 import { PublicationCardLabels, PublicationCardComponent } from './publication-card.component';
 import { PublicationDetailComponent, PublicationDetailLabels } from './publication-detail.component';
 
-type Page = 'catalogue' | 'detail' | 'connexion' | 'inscription' | 'profil' | 'publication' | 'validation' | 'administration' | 'password-reset';
+type Page = 'catalogue' | 'detail' | 'connexion' | 'inscription' | 'profil' | 'publication' | 'validation' | 'administration' | 'password-reset' | 'legal';
 type Language = 'fr' | 'nl' | 'en';
 
 const translations = {
@@ -105,7 +105,14 @@ const translations = {
     exportFailed: 'Export CSV impossible.',
     auditLogs: 'Journal d audit',
     deactivateAccount: 'Désactiver',
+    activateAccount: 'Activer',
+    accountActivated: 'Le compte est active.',
+    legalCenter: 'Informations legales',
+    privacyTitle: 'Politique de confidentialite',
+    legalNoticeTitle: 'Mentions legales',
+    termsTitle: 'Conditions generales de vente',
     requestDeletion: 'Demander la suppression du compte',
+    exportMyData: 'Exporter mes données',
     logout: 'Se déconnecter',
     saveProfile: 'Enregistrer le profil',
     deletionRecorded: 'La demande est enregistrée. Le compte passe au statut DESACTIVE et les données personnelles sont anonymisées.',
@@ -135,6 +142,7 @@ const translations = {
     apiUnavailable: "Impossible de joindre l'API locale.",
     loginFailed: 'Connexion impossible avec les donnees envoyees.',
     registerFailed: 'Creation du compte impossible avec les donnees envoyees.',
+    registrationPending: 'Votre compte a ete cree. Il doit etre valide par un administrateur avant votre premiere connexion.',
     createPublicationFailed: 'Creation de la publication impossible avec les donnees envoyees.',
     purchaseFailed: 'Achat de credits impossible.',
     extractionFailed: 'Extraction impossible. Verifiez le solde de credits.',
@@ -258,7 +266,14 @@ const translations = {
     exportFailed: 'CSV-export is onmogelijk.',
     auditLogs: 'Auditlogboek',
     deactivateAccount: 'Deactiveren',
+    activateAccount: 'Activeren',
+    accountActivated: 'Het account is geactiveerd.',
+    legalCenter: 'Juridische informatie',
+    privacyTitle: 'Privacybeleid',
+    legalNoticeTitle: 'Wettelijke vermeldingen',
+    termsTitle: 'Algemene verkoopvoorwaarden',
     requestDeletion: 'Verwijdering van de account aanvragen',
+    exportMyData: 'Mijn gegevens exporteren',
     logout: 'Afmelden',
     saveProfile: 'Profiel opslaan',
     deletionRecorded: 'De aanvraag is geregistreerd. De account krijgt de status DESACTIVE en de persoonsgegevens worden geanonimiseerd.',
@@ -288,6 +303,7 @@ const translations = {
     apiUnavailable: 'De lokale API is niet bereikbaar.',
     loginFailed: 'Aanmelden is onmogelijk met de verzonden gegevens.',
     registerFailed: 'Account aanmaken is onmogelijk met de verzonden gegevens.',
+    registrationPending: 'Uw account is aangemaakt. Het moet door een beheerder worden gevalideerd voor uw eerste aanmelding.',
     createPublicationFailed: 'Publicatie aanmaken is onmogelijk met de verzonden gegevens.',
     purchaseFailed: 'Credits kopen is onmogelijk.',
     extractionFailed: 'Extractie is onmogelijk. Controleer het creditsaldo.',
@@ -411,7 +427,14 @@ const translations = {
     exportFailed: 'CSV export failed.',
     auditLogs: 'Audit log',
     deactivateAccount: 'Deactivate',
+    activateAccount: 'Activate',
+    accountActivated: 'The account has been activated.',
+    legalCenter: 'Legal information',
+    privacyTitle: 'Privacy policy',
+    legalNoticeTitle: 'Legal notice',
+    termsTitle: 'Terms and conditions of sale',
     requestDeletion: 'Request account deletion',
+    exportMyData: 'Export my data',
     logout: 'Sign out',
     saveProfile: 'Save profile',
     deletionRecorded: 'The request is recorded. The account moves to DESACTIVE status and personal data is anonymized.',
@@ -441,6 +464,7 @@ const translations = {
     apiUnavailable: 'Unable to reach the local API.',
     loginFailed: 'Sign-in failed with the submitted data.',
     registerFailed: 'Account creation failed with the submitted data.',
+    registrationPending: 'Your account has been created. It must be validated by an administrator before your first sign-in.',
     createPublicationFailed: 'Publication creation failed with the submitted data.',
     purchaseFailed: 'Credit purchase failed.',
     extractionFailed: 'Extraction failed. Check the credit balance.',
@@ -835,6 +859,13 @@ export class AppComponent implements OnInit {
     this.pushHistory({ page: 'catalogue' });
   }
 
+  openLegal(): void {
+    this.page = 'legal';
+    this.message = '';
+    this.pushHistory({ page: 'legal' });
+    window.scrollTo({ top: 0 });
+  }
+
   openPasswordReset(): void {
     this.page = 'password-reset';
     this.passwordResetRequested = false;
@@ -895,16 +926,10 @@ export class AppComponent implements OnInit {
     }
 
     this.api.register(this.registerForm).subscribe({
-      next: (response) => {
-        this.storeSession(response);
-        this.fillProfileForm(response.user);
-        this.deletionRequested = false;
-        this.profileSaved = false;
-        this.message = '';
-        this.page = 'profil';
-        this.loadCredits();
-        this.loadCreditMovements();
-        this.loadStatistics();
+      next: () => {
+        this.registerForm = { firstName: '', lastName: '', email: '', institution: '', password: '' };
+        this.message = this.t('registrationPending');
+        this.navigate('connexion');
       },
       error: () => {
         this.message = this.t('registerFailed');
@@ -1457,6 +1482,26 @@ export class AppComponent implements OnInit {
     this.page = 'catalogue';
   }
 
+  exportPersonalData(): void {
+    if (!this.session) {
+      return;
+    }
+    this.api.exportPersonalData(this.session.id).subscribe({
+      next: (data) => {
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = 'mes-donnees-metamind.json';
+        link.click();
+        URL.revokeObjectURL(url);
+      },
+      error: () => {
+        this.message = this.t('apiUnavailable');
+      }
+    });
+  }
+
   get isAdmin(): boolean {
     return this.session?.role === 'ADMIN';
   }
@@ -1501,6 +1546,22 @@ export class AppComponent implements OnInit {
 
     this.api.updateAdminUser(user.id, { role: user.role === 'ADMIN' ? 'ADMIN' : 'LIBRARIAN', statut: 'DESACTIVE' }).subscribe({
       next: () => this.loadAdminData(),
+      error: () => {
+        this.message = this.t('statusUpdateFailed');
+      }
+    });
+  }
+
+  activateUser(user: UserSession): void {
+    if (!this.isAdmin) {
+      return;
+    }
+
+    this.api.updateAdminUser(user.id, { role: user.role === 'ADMIN' ? 'ADMIN' : 'LIBRARIAN', statut: 'ACTIF' }).subscribe({
+      next: () => {
+        this.message = this.t('accountActivated');
+        this.loadAdminData();
+      },
       error: () => {
         this.message = this.t('statusUpdateFailed');
       }

@@ -394,6 +394,7 @@
     </div>
 
     <div *ngIf="session" class="actions">
+      <button type="button" (click)="exportPersonalData()">{{ t('exportMyData') }}</button>
       <button type="button" class="danger" (click)="requestDeletion()" [disabled]="deletionRequested">
         {{ t('requestDeletion') }}
       </button>
@@ -536,6 +537,9 @@
             <td>{{ user.institution }}</td>
             <td>{{ user.status }}</td>
             <td>
+              <button type="button" class="primary" *ngIf="user.status === 'EN_ATTENTE'" (click)="activateUser(user)">
+                {{ t('activateAccount') }}
+              </button>
               <button type="button" class="danger" [disabled]="user.status === 'DESACTIVE'" (click)="deactivateUser(user)">
                 {{ t('deactivateAccount') }}
               </button>
@@ -577,8 +581,74 @@
       <p class="notice">{{ t('adminRequired') }}</p>
     </ng-template>
   </section>
+
+  <section *ngIf="page === 'legal'" class="panel legal-page">
+    <p class="eyebrow">{{ t('legalCenter') }}</p>
+
+    <article id="confidentialite">
+      <h2>{{ t('privacyTitle') }}</h2>
+      <p>Metamind est soumise au Reglement general sur la protection des donnees (Reglement UE 2016/679, RGPD)
+        et a la loi belge du 30 juillet 2018. L'autorite de controle est l'Autorite de protection des donnees (APD).</p>
+      <h3>Donnees traitees et finalites</h3>
+      <ul>
+        <li>Email, nom, prenom, institution : creation et gestion des comptes.</li>
+        <li>Mot de passe (hache avec bcrypt) : authentification.</li>
+        <li>Journaux d'audit (actions, horodatage) : tracabilite et securite.</li>
+        <li>Noms d'auteurs et metadonnees : description des publications.</li>
+      </ul>
+      <p>La base legale est l'execution du contrat de service et l'interet legitime (securite). Le traitement
+        respecte les principes de liceite, finalite, minimisation, exactitude et limitation de conservation.</p>
+      <h3>Vos droits</h3>
+      <p>Vous disposez des droits d'acces, de rectification, d'effacement (droit a l'oubli), de limitation,
+        d'opposition et de portabilite. La rectification se fait depuis votre profil ; l'export de vos donnees
+        et la demande de suppression sont accessibles depuis la page Profil. Une demande est traitee dans un
+        delai d'un mois. En cas de desaccord, vous pouvez saisir l'APD (autoriteprotectiondonnees.be).</p>
+      <h3>Securite et conservation</h3>
+      <p>Les communications sont chiffrees via HTTPS/TLS, les mots de passe haches (bcrypt), l'acces controle
+        par roles. La suppression courante est logique (statut SUPPRIME / DESACTIVE) afin de preserver la
+        tracabilite ; sur exercice d'un droit a l'oubli fonde, les donnees personnelles sont anonymisees ou
+        reellement supprimees. Une violation de donnees est notifiee a l'APD dans les 72 heures.</p>
+    </article>
+
+    <article id="mentions-legales">
+      <h2>{{ t('legalNoticeTitle') }}</h2>
+      <p>Metamind est une plateforme developpee dans le cadre de l'epreuve integree du Bachelier en
+        Informatique de l'Institut des Carrieres Commerciales (ICC), Bruxelles, par ASSAL Hatim (2025-2026).</p>
+      <p>Pour les comptes utilisateurs, Metamind agit comme responsable de traitement. Pour les documents
+        deposes par les institutions, Metamind agit comme sous-traitant de l'institution, qui reste
+        responsable de ses donnees. En tant qu'hebergeur, Metamind n'exerce pas de surveillance generale des
+        contenus mais retire promptement tout contenu manifestement illicite qui lui est signale (procedure de
+        signalement et de retrait). La validation humaine avant publication et les journaux d'audit renforcent
+        la maitrise des contenus diffuses.</p>
+    </article>
+
+    <article id="cgv">
+      <h2>{{ t('termsTitle') }}</h2>
+      <p>La vente de packs de credits constitue un service de commerce electronique soumis au Code de droit
+        economique (Livres VI et XII).</p>
+      <ul>
+        <li>Le prix total, tous frais compris, est affiche avant la commande.</li>
+        <li>Le paiement est delegue a Stripe, prestataire certifie PCI-DSS ; les donnees bancaires ne sont
+          jamais stockees par Metamind.</li>
+        <li>Les credits achetes sont utilises pour les fonctionnalites payantes (extraction de metadonnees).</li>
+        <li>Le service numerique etant execute immediatement, le bibliothecaire donne son accord expres a
+          l'execution immediate et reconnait perdre son droit de retractation de 14 jours.</li>
+        <li>Les conditions generales, mentions legales et politique de confidentialite sont accessibles avant
+          tout achat.</li>
+      </ul>
+    </article>
+
+    <div class="actions">
+      <button type="button" (click)="navigate('catalogue')">{{ t('backToCatalogue') }}</button>
+    </div>
+  </section>
 </main>
 
 <footer class="site-footer">
-  Metamind · {{ t('title') }} · ASSAL Hatim, ICC 2025-2026
+  <span>Metamind · {{ t('title') }} · ASSAL Hatim, ICC 2025-2026</span>
+  <nav class="footer-links" aria-label="Informations legales">
+    <button type="button" (click)="openLegal()">{{ t('privacyTitle') }}</button>
+    <button type="button" (click)="openLegal()">{{ t('legalNoticeTitle') }}</button>
+    <button type="button" (click)="openLegal()">{{ t('termsTitle') }}</button>
+  </nav>
 </footer>
