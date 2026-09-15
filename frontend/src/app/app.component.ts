@@ -138,6 +138,16 @@ const translations = {
     publicationDate: 'Date de publication',
     classification: 'Classification',
     cancel: 'Annuler',
+    confirm: 'Confirmer',
+    confirmDeleteQuestion: 'Supprimer cette publication ?',
+    stepImported: 'Importé',
+    stepExtraction: 'Extraction IA',
+    stepToValidate: 'À valider',
+    stepPublished: 'Publié',
+    rejectMetadata: 'Rejeter',
+    rejectReasonLabel: 'Motif du rejet',
+    rejectReasonRequired: 'Le motif du rejet est obligatoire.',
+    metadataRejected: 'Les métadonnées ont été rejetées.',
     deletePublication: 'Supprimer',
     apiUnavailable: "Impossible de joindre l'API locale.",
     loginFailed: 'Connexion impossible avec les donnees envoyees.',
@@ -299,6 +309,16 @@ const translations = {
     publicationDate: 'Publicatiedatum',
     classification: 'Classificatie',
     cancel: 'Annuleren',
+    confirm: 'Bevestigen',
+    confirmDeleteQuestion: 'Deze publicatie verwijderen?',
+    stepImported: 'Geïmporteerd',
+    stepExtraction: 'AI-extractie',
+    stepToValidate: 'Te valideren',
+    stepPublished: 'Gepubliceerd',
+    rejectMetadata: 'Weigeren',
+    rejectReasonLabel: 'Reden voor weigering',
+    rejectReasonRequired: 'De reden voor weigering is verplicht.',
+    metadataRejected: 'De metadata zijn geweigerd.',
     deletePublication: 'Verwijderen',
     apiUnavailable: 'De lokale API is niet bereikbaar.',
     loginFailed: 'Aanmelden is onmogelijk met de verzonden gegevens.',
@@ -460,6 +480,16 @@ const translations = {
     publicationDate: 'Publication date',
     classification: 'Classification',
     cancel: 'Cancel',
+    confirm: 'Confirm',
+    confirmDeleteQuestion: 'Delete this publication?',
+    stepImported: 'Imported',
+    stepExtraction: 'AI extraction',
+    stepToValidate: 'To validate',
+    stepPublished: 'Published',
+    rejectMetadata: 'Reject',
+    rejectReasonLabel: 'Rejection reason',
+    rejectReasonRequired: 'The rejection reason is required.',
+    metadataRejected: 'The metadata were rejected.',
     deletePublication: 'Delete',
     apiUnavailable: 'Unable to reach the local API.',
     loginFailed: 'Sign-in failed with the submitted data.',
@@ -566,8 +596,10 @@ export class AppComponent implements OnInit {
     visibility: 'PUBLIC' as 'PUBLIC' | 'INSTITUTION',
     authors: '',
     keywords: '',
-    extractedText: ''
+    extractedText: '',
+    rejectReason: ''
   };
+  showRejectForm = false;
 
   profileForm = {
     firstName: '',
@@ -741,7 +773,14 @@ export class AppComponent implements OnInit {
       edit: this.t('editMetadata'),
       delete: this.t('deletePublication'),
       processing: this.t('processing'),
-      retry: this.t('retryProcessing')
+      retry: this.t('retryProcessing'),
+      stepImported: this.t('stepImported'),
+      stepExtraction: this.t('stepExtraction'),
+      stepToValidate: this.t('stepToValidate'),
+      stepPublished: this.t('stepPublished'),
+      confirmDelete: this.t('confirmDeleteQuestion'),
+      confirm: this.t('confirm'),
+      cancel: this.t('cancel')
     };
   }
 
@@ -1280,7 +1319,8 @@ export class AppComponent implements OnInit {
           visibility: publication.visibility,
           authors: publication.author,
           keywords: publication.keywords.join(', '),
-          extractedText: ''
+          extractedText: '',
+          rejectReason: ''
         };
         this.selectedMetadataPublicationId = publication.id;
       }
@@ -1322,6 +1362,7 @@ export class AppComponent implements OnInit {
 
   cancelMetadataValidation(): void {
     this.selectedMetadataPublicationId = null;
+    this.showRejectForm = false;
     this.metadataForm = {
       documentId: 0,
       title: '',
@@ -1331,8 +1372,35 @@ export class AppComponent implements OnInit {
       visibility: 'PUBLIC',
       authors: '',
       keywords: '',
-      extractedText: ''
+      extractedText: '',
+      rejectReason: ''
     };
+  }
+
+  toggleRejectForm(): void {
+    this.showRejectForm = !this.showRejectForm;
+  }
+
+  rejectMetadata(): void {
+    if (!this.session || !this.selectedMetadataPublicationId) {
+      return;
+    }
+    if (this.metadataForm.rejectReason.trim().length === 0) {
+      this.message = this.t('rejectReasonRequired');
+      return;
+    }
+    this.api.rejectMetadata(this.selectedMetadataPublicationId, this.metadataForm.rejectReason.trim()).subscribe({
+      next: () => {
+        this.cancelMetadataValidation();
+        this.message = this.t('metadataRejected');
+        this.loadStatistics();
+        this.loadPublications(false);
+        this.loadValidationQueue();
+      },
+      error: (err) => {
+        this.message = this.describeError(err, 'statusUpdateFailed');
+      }
+    });
   }
 
   updatePublicationStatus(publication: Publication, status: Extract<PublicationStatus, 'A_VALIDER' | 'PUBLIE' | 'SUPPRIME'>): void {
@@ -1680,7 +1748,8 @@ export class AppComponent implements OnInit {
       visibility: metadata.visibilite || publication.visibility,
       authors: metadata.auteurs.length > 0 ? metadata.auteurs.map((author) => author.nom_complet).join(', ') : publication.author,
       keywords: metadata.mots_cles.length > 0 ? metadata.mots_cles.join(', ') : publication.keywords.join(', '),
-      extractedText: metadata.texte_extrait || ''
+      extractedText: metadata.texte_extrait || '',
+      rejectReason: ''
     };
     this.selectedMetadataPublicationId = publication.id;
   }

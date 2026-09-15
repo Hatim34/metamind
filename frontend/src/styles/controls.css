@@ -264,6 +264,105 @@ app-publication-card.card-editing .doc-cover {
   border-top: 1px solid var(--line);
 }
 
+/* --- Pipeline de workflow : Importe -> Extraction -> A valider -> Publie --- */
+.doc-pipeline {
+  display: flex;
+  align-items: flex-start;
+  gap: 0;
+  list-style: none;
+  margin: 0;
+  padding: 0.6rem 1rem 0.2rem;
+}
+
+.doc-pipeline li {
+  position: relative;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+  font-family: var(--f-mono);
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ink-faint);
+  text-align: center;
+}
+
+.doc-pipeline li::before {
+  content: "";
+  position: absolute;
+  top: 6px;
+  left: -50%;
+  width: 100%;
+  height: 2px;
+  background: var(--line);
+  z-index: 0;
+}
+
+.doc-pipeline li:first-child::before {
+  display: none;
+}
+
+.doc-pipeline .pipe-dot {
+  position: relative;
+  z-index: 1;
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  border: 2px solid var(--line-strong);
+  background: var(--surface);
+}
+
+.doc-pipeline .pipe-done .pipe-dot {
+  background: var(--teal);
+  border-color: var(--teal);
+}
+
+.doc-pipeline .pipe-done::before {
+  background: var(--teal);
+}
+
+.doc-pipeline .pipe-current .pipe-dot {
+  border-color: var(--teal);
+  box-shadow: 0 0 0 3px var(--teal-soft, rgba(18, 120, 123, 0.18));
+}
+
+.doc-pipeline .pipe-current .pipe-label,
+.doc-pipeline .pipe-done .pipe-label {
+  color: var(--ink-soft);
+}
+
+.delete-confirm {
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.6rem;
+}
+
+.delete-confirm .confirm-text {
+  font-size: 0.85rem;
+  color: var(--ink);
+  margin-right: auto;
+}
+
+.reject-box {
+  display: grid;
+  gap: 0.6rem;
+  margin-top: 0.9rem;
+  padding: 0.9rem;
+  border: 1px solid color-mix(in srgb, var(--red) 40%, var(--line));
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--red) 5%, var(--surface));
+}
+
+.reject-box textarea {
+  min-height: 80px;
+}
+
+.reject-box button {
+  justify-self: start;
+}
+
 @media (max-width: 1050px) {
   .publication-list {
     grid-template-columns: repeat(2, minmax(0, 1fr));

@@ -8,6 +8,7 @@ import java.util.List;
 
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
@@ -41,5 +42,11 @@ public class MetadataController {
 	public MetadataResponse validateMetadata(@PathVariable long documentId, @RequestHeader("Authorization") String authorization, @Valid @RequestBody MetadataValidationRequest request) {
 		UserEntity currentUser = accountService.authenticate(authorization);
 		return metadataService.validateMetadata(documentId, request, currentUser);
+	}
+
+	@PostMapping("/rejet")
+	public MetadataResponse rejectMetadata(@PathVariable long documentId, @RequestHeader("Authorization") String authorization, @Valid @RequestBody MetadataRejectionRequest request) {
+		UserEntity currentUser = accountService.authenticate(authorization);
+		return metadataService.rejectMetadata(documentId, request, currentUser);
 	}
 }

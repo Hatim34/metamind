@@ -392,6 +392,10 @@ export class ApiService {
     return this.http.put<MetadataDetails>(`${this.baseUrl}/documents/${publicationId}/metadata`, request, { headers: this.authHeaders() });
   }
 
+  rejectMetadata(publicationId: number, reason: string): Observable<unknown> {
+    return this.http.post<unknown>(`${this.baseUrl}/documents/${publicationId}/metadata/rejet`, { motif: reason }, { headers: this.authHeaders() });
+  }
+
   login(request: LoginRequest): Observable<AuthResponse> {
     return this.http.post<unknown>(`${this.baseUrl}/auth/login`, request)
       .pipe(map((response) => this.toAuthResponse(response)));

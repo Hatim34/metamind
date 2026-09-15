@@ -10,6 +10,18 @@ export interface PublicationCardLabels {
   delete: string;
   processing: string;
   retry: string;
+  stepImported: string;
+  stepExtraction: string;
+  stepToValidate: string;
+  stepPublished: string;
+  confirmDelete: string;
+  confirm: string;
+  cancel: string;
+}
+
+interface WorkflowStep {
+  label: string;
+  state: 'done' | 'current' | 'todo';
 }
 
 @Component({
@@ -33,6 +45,7 @@ export class PublicationCardComponent implements OnChanges, OnDestroy {
   @Output() retry = new EventEmitter<Publication>();
 
   coverUrl: string | null = null;
+  confirmingDelete = false;
   private objectUrl: string | null = null;
   private loadedFor: number | null = null;
 
@@ -41,11 +54,46 @@ export class PublicationCardComponent implements OnChanges, OnDestroy {
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['publication'] && this.publication?.id !== this.loadedFor) {
       this.loadCover();
+      this.confirmingDelete = false;
     }
   }
 
   ngOnDestroy(): void {
     this.revoke();
+  }
+
+  /** Le document a-t-il deja recu des metadonnees enrichies (extraction faite) ? */
+  get isEnriched(): boolean {
+    return !!(this.publication?.summary && this.publication.summary.trim().length > 0)
+      || (this.publication?.keywords?.length ?? 0) > 0;
+  }
+
+  /** Pipeline visuel : Importe, Extraction IA, A valider, Publie. */
+  get steps(): WorkflowStep[] {
+    const order = ['EN_ATTENTE', 'EXTRACTION', 'A_VALIDER', 'PUBLIE'];
+    const current = Math.max(0, order.indexOf(this.publication.status));
+    return [
+      this.labels.stepImported,
+      this.labels.stepExtraction,
+      this.labels.stepToValidate,
+      this.labels.stepPublished
+    ].map((label, index) => ({
+      label,
+      state: index < current ? 'done' : index === current ? 'current' : 'todo'
+    }));
+  }
+
+  askDelete(): void {
+    this.confirmingDelete = true;
+  }
+
+  cancelDelete(): void {
+    this.confirmingDelete = false;
+  }
+
+  confirmDelete(): void {
+    this.confirmingDelete = false;
+    this.remove.emit(this.publication);
   }
 
   private loadCover(): void {

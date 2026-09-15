@@ -101,6 +101,23 @@ public class MetadataService {
 		return toResponse(metadata);
 	}
 
+	@Transactional
+	public MetadataResponse rejectMetadata(long documentId, MetadataRejectionRequest request, UserEntity user) {
+		DocumentEntity document = findManageableDocument(documentId, user);
+		if (document.getStatus() == DocumentStatus.SUPPRIME) {
+			throw new ApiException(HttpStatus.BAD_REQUEST, "Un document supprime ne peut pas etre rejete.");
+		}
+		String reason = request.reason() == null ? "" : request.reason().trim();
+		if (reason.isBlank()) {
+			throw new ApiException(HttpStatus.BAD_REQUEST, "Le motif du rejet est obligatoire.");
+		}
+		MetadataEntity metadata = metadataRepository.findByDocumentId(document.getId())
+				.orElseThrow(() -> new ApiException(HttpStatus.BAD_REQUEST, "Aucune metadonnee a rejeter."));
+		metadata.reject(user);
+		recordMetadataHistory(document, "rejet", metadata.getStatus().name(), reason, user);
+		return toResponse(metadata);
+	}
+
 	private DocumentEntity findManageableDocument(long documentId, UserEntity user) {
 		DocumentEntity document = documentRepository.findById(documentId)
 				.orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Le document demande est introuvable."));

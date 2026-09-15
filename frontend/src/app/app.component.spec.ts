@@ -317,7 +317,8 @@ describe('AppComponent', () => {
       visibility: 'PUBLIC',
       authors: 'Sarah Lemaire',
       keywords: 'Dublin Core',
-      extractedText: ''
+      extractedText: '',
+      rejectReason: ''
     };
 
     component.validateMetadata();

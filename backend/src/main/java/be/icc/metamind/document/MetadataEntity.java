@@ -150,4 +150,10 @@ public class MetadataEntity {
 		this.validatedBy = validatedBy;
 		this.validatedAt = LocalDateTime.now();
 	}
+
+	public void reject(UserEntity rejectedBy) {
+		this.status = MetadataStatus.REJETE;
+		this.validatedBy = rejectedBy;
+		this.validatedAt = LocalDateTime.now();
+	}
 }

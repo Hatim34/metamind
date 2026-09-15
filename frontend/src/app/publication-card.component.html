@@ -10,17 +10,34 @@
       <p class="doc-summary" *ngIf="publication.summary">{{ publication.summary }}</p>
     </div>
   </div>
+
+  <ol class="doc-pipeline" *ngIf="publication.status !== 'SUPPRIME'" aria-hidden="true">
+    <li *ngFor="let step of steps" [class]="'pipe-' + step.state">
+      <span class="pipe-dot"></span>
+      <span class="pipe-label">{{ step.label }}</span>
+    </li>
+  </ol>
+
   <div class="tags">
     <span class="badge" [class.badge-green]="publication.status === 'PUBLIE'" [class.badge-amber]="publication.status === 'A_VALIDER' || publication.status === 'EXTRACTION'" [class.badge-red]="publication.status === 'SUPPRIME'">{{ publication.status === 'EXTRACTION' ? labels.processing : publication.status }}</span>
     <span>{{ publication.visibility }}</span>
     <span *ngFor="let keyword of publication.keywords">{{ keyword }}</span>
   </div>
-  <div class="publication-actions">
+
+  <div class="publication-actions" *ngIf="!confirmingDelete">
     <button type="button" (click)="consult.emit(publication)">{{ labels.consult }}</button>
-    <button type="button" class="primary" *ngIf="allowExtract" (click)="extract.emit(publication)">{{ labels.extract }}</button>
-    <button type="button" *ngIf="allowEdit" (click)="edit.emit(publication)">{{ labels.edit }}</button>
-    <button type="button" class="danger" *ngIf="allowDelete" (click)="remove.emit(publication)">{{ labels.delete }}</button>
     <button type="button" *ngIf="allowRetry" (click)="retry.emit(publication)">{{ labels.retry }}</button>
+    <button type="button" class="primary" *ngIf="allowExtract && !isEnriched" (click)="extract.emit(publication)">{{ labels.extract }}</button>
+    <button type="button" class="primary" *ngIf="allowEdit && isEnriched" (click)="edit.emit(publication)">{{ labels.edit }}</button>
+    <button type="button" *ngIf="allowExtract && isEnriched" (click)="extract.emit(publication)">{{ labels.extract }}</button>
+    <button type="button" class="danger" *ngIf="allowDelete" (click)="askDelete()">{{ labels.delete }}</button>
   </div>
+
+  <div class="publication-actions delete-confirm" *ngIf="confirmingDelete">
+    <span class="confirm-text">{{ labels.confirmDelete }}</span>
+    <button type="button" class="danger" (click)="confirmDelete()">{{ labels.confirm }}</button>
+    <button type="button" (click)="cancelDelete()">{{ labels.cancel }}</button>
+  </div>
+
   <ng-content></ng-content>
 </article>
