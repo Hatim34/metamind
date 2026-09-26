@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, HostListener, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { Meta, Title } from '@angular/platform-browser';
 
 import { ApiService, AuditLog, AuthResponse, CreditMovement, CreditPackOption, DashboardStatistics, Institution, MetadataDetails, MetadataExtraction, Publication, PublicationStatus, SearchFilters, UserSession } from './api.service';
 import { NavigationLabels, NavbarComponent } from './navbar.component';
@@ -39,6 +40,7 @@ const translations = {
     movementDescription: 'Description',
     noCreditMovement: 'Aucun mouvement de crédit enregistré.',
     availablePublications: 'Publications disponibles',
+    noPublications: 'Aucune publication ne correspond à votre recherche.',
     loadingCatalogue: 'Chargement du catalogue...',
     addPublication: 'Ajouter une publication',
     consult: 'Consulter',
@@ -107,6 +109,7 @@ const translations = {
     deactivateAccount: 'Désactiver',
     activateAccount: 'Activer',
     accountActivated: 'Le compte est active.',
+    roleUpdated: 'Le rôle a été mis à jour.',
     legalCenter: 'Informations legales',
     privacyTitle: 'Politique de confidentialite',
     legalNoticeTitle: 'Mentions legales',
@@ -170,7 +173,7 @@ const translations = {
     invalidForm: 'Veuillez compléter correctement les champs obligatoires.',
     sending: 'Envoi en cours...',
     publicationAdded: 'Publication ajoutée au catalogue.',
-    fileTooLarge: 'Fichier trop volumineux (128 Mo maximum).',
+    fileTooLarge: 'Fichier trop volumineux (50 Mo maximum).',
     imageTooLarge: 'Image trop volumineuse (5 Mo maximum).',
     unsupportedFileType: 'Format non pris en charge. Formats acceptés : PDF, DOCX, TXT.',
     unsupportedImageType: 'Image non prise en charge. Formats acceptés : PNG, JPG, WEBP.',
@@ -210,6 +213,7 @@ const translations = {
     movementDescription: 'Beschrijving',
     noCreditMovement: 'Geen creditbeweging geregistreerd.',
     availablePublications: 'Beschikbare publicaties',
+    noPublications: 'Geen publicatie komt overeen met uw zoekopdracht.',
     loadingCatalogue: 'Catalogus wordt geladen...',
     addPublication: 'Een publicatie toevoegen',
     consult: 'Bekijken',
@@ -278,6 +282,7 @@ const translations = {
     deactivateAccount: 'Deactiveren',
     activateAccount: 'Activeren',
     accountActivated: 'Het account is geactiveerd.',
+    roleUpdated: 'De rol is bijgewerkt.',
     legalCenter: 'Juridische informatie',
     privacyTitle: 'Privacybeleid',
     legalNoticeTitle: 'Wettelijke vermeldingen',
@@ -341,7 +346,7 @@ const translations = {
     invalidForm: 'Vul de verplichte velden correct in.',
     sending: 'Bezig met verzenden...',
     publicationAdded: 'Publicatie toegevoegd aan de catalogus.',
-    fileTooLarge: 'Bestand te groot (max. 128 MB).',
+    fileTooLarge: 'Bestand te groot (max. 50 MB).',
     imageTooLarge: 'Afbeelding te groot (max. 5 MB).',
     unsupportedFileType: 'Formaat niet ondersteund. Toegestaan: PDF, DOCX, TXT.',
     unsupportedImageType: 'Afbeelding niet ondersteund. Toegestaan: PNG, JPG, WEBP.',
@@ -381,6 +386,7 @@ const translations = {
     movementDescription: 'Description',
     noCreditMovement: 'No credit movement recorded.',
     availablePublications: 'Available publications',
+    noPublications: 'No publication matches your search.',
     loadingCatalogue: 'Loading catalogue...',
     addPublication: 'Add a publication',
     consult: 'View',
@@ -449,6 +455,7 @@ const translations = {
     deactivateAccount: 'Deactivate',
     activateAccount: 'Activate',
     accountActivated: 'The account has been activated.',
+    roleUpdated: 'The role has been updated.',
     legalCenter: 'Legal information',
     privacyTitle: 'Privacy policy',
     legalNoticeTitle: 'Legal notice',
@@ -512,7 +519,7 @@ const translations = {
     invalidForm: 'Please complete the required fields correctly.',
     sending: 'Sending...',
     publicationAdded: 'Publication added to the catalogue.',
-    fileTooLarge: 'File too large (128 MB maximum).',
+    fileTooLarge: 'File too large (50 MB maximum).',
     imageTooLarge: 'Image too large (5 MB maximum).',
     unsupportedFileType: 'Unsupported format. Accepted: PDF, DOCX, TXT.',
     unsupportedImageType: 'Unsupported image. Accepted: PNG, JPG, WEBP.',
@@ -636,12 +643,24 @@ export class AppComponent implements OnInit {
   selectedMetadataPublicationId: number | null = null;
   extractingPublicationIds = new Set<number>();
 
-  private readonly maxFileSize = 128 * 1024 * 1024;
+  private readonly maxFileSize = 50 * 1024 * 1024;
   private readonly maxImageSize = 5 * 1024 * 1024;
   private readonly allowedFileExtensions = ['pdf', 'docx', 'txt'];
   private readonly allowedImageTypes = ['image/png', 'image/jpeg', 'image/webp'];
 
-  constructor(private readonly api: ApiService) {}
+  constructor(
+    private readonly api: ApiService,
+    private readonly titleService: Title,
+    private readonly metaService: Meta
+  ) {}
+
+  /** Met a jour le titre de l'onglet et la meta description (SEO on-page, livrable 17). */
+  private updateSeo(title: string, description: string): void {
+    const fullTitle = title ? `${title} · Metamind` : 'Metamind · Dépôt institutionnel de publications';
+    this.titleService.setTitle(fullTitle);
+    const clean = (description || 'Metamind, plateforme d\'extraction de métadonnées par intelligence artificielle pour les dépôts institutionnels.').slice(0, 300);
+    this.metaService.updateTag({ name: 'description', content: clean });
+  }
 
   ngOnInit(): void {
     this.restoreSession();
@@ -652,6 +671,7 @@ export class AppComponent implements OnInit {
     }
     this.loadPublications();
     this.loadCreditPacks();
+    this.updateSeo(this.t(this.pageTitleKey(this.page)), '');
     try {
       window.history.replaceState({ page: this.page }, '', '#/' + this.page);
     } catch {
@@ -708,6 +728,23 @@ export class AppComponent implements OnInit {
       this.loadInstitutions();
       this.loadAdminData();
     }
+    if (page !== 'detail') {
+      this.updateSeo(this.t(this.pageTitleKey(page)), '');
+    }
+  }
+
+  private pageTitleKey(page: Page): TranslationKey {
+    switch (page) {
+      case 'catalogue': return 'catalogue';
+      case 'publication': return 'newPublication';
+      case 'validation': return 'validationQueue';
+      case 'administration': return 'administration';
+      case 'profil': return 'profile';
+      case 'connexion': return 'login';
+      case 'inscription': return 'register';
+      case 'legal': return 'legalCenter';
+      default: return 'catalogue';
+    }
   }
 
   private pushHistory(state: { page: Page; publicationId?: number }): void {
@@ -725,12 +762,14 @@ export class AppComponent implements OnInit {
     if (page === 'detail' && state?.publicationId) {
       if (this.selectedPublication?.id === state.publicationId) {
         this.page = 'detail';
+        this.updateSeo(this.selectedPublication.title, this.selectedPublication.summary || '');
         return;
       }
       this.api.getPublication(state.publicationId).subscribe({
         next: (details) => {
           this.selectedPublication = details;
           this.page = 'detail';
+          this.updateSeo(details.title, details.summary || '');
         },
         error: () => this.applyPage('catalogue')
       });
@@ -861,10 +900,12 @@ export class AppComponent implements OnInit {
     this.selectedPublication = publication;
     this.page = 'detail';
     this.message = '';
+    this.updateSeo(publication.title, publication.summary || `${publication.title}, ${publication.author}`);
     this.pushHistory({ page: 'detail', publicationId: publication.id });
     this.api.getPublication(publication.id).subscribe({
       next: (details) => {
         this.selectedPublication = details;
+        this.updateSeo(details.title, details.summary || `${details.title}, ${details.author}`);
       },
       error: () => {
         this.message = this.t('apiUnavailable');
@@ -1632,6 +1673,24 @@ export class AppComponent implements OnInit {
       },
       error: () => {
         this.message = this.t('statusUpdateFailed');
+      }
+    });
+  }
+
+  changeUserRole(user: UserSession, role: string): void {
+    if (!this.isAdmin || (role !== 'ADMIN' && role !== 'LIBRARIAN') || role === user.role) {
+      return;
+    }
+    const statut: 'EN_ATTENTE' | 'ACTIF' | 'DESACTIVE' =
+      user.status === 'EN_ATTENTE' || user.status === 'DESACTIVE' ? user.status : 'ACTIF';
+    this.api.updateAdminUser(user.id, { role: role as 'LIBRARIAN' | 'ADMIN', statut }).subscribe({
+      next: () => {
+        this.message = this.t('roleUpdated');
+        this.loadAdminData();
+      },
+      error: () => {
+        this.message = this.t('statusUpdateFailed');
+        this.loadAdminData();
       }
     });
   }

@@ -1,0 +1,16 @@
+# Metamind - depot institutionnel
+# Le catalogue public est indexable ; l'espace de gestion et les
+# documents restreints ne le sont pas (cf. livrable 17 - Referencement).
+
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /#/administration
+Disallow: /#/profil
+Disallow: /#/publication
+Disallow: /#/validation
+Disallow: /#/connexion
+Disallow: /#/inscription
+Disallow: /#/password-reset
+
+Sitemap: https://metamind-app.duckdns.org/sitemap.xml

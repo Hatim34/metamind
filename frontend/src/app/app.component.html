@@ -10,6 +10,11 @@
   (signOut)="logout()">
 </app-navbar>
 
+<div class="global-toast" *ngIf="message && page !== 'catalogue' && page !== 'validation'" role="status">
+  <span>{{ message }}</span>
+  <button type="button" class="toast-close" (click)="message = ''" aria-label="Fermer">×</button>
+</div>
+
 <main class="app-shell">
 
   <section class="summary-grid" *ngIf="page === 'catalogue' || page === 'profil'" [attr.aria-label]="t('indicators')">
@@ -107,7 +112,12 @@
       {{ t('extractedMetadataPrefix') }} "{{ extractionResult.title }}" : {{ extractionResult.suggestedKeywords.join(', ') }}.
     </p>
 
-    <div class="publication-list">
+    <div class="empty-state" *ngIf="!loading && publications.length === 0">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="M21 21l-4.3-4.3" /></svg>
+      <p>{{ t('noPublications') }}</p>
+    </div>
+
+    <div class="publication-list" *ngIf="publications.length > 0">
       <app-publication-card
         *ngFor="let publication of publications"
         [class.card-editing]="selectedMetadataPublicationId === publication.id"
@@ -545,7 +555,12 @@
           <tr *ngFor="let user of adminUsers">
             <td>{{ user.firstName }} {{ user.lastName }}</td>
             <td>{{ user.email }}</td>
-            <td>{{ user.role }}</td>
+            <td>
+              <select [ngModel]="user.role" (ngModelChange)="changeUserRole(user, $event)" [name]="'role' + user.id" aria-label="Role">
+                <option value="LIBRARIAN">LIBRARIAN</option>
+                <option value="ADMIN">ADMIN</option>
+              </select>
+            </td>
             <td>{{ user.institution }}</td>
             <td>{{ user.status }}</td>
             <td>

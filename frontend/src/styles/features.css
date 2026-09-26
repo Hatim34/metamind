@@ -3,6 +3,66 @@
    filtres de recherche, fiche detail d'une publication
    ============================================================ */
 
+/* --- Etat vide (catalogue sans resultat) --- */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.8rem;
+  padding: 3rem 1rem;
+  color: var(--ink-faint);
+  text-align: center;
+}
+
+.empty-state svg {
+  width: 40px;
+  height: 40px;
+  opacity: 0.6;
+}
+
+.empty-state p {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+/* --- Notification globale (visible sur toutes les pages) --- */
+.global-toast {
+  position: sticky;
+  top: 64px;
+  z-index: 20;
+  max-width: var(--maxw);
+  margin: 0.8rem auto 0;
+  padding: 0.7rem 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  border: 1px solid var(--line-strong);
+  border-left: 3px solid var(--teal);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 0.9rem;
+  box-shadow: 0 4px 14px rgba(24, 42, 43, 0.08);
+}
+
+.global-toast span {
+  flex: 1;
+}
+
+.toast-close {
+  padding: 0 0.4rem;
+  border: 0;
+  background: transparent;
+  color: var(--ink-soft);
+  font-size: 1.3rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.toast-close:hover {
+  color: var(--ink);
+}
+
 /* --- Controles de la file de validation (filtre + actualiser) --- */
 .queue-controls {
   display: flex;
