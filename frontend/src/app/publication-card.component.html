@@ -6,7 +6,7 @@
     </div>
     <div class="doc-text">
       <h3>{{ publication.title }}</h3>
-      <p>{{ publication.author }} · {{ publication.institution }} · {{ publication.publicationDate || publication.year }}</p>
+      <p>{{ metaLine }}</p>
       <p class="doc-summary" *ngIf="publication.summary">{{ publication.summary }}</p>
     </div>
   </div>

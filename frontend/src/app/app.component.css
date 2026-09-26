@@ -22,12 +22,17 @@
 }
 
 .metadata-source pre {
-  max-height: 30rem;
+  max-height: 18rem;
   margin: 0;
+  padding: 0.6rem 0.8rem;
   overflow: auto;
   white-space: pre-wrap;
+  word-break: break-word;
   color: var(--ink-soft);
-  font: 0.85rem / 1.6 var(--f-mono, monospace);
+  background: var(--surface-2, #f5f7f8);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  font: 0.8rem / 1.55 var(--f-mono, monospace);
 }
 
 @media (max-width: 860px) {

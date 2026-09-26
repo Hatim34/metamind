@@ -68,6 +68,24 @@ export class PublicationCardComponent implements OnChanges, OnDestroy {
       || (this.publication?.keywords?.length ?? 0) > 0;
   }
 
+  /** Ligne "Auteur · Institution · Annee" sans separateurs vides ni annee 0. */
+  get metaLine(): string {
+    const parts: string[] = [];
+    if (this.publication?.author && this.publication.author.trim().length > 0) {
+      parts.push(this.publication.author.trim());
+    }
+    if (this.publication?.institution) {
+      parts.push(this.publication.institution);
+    }
+    const date = this.publication?.publicationDate;
+    if (date) {
+      parts.push(date);
+    } else if (this.publication?.year && this.publication.year > 0) {
+      parts.push(String(this.publication.year));
+    }
+    return parts.join(' · ');
+  }
+
   /** Pipeline visuel : Importe, Extraction IA, A valider, Publie. */
   get steps(): WorkflowStep[] {
     const order = ['EN_ATTENTE', 'EXTRACTION', 'A_VALIDER', 'PUBLIE'];

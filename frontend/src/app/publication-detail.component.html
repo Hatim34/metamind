@@ -11,13 +11,13 @@
     <div class="detail-content">
       <p class="eyebrow">{{ labels.publicationDetails }}</p>
       <h2>{{ publication.title }}</h2>
-      <p class="detail-meta">{{ publication.author }} · {{ publication.institution }}</p>
+      <p class="detail-meta">{{ publication.author ? publication.author + ' · ' : '' }}{{ publication.institution }}</p>
       <p class="detail-summary">{{ publication.summary || labels.noSummary }}</p>
     </div>
   </div>
 
   <dl class="detail-grid">
-    <div><dt>{{ labels.publicationDate }}</dt><dd>{{ publication.publicationDate || publication.year }}</dd></div>
+    <div><dt>{{ labels.publicationDate }}</dt><dd>{{ publication.publicationDate || (publication.year > 0 ? publication.year : '-') }}</dd></div>
     <div><dt>{{ labels.language }}</dt><dd>{{ publication.language || '-' }}</dd></div>
     <div><dt>{{ labels.documentType }}</dt><dd>{{ publication.documentType || '-' }}</dd></div>
     <div><dt>{{ labels.classification }}</dt><dd>{{ publication.classification || '-' }}</dd></div>
