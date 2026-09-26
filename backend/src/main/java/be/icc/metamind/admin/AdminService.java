@@ -6,6 +6,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import be.icc.metamind.api.ApiException;
+import be.icc.metamind.api.ClientIpResolver;
 import be.icc.metamind.api.PageResponse;
 import be.icc.metamind.document.AuditLogEntity;
 import be.icc.metamind.document.AuditLogRepository;
@@ -83,7 +84,7 @@ public class AdminService {
 				"users",
 				id,
 				"Role ou statut modifie",
-				"system"
+				ClientIpResolver.current()
 		));
 		return UserResponse.from(user);
 	}
@@ -100,7 +101,7 @@ public class AdminService {
 		Map<String, String> values = configurationRepository.findAll().stream()
 				.collect(Collectors.toMap(item -> item.getCle(), item -> item.getValeur() == null ? "" : item.getValeur()));
 		values.putIfAbsent("modele_llm", "gemini-3.5-flash-lite");
-		values.putIfAbsent("taille_max_upload_mo", "128");
+		values.putIfAbsent("taille_max_upload_mo", "50");
 		values.putIfAbsent("prix_credit_eur", "0.50");
 		return values;
 	}
@@ -117,7 +118,7 @@ public class AdminService {
 				"configurations",
 				null,
 				"Parametres modifies : " + String.join(", ", values.keySet()),
-				"system"
+				ClientIpResolver.current()
 		));
 		return readConfiguration();
 	}

@@ -15,6 +15,7 @@ import com.stripe.net.Webhook;
 import com.stripe.param.checkout.SessionCreateParams;
 
 import be.icc.metamind.api.ApiException;
+import be.icc.metamind.api.ClientIpResolver;
 import be.icc.metamind.document.AuditLogEntity;
 import be.icc.metamind.document.AuditLogRepository;
 import be.icc.metamind.document.CreditPackEntity;
@@ -253,7 +254,7 @@ public class CreditService {
 				"institutions",
 				institutionId,
 				normalReason(request.reason()),
-				"system"
+				ClientIpResolver.current()
 		));
 		return toResponse(institution);
 	}

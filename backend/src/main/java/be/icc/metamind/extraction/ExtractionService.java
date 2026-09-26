@@ -169,8 +169,8 @@ public class ExtractionService {
 		if (documentIds.isEmpty()) {
 			throw new ApiException(HttpStatus.BAD_REQUEST, "La liste des documents est invalide.");
 		}
-		if (documentIds.size() > 50) {
-			throw new ApiException(HttpStatus.BAD_REQUEST, "Le traitement groupe est limite a 50 documents.");
+		if (documentIds.size() > 10) {
+			throw new ApiException(HttpStatus.BAD_REQUEST, "Le traitement groupe est limite a 10 documents.");
 		}
 		return documentIds;
 	}

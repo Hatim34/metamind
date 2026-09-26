@@ -40,7 +40,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 @Service
 public class DocumentUploadService {
-	private static final long MAX_FILE_SIZE = 128L * 1024L * 1024L;
+	private static final long MAX_FILE_SIZE = 50L * 1024L * 1024L;
 	private static final long MAX_IMAGE_SIZE = 5L * 1024L * 1024L;
 	private static final Set<String> ALLOWED_EXTENSIONS = Set.of("pdf", "docx", "txt");
 	private static final Set<String> ALLOWED_IMAGE_EXTENSIONS = Set.of("png", "jpg", "jpeg", "webp");
@@ -136,7 +136,7 @@ public class DocumentUploadService {
 			throw new ApiException(HttpStatus.BAD_REQUEST, "Le fichier est obligatoire.");
 		}
 		if (file.getSize() > MAX_FILE_SIZE) {
-			throw new ApiException(HttpStatus.BAD_REQUEST, "Le fichier depasse la taille maximale de 128 MB.");
+			throw new ApiException(HttpStatus.BAD_REQUEST, "Le fichier depasse la taille maximale de 50 MB.");
 		}
 		String extension = extension(file.getOriginalFilename());
 		if (!ALLOWED_EXTENSIONS.contains(extension)) {

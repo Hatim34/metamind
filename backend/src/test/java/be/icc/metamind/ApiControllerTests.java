@@ -651,7 +651,7 @@ class ApiControllerTests {
 						.header("Authorization", adminBearerToken()))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.prix_credit_eur", is("0.50")))
-				.andExpect(jsonPath("$.taille_max_upload_mo", is("128")));
+				.andExpect(jsonPath("$.taille_max_upload_mo", is("50")));
 
 		String body = """
 				{

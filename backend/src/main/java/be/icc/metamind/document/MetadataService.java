@@ -6,6 +6,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import be.icc.metamind.api.ApiException;
+import be.icc.metamind.api.ClientIpResolver;
 import be.icc.metamind.user.UserEntity;
 import be.icc.metamind.user.UserRole;
 import be.icc.metamind.opendata.DspacePublisher;
@@ -169,7 +170,7 @@ public class MetadataService {
 				"metadonnees",
 				document.getId(),
 				field + "\n" + previous + "\n" + current,
-				"system"
+				ClientIpResolver.current()
 		));
 	}
 
