@@ -476,7 +476,8 @@ class ApiControllerTests {
 		String body = """
 				{
 				  "pack_id": 1,
-				  "cgv_acceptees": true
+				  "cgv_acceptees": true,
+				  "renonciation_retractation_acceptee": true
 				}
 				""";
 
@@ -492,7 +493,7 @@ class ApiControllerTests {
 		mockMvc.perform(post("/api/v1/credits")
 						.header("Authorization", bearerToken())
 						.contentType(MediaType.APPLICATION_JSON)
-					.content("{\"pack_id\":2,\"cgv_acceptees\":true}"))
+					.content("{\"pack_id\":2,\"cgv_acceptees\":true,\"renonciation_retractation_acceptee\":true}"))
 				.andExpect(status().isServiceUnavailable());
 	}
 
@@ -547,7 +548,7 @@ class ApiControllerTests {
 		mockMvc.perform(post("/api/v1/credits")
 					.header("Authorization", bearerToken())
 					.contentType(MediaType.APPLICATION_JSON)
-					.content("{\"pack_id\":2,\"cgv_acceptees\":true}"))
+					.content("{\"pack_id\":2,\"cgv_acceptees\":true,\"renonciation_retractation_acceptee\":true}"))
 				.andExpect(status().isForbidden());
 	}
 

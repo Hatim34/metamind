@@ -1,6 +1,7 @@
 package be.icc.metamind.credit;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -43,6 +44,7 @@ public class CreditService {
 	private final CreditMovementRepository movementRepository;
 	private final CreditPackRepository packRepository;
 	private final AuditLogRepository auditLogRepository;
+	private final PaymentConsentRepository paymentConsentRepository;
 	private final String publicUrl;
 	private final String stripeSecretKey;
 	private final String stripeWebhookSecret;
@@ -53,6 +55,7 @@ public class CreditService {
 			CreditMovementRepository movementRepository,
 			CreditPackRepository packRepository,
 			AuditLogRepository auditLogRepository,
+			PaymentConsentRepository paymentConsentRepository,
 		@Value("${metamind.public-url:https://metamind-app.duckdns.org}") String publicUrl,
 		@Value("${metamind.stripe.secret-key:}") String stripeSecretKey,
 		@Value("${metamind.stripe.webhook-secret:}") String stripeWebhookSecret,
@@ -63,6 +66,7 @@ public class CreditService {
 		this.movementRepository = movementRepository;
 		this.packRepository = packRepository;
 		this.auditLogRepository = auditLogRepository;
+		this.paymentConsentRepository = paymentConsentRepository;
 		this.publicUrl = publicUrl;
 		this.stripeSecretKey = stripeSecretKey == null ? "" : stripeSecretKey.trim();
 		this.stripeWebhookSecret = stripeWebhookSecret == null ? "" : stripeWebhookSecret.trim();
@@ -100,6 +104,7 @@ public class CreditService {
 			throw new ApiException(HttpStatus.FORBIDDEN, "Les achats de credits sont suspendus pour cette institution.");
 		}
 		CreditPackOptionResponse option = findPackOption(request.packId());
+		savePaymentConsents(user);
 		String reference = "pay_" + UUID.randomUUID().toString().replace("-", "");
 		CreditPackEntity pack = packRepository.save(new CreditPackEntity(
 				user.getInstitution(),
@@ -110,6 +115,13 @@ public class CreditService {
 		));
 		String checkoutUrl = createCheckoutUrl(option, reference, pack.getId());
 		return new CreditCheckoutResponse(checkoutUrl, reference);
+	}
+
+	private void savePaymentConsents(UserEntity user) {
+		Instant acceptedAt = Instant.now();
+		String ip = ClientIpResolver.current();
+		paymentConsentRepository.save(new PaymentConsentEntity(user, ConsentType.CGV, "2026-01", acceptedAt, ip));
+		paymentConsentRepository.save(new PaymentConsentEntity(user, ConsentType.RENONCIATION_RETRACTATION, "2026-01", acceptedAt, ip));
 	}
 
 	@Transactional

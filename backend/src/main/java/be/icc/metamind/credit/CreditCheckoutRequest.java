@@ -11,6 +11,10 @@ public record CreditCheckoutRequest(
 
 		@JsonProperty("cgv_acceptees")
 		@AssertTrue(message = "Les conditions generales doivent etre acceptees.")
-		boolean termsAccepted
+		boolean termsAccepted,
+
+		@JsonProperty("renonciation_retractation_acceptee")
+		@AssertTrue(message = "La demande d'execution immediate doit etre acceptee.")
+		boolean withdrawalWaiverAccepted
 ) {
 }

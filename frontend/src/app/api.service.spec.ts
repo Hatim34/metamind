@@ -115,26 +115,19 @@ describe('ApiService', () => {
   it('achete des credits via l API', () => {
     service.setToken('token-test');
 
-    service.startCreditCheckout(2).subscribe((response) => {
+    service.startCreditCheckout(2, true, true).subscribe((response) => {
       expect(response.reference).toBe('pay_123');
     });
 
     const request = httpMock.expectOne('/api/v1/credits');
     expect(request.request.method).toBe('POST');
-    expect(request.request.body).toEqual({ pack_id: 2, cgv_acceptees: true });
+    expect(request.request.body).toEqual({
+      pack_id: 2,
+      cgv_acceptees: true,
+      renonciation_retractation_acceptee: true
+    });
     expect(request.request.headers.get('Authorization')).toBe('Bearer token-test');
     request.flush({ checkout_url: '/paiement/confirmation', reference: 'pay_123' });
-  });
-
-  it('confirme un paiement de credits', () => {
-    service.confirmCreditPayment('pay_123').subscribe((response) => {
-      expect(response.balance).toBe(100);
-    });
-
-    const request = httpMock.expectOne('/api/v1/webhooks/stripe');
-    expect(request.request.method).toBe('POST');
-    expect(request.request.body).toEqual({ reference: 'pay_123', type: 'checkout.session.completed' });
-    request.flush({ institution_id: 1, institution: 'Institution A', solde_credits: 100 });
   });
 
   it('charge l historique des credits via l API', () => {

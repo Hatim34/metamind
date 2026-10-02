@@ -257,10 +257,11 @@ paths:
           application/json:
             schema:
               type: object
-              required: [pack_id, cgv_acceptees]
+              required: [pack_id, cgv_acceptees, renonciation_retractation_acceptee]
               properties:
                 pack_id: { type: integer, example: 2 }
-                cgv_acceptees: { type: boolean, example: true, description: Acceptation des CGV et renonciation au droit de retractation }
+                cgv_acceptees: { type: boolean, example: true, description: Acceptation explicite des CGV }
+                renonciation_retractation_acceptee: { type: boolean, example: true, description: Demande d execution immediate et renonciation au droit de retractation }
       responses:
         '200':
           description: Reference de paiement creee

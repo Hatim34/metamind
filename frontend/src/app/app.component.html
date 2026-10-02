@@ -446,8 +446,16 @@
 
     <div *ngIf="session" class="credit-history">
       <h3>{{ t('availablePacks') }}</h3>
+      <label class="checkbox-row">
+        <input type="checkbox" name="paymentTermsAccepted" [(ngModel)]="paymentTermsAccepted" />
+        {{ t('paymentTerms') }}
+      </label>
+      <label class="checkbox-row">
+        <input type="checkbox" name="paymentWithdrawalWaiverAccepted" [(ngModel)]="paymentWithdrawalWaiverAccepted" />
+        {{ t('paymentWithdrawalWaiver') }}
+      </label>
       <div class="pack-grid">
-        <button type="button" *ngFor="let pack of creditPacks" (click)="purchaseCredits(pack.id)">
+        <button type="button" *ngFor="let pack of creditPacks" (click)="purchaseCredits(pack.id)" [disabled]="!paymentTermsAccepted || !paymentWithdrawalWaiverAccepted">
           <strong>{{ pack.credits }}</strong>
           <span>{{ pack.amount | number:'1.2-2' }} {{ pack.currency }}</span>
         </button>

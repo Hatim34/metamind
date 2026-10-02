@@ -45,7 +45,7 @@ class CreditServiceTests {
 	void freePackIsNotAvailable() {
 		UserEntity user = saveUser();
 
-		assertThatThrownBy(() -> creditService.startCheckout(user, new CreditCheckoutRequest(1, true)))
+		assertThatThrownBy(() -> creditService.startCheckout(user, new CreditCheckoutRequest(1, true, true)))
 				.isInstanceOf(ApiException.class)
 				.hasMessage("Le pack de credits est introuvable.");
 	}
@@ -81,7 +81,7 @@ class CreditServiceTests {
 	void unknownPackIsRejected() {
 		UserEntity user = saveUser();
 
-		assertThatThrownBy(() -> creditService.startCheckout(user, new CreditCheckoutRequest(99, true)))
+		assertThatThrownBy(() -> creditService.startCheckout(user, new CreditCheckoutRequest(99, true, true)))
 				.isInstanceOf(ApiException.class)
 				.hasMessage("Le pack de credits est introuvable.");
 	}
@@ -90,7 +90,7 @@ class CreditServiceTests {
 	void paidCheckoutRequiresStripeConfiguration() {
 		UserEntity user = saveUser();
 
-		assertThatThrownBy(() -> creditService.startCheckout(user, new CreditCheckoutRequest(2, true)))
+		assertThatThrownBy(() -> creditService.startCheckout(user, new CreditCheckoutRequest(2, true, true)))
 				.isInstanceOf(ApiException.class)
 				.hasMessage("Le paiement Stripe n'est pas configure.");
 		assertThat(creditService.getBalance(user.getId()).balance()).isZero();

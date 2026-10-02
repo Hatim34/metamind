@@ -89,6 +89,8 @@ const translations = {
     role: 'Rôle',
     buyCredits: 'Acheter 10 crédits',
     availablePacks: 'Packs disponibles',
+    paymentTerms: 'J accepte les conditions generales de vente.',
+    paymentWithdrawalWaiver: 'Je demande l execution immediate du service numerique et renonce au droit de retractation.',
     checkoutStarted: 'Paiement confirme, le solde est mis a jour.',
     importFile: 'Importer un document',
     selectedFile: 'Fichier sélectionné',
@@ -158,6 +160,7 @@ const translations = {
     registrationPending: 'Votre compte a ete cree. Il doit etre valide par un administrateur avant votre premiere connexion.',
     createPublicationFailed: 'Creation de la publication impossible avec les donnees envoyees.',
     purchaseFailed: 'Achat de credits impossible.',
+    paymentConsentRequired: 'Acceptez les CGV et la demande d execution immediate avant de continuer.',
     extractionFailed: 'Extraction impossible. Verifiez le solde de credits.',
     publicationPublished: 'La publication est publiee.',
     metadataLoaded: 'Les métadonnées sont prêtes à être corrigées.',
@@ -262,6 +265,8 @@ const translations = {
     role: 'Rol',
     buyCredits: '10 credits kopen',
     availablePacks: 'Beschikbare pakketten',
+    paymentTerms: 'Ik aanvaard de algemene verkoopvoorwaarden.',
+    paymentWithdrawalWaiver: 'Ik vraag de onmiddellijke uitvoering van de digitale dienst en doe afstand van het herroepingsrecht.',
     checkoutStarted: 'Betaling bevestigd, het saldo is bijgewerkt.',
     importFile: 'Document importeren',
     selectedFile: 'Geselecteerd bestand',
@@ -331,6 +336,7 @@ const translations = {
     registrationPending: 'Uw account is aangemaakt. Het moet door een beheerder worden gevalideerd voor uw eerste aanmelding.',
     createPublicationFailed: 'Publicatie aanmaken is onmogelijk met de verzonden gegevens.',
     purchaseFailed: 'Credits kopen is onmogelijk.',
+    paymentConsentRequired: 'Accepteer de voorwaarden en de onmiddellijke uitvoering om verder te gaan.',
     extractionFailed: 'Extractie is onmogelijk. Controleer het creditsaldo.',
     publicationPublished: 'De publicatie is gepubliceerd.',
     metadataLoaded: 'De metadata is klaar om gecorrigeerd te worden.',
@@ -435,6 +441,8 @@ const translations = {
     role: 'Role',
     buyCredits: 'Buy 10 credits',
     availablePacks: 'Available packs',
+    paymentTerms: 'I accept the terms and conditions of sale.',
+    paymentWithdrawalWaiver: 'I request immediate execution of the digital service and waive the right of withdrawal.',
     checkoutStarted: 'Payment confirmed, the balance is updated.',
     importFile: 'Import a document',
     selectedFile: 'Selected file',
@@ -504,6 +512,7 @@ const translations = {
     registrationPending: 'Your account has been created. It must be validated by an administrator before your first sign-in.',
     createPublicationFailed: 'Publication creation failed with the submitted data.',
     purchaseFailed: 'Credit purchase failed.',
+    paymentConsentRequired: 'Accept the terms and immediate execution request before continuing.',
     extractionFailed: 'Extraction failed. Check the credit balance.',
     publicationPublished: 'The publication is published.',
     metadataLoaded: 'The metadata is ready for review.',
@@ -634,6 +643,8 @@ export class AppComponent implements OnInit {
   creditPacks: CreditPackOption[] = [];
   creditBalance: number | null = null;
   creditMovements: CreditMovement[] = [];
+  paymentTermsAccepted = false;
+  paymentWithdrawalWaiverAccepted = false;
   importing = false;
   publicationSubmitting = false;
   publicationFeedback: { type: 'success' | 'error'; text: string } | null = null;
@@ -1266,7 +1277,12 @@ export class AppComponent implements OnInit {
       return;
     }
 
-    this.api.startCreditCheckout(packId).subscribe({
+    if (!this.paymentTermsAccepted || !this.paymentWithdrawalWaiverAccepted) {
+      this.message = this.t('paymentConsentRequired');
+      return;
+    }
+
+    this.api.startCreditCheckout(packId, this.paymentTermsAccepted, this.paymentWithdrawalWaiverAccepted).subscribe({
       next: (checkout) => {
         window.location.assign(checkout.checkout_url);
       },

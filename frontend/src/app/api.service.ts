@@ -346,13 +346,12 @@ export class ApiService {
       .pipe(map((response) => response.map((item) => this.toCreditPack(item))));
   }
 
-  startCreditCheckout(packId: number): Observable<CreditCheckout> {
-    return this.http.post<CreditCheckout>(`${this.baseUrl}/credits`, { pack_id: packId, cgv_acceptees: true }, { headers: this.authHeaders() });
-  }
-
-  confirmCreditPayment(reference: string): Observable<CreditBalance> {
-    return this.http.post<unknown>(`${this.baseUrl}/webhooks/stripe`, { reference, type: 'checkout.session.completed' })
-      .pipe(map((response) => this.toCreditBalance(response)));
+  startCreditCheckout(packId: number, termsAccepted: boolean, withdrawalWaiverAccepted: boolean): Observable<CreditCheckout> {
+    return this.http.post<CreditCheckout>(`${this.baseUrl}/credits`, {
+      pack_id: packId,
+      cgv_acceptees: termsAccepted,
+      renonciation_retractation_acceptee: withdrawalWaiverAccepted
+    }, { headers: this.authHeaders() });
   }
 
   getCreditBalance(userId: number): Observable<CreditBalance> {
