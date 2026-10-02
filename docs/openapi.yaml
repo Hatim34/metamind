@@ -247,10 +247,8 @@ paths:
       tags: [Credits]
       summary: Demarrer l'achat d'un pack de credits
       description: >
-        Cree une reference de paiement et retourne une URL Checkout. Si
-        STRIPE_SECRET_KEY est configuree, l'URL provient de Stripe Checkout.
-        Sans cle Stripe, l'application conserve un parcours local pour les
-        tests et la validation fonctionnelle.
+        Cree une reference de paiement et retourne une URL Stripe Checkout.
+        Le solde est credite uniquement apres confirmation d'un webhook signe.
       requestBody:
         required: true
         content:
@@ -274,6 +272,19 @@ paths:
                   reference: { type: string, example: pay_abc123 }
         '400': { description: CGV non acceptees, $ref: '#/components/responses/Error' }
 
+  /credits/checkout/{reference}:
+    get:
+      tags: [Credits]
+      summary: Consulter le statut d'un paiement
+      parameters:
+        - name: reference
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: Statut du paiement }
+        '404': { description: Paiement introuvable, $ref: '#/components/responses/Error' }
+
   /credits/packs:
     get:
       tags: [Credits]
@@ -294,9 +305,7 @@ paths:
       summary: Confirmer un paiement de credits
       security: []
       description: >
-        Traite l'evenement Stripe checkout.session.completed. Si
-        STRIPE_WEBHOOK_SECRET est configure, l'en-tete Stripe-Signature est
-        obligatoire et verifie avant credit du solde institutionnel.
+        Traite les evenements Stripe de paiement avec une signature valide.
       parameters:
         - name: Stripe-Signature
           in: header

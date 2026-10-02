@@ -398,8 +398,8 @@ paths:
       summary: Demarrer l'achat d'un pack de credits
       description: >
         Cree une reference de paiement et retourne une URL Checkout Stripe pour
-        les packs payants. Le pack decouverte gratuit peut etre confirme dans
-        l'application. Une cle Stripe est obligatoire pour les packs payants.
+        les packs payants. Le solde est credite uniquement apres confirmation
+        d'un webhook Stripe signe.
       requestBody:
         required: true
         content:
@@ -424,6 +424,19 @@ paths:
         '400': { description: CGV non acceptees, $ref: '#/components/responses/Error' }
         '503': { description: Paiement Stripe non configure, $ref: '#/components/responses/Error' }
 
+  /credits/checkout/{reference}:
+    get:
+      tags: [Credits]
+      summary: Consulter le statut d'un paiement
+      parameters:
+        - name: reference
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: Statut du paiement }
+        '404': { description: Paiement introuvable, $ref: '#/components/responses/Error' }
+
   /credits/packs:
     get:
       tags: [Credits]
@@ -444,9 +457,7 @@ paths:
       summary: Confirmer un paiement de credits
       security: []
       description: >
-        Traite l'evenement Stripe checkout.session.completed. Si
-        STRIPE_WEBHOOK_SECRET est configure, l'en-tete Stripe-Signature est
-        obligatoire et verifie avant credit du solde institutionnel.
+        Traite les evenements Stripe de paiement avec une signature valide.
       parameters:
         - name: Stripe-Signature
           in: header

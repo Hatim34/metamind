@@ -113,8 +113,18 @@ public class CreditService {
 				reference,
 				CreditPackStatus.EN_ATTENTE
 		));
-		String checkoutUrl = createCheckoutUrl(option, reference, pack.getId());
+		String checkoutUrl = createCheckoutUrl(user, option, reference, pack.getId());
 		return new CreditCheckoutResponse(checkoutUrl, reference);
+	}
+
+	@Transactional(readOnly = true)
+	public CreditCheckoutStatusResponse getCheckoutStatus(UserEntity user, String reference) {
+		CreditPackEntity pack = packRepository.findByPaymentReference(reference)
+				.orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "La reference de paiement est introuvable."));
+		if (pack.getInstitution().getId() == null || !pack.getInstitution().getId().equals(user.getInstitution().getId())) {
+			throw new ApiException(HttpStatus.NOT_FOUND, "La reference de paiement est introuvable.");
+		}
+		return new CreditCheckoutStatusResponse(reference, pack.getStatus().name(), pack.getInstitution().getCreditBalance());
 	}
 
 	private void savePaymentConsents(UserEntity user) {
@@ -149,15 +159,23 @@ public class CreditService {
 		return toResponse(pack.getInstitution());
 	}
 
-	private String createCheckoutUrl(CreditPackOptionResponse option, String reference, long packId) {
+	private String createCheckoutUrl(UserEntity user, CreditPackOptionResponse option, String reference, long packId) {
 		if (!isStripeEnabled()) {
 			throw new ApiException(HttpStatus.SERVICE_UNAVAILABLE, "Le paiement Stripe n'est pas configure.");
 		}
 		Stripe.apiKey = stripeSecretKey;
 		try {
+			SessionCreateParams.ConsentCollection consentCollection = SessionCreateParams.ConsentCollection.builder()
+					.setTermsOfService(SessionCreateParams.ConsentCollection.TermsOfService.REQUIRED)
+					.build();
 			SessionCreateParams params = SessionCreateParams.builder()
 					.setMode(SessionCreateParams.Mode.PAYMENT)
 					.setClientReferenceId(reference)
+					.setCustomerEmail(user.getEmail())
+					.setConsentCollection(consentCollection)
+					.putMetadata("institutionId", user.getInstitution().getId().toString())
+					.putMetadata("packId", Long.toString(packId))
+					.putMetadata("paymentReference", reference)
 					.setSuccessUrl(publicUrl + "/paiement/succes?session_id={CHECKOUT_SESSION_ID}")
 					.setCancelUrl(publicUrl + "/credits")
 					.addLineItem(SessionCreateParams.LineItem.builder()
@@ -182,15 +200,16 @@ public class CreditService {
 		if (payload == null || payload.isBlank()) {
 			throw new ApiException(HttpStatus.BAD_REQUEST, "Le contenu du webhook est vide.");
 		}
-		if (!stripeWebhookSecret.isBlank()) {
-			if (signature == null || signature.isBlank()) {
-				throw new ApiException(HttpStatus.UNAUTHORIZED, "La signature Stripe est manquante.");
-			}
-			try {
-				Webhook.constructEvent(payload, signature, stripeWebhookSecret);
-			} catch (SignatureVerificationException exception) {
-				throw new ApiException(HttpStatus.UNAUTHORIZED, "La signature Stripe est invalide.");
-			}
+		if (stripeWebhookSecret.isBlank()) {
+			throw new ApiException(HttpStatus.SERVICE_UNAVAILABLE, "Le webhook Stripe n'est pas configure.");
+		}
+		if (signature == null || signature.isBlank()) {
+			throw new ApiException(HttpStatus.BAD_REQUEST, "La signature Stripe est manquante.");
+		}
+		try {
+			Webhook.constructEvent(payload, signature, stripeWebhookSecret);
+		} catch (SignatureVerificationException exception) {
+			throw new ApiException(HttpStatus.BAD_REQUEST, "La signature Stripe est invalide.");
 		}
 		try {
 			JsonObject root = JsonParser.parseString(payload).getAsJsonObject();

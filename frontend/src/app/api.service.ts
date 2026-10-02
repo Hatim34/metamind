@@ -75,6 +75,12 @@ export interface CreditCheckout {
   reference: string;
 }
 
+export interface CreditCheckoutStatus {
+  reference: string;
+  status: string;
+  balance: number;
+}
+
 export interface DashboardStatistics {
   scope: string;
   totalPublications: number;
@@ -352,6 +358,14 @@ export class ApiService {
       cgv_acceptees: termsAccepted,
       renonciation_retractation_acceptee: withdrawalWaiverAccepted
     }, { headers: this.authHeaders() });
+  }
+
+  getCreditCheckoutStatus(reference: string): Observable<CreditCheckoutStatus> {
+    return this.http.get<unknown>(`${this.baseUrl}/credits/checkout/${encodeURIComponent(reference)}`, { headers: this.authHeaders() })
+      .pipe(map((response) => {
+        const value = response as { reference: string; status: string; solde_credits: number };
+        return { reference: value.reference, status: value.status, balance: value.solde_credits };
+      }));
   }
 
   getCreditBalance(userId: number): Observable<CreditBalance> {

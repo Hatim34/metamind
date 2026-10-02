@@ -43,6 +43,12 @@ public class CreditController {
 		return service.startCheckout(user, request);
 	}
 
+	@GetMapping("/credits/checkout/{reference}")
+	public CreditCheckoutStatusResponse checkoutStatus(@PathVariable String reference, @RequestHeader("Authorization") String authorization) {
+		UserEntity user = accountService.authenticate(authorization);
+		return service.getCheckoutStatus(user, reference);
+	}
+
 	@PostMapping("/webhooks/stripe")
 	public CreditBalanceResponse stripeWebhook(
 			@RequestBody String payload,
