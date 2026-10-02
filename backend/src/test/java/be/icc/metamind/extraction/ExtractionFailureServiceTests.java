@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.util.List;
 
 import be.icc.metamind.api.ApiException;
+import be.icc.metamind.credit.CreditMovementType;
 import be.icc.metamind.credit.CreditMovementRepository;
 import be.icc.metamind.document.AuthorRepository;
 import be.icc.metamind.document.DocumentAuthorRepository;
@@ -76,7 +77,7 @@ class ExtractionFailureServiceTests {
 	private EnrichmentRepository enrichmentRepository;
 
 	@Test
-	void failingProviderFallsBackToLocalExtraction() {
+	void failingProviderFailsWithoutConsumingCredit() {
 		InstitutionEntity institution = institutionRepository.save(new InstitutionEntity("INST-A", "Institution A", "institution-a.example"));
 		institution.addCredits(2);
 		UserEntity user = userRepository.save(new UserEntity(
@@ -98,16 +99,20 @@ class ExtractionFailureServiceTests {
 				user
 		);
 
-		MetadataExtractionResponse response = extractionService.extract(document.getId(), user);
-
-		assertThat(response.title()).isNotBlank();
-		assertThat(institution.getCreditBalance()).isEqualTo(1);
-		assertThat(document.getStatus()).isEqualTo(DocumentStatus.A_VALIDER);
-		assertThat(movementRepository.findByInstitutionIdOrderByCreatedAtDesc(institution.getId())).hasSize(1);
+		ApiException exception = org.junit.jupiter.api.Assertions.assertThrows(ApiException.class,
+				() -> extractionService.extract(document.getId(), user));
+		assertThat(exception.getStatus()).isEqualTo(HttpStatus.SERVICE_UNAVAILABLE);
+		assertThat(institution.getCreditBalance()).isEqualTo(2);
+		assertThat(document.getStatus()).isEqualTo(DocumentStatus.EN_ATTENTE);
+		assertThat(movementRepository.findByInstitutionIdOrderByCreatedAtDesc(institution.getId()))
+				.singleElement().satisfies(movement -> {
+					assertThat(movement.getType()).isEqualTo(CreditMovementType.REMBOURSEMENT);
+					assertThat(movement.getAmount()).isEqualTo(1);
+				});
 		assertThat(enrichmentRepository.findAll())
 				.filteredOn(enrichment -> enrichment.getDocument().getId().equals(document.getId()))
 				.singleElement()
-				.satisfies(enrichment -> assertThat(enrichment.getStatus()).isEqualTo(EnrichmentStatus.TERMINE));
+				.satisfies(enrichment -> assertThat(enrichment.getStatus()).isEqualTo(EnrichmentStatus.ECHEC));
 	}
 
 	@TestConfiguration

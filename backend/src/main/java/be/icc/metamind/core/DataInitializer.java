@@ -20,6 +20,9 @@ import be.icc.metamind.document.KeywordRepository;
 import be.icc.metamind.document.MetadataEntity;
 import be.icc.metamind.document.MetadataRepository;
 import be.icc.metamind.document.MetadataStatus;
+import be.icc.metamind.credit.CreditMovementEntity;
+import be.icc.metamind.credit.CreditMovementRepository;
+import be.icc.metamind.credit.CreditMovementType;
 import be.icc.metamind.institution.InstitutionEntity;
 import be.icc.metamind.institution.InstitutionRepository;
 import be.icc.metamind.user.UserEntity;
@@ -49,6 +52,7 @@ public class DataInitializer implements ApplicationRunner {
 	private final boolean enabled;
 	private final boolean resetSeed;
 	private final JdbcTemplate jdbcTemplate;
+	private final CreditMovementRepository creditMovementRepository;
 
 	public DataInitializer(
 			InstitutionRepository institutionRepository,
@@ -62,6 +66,7 @@ public class DataInitializer implements ApplicationRunner {
 			DocumentUploadService documentUploadService,
 			PasswordService passwordService,
 			JdbcTemplate jdbcTemplate,
+			CreditMovementRepository creditMovementRepository,
 			@Value("${metamind.seed-data:true}") boolean enabled,
 			@Value("${metamind.seed-reset:false}") boolean resetSeed
 	) {
@@ -76,6 +81,7 @@ public class DataInitializer implements ApplicationRunner {
 		this.documentUploadService = documentUploadService;
 		this.passwordService = passwordService;
 		this.jdbcTemplate = jdbcTemplate;
+		this.creditMovementRepository = creditMovementRepository;
 		this.enabled = enabled;
 		this.resetSeed = resetSeed;
 	}
@@ -114,8 +120,18 @@ public class DataInitializer implements ApplicationRunner {
 	}
 
 	private void seedCredits(InstitutionEntity institution) {
-		if (institution.getCreditBalance() == 0) {
-			institution.addCredits(20);
+		if (institution.getCreditBalance() > 0) {
+			institution.markWelcomeCreditsGranted();
+			return;
+		}
+		if (institution.grantWelcomeCredits(20)) {
+			creditMovementRepository.save(new CreditMovementEntity(
+					institution,
+					CreditMovementType.OFFRE_BIENVENUE,
+					20,
+					institution.getCreditBalance(),
+					"Offre de bienvenue de demonstration"
+			));
 		}
 	}
 

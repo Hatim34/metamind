@@ -16,7 +16,13 @@ public record InstitutionResponse(
 		boolean active,
 
 		@JsonProperty("solde_credits")
-		int creditBalance
+		int creditBalance,
+
+		@JsonProperty("achats_suspendus")
+		boolean purchasesSuspended,
+
+		@JsonProperty("credits_bienvenue_accordes")
+		boolean welcomeCreditsGranted
 ) {
 	public static InstitutionResponse from(InstitutionEntity institution) {
 		return new InstitutionResponse(
@@ -25,7 +31,9 @@ public record InstitutionResponse(
 				institution.getName(),
 				institution.getEmailDomain(),
 				institution.isActive(),
-				institution.getCreditBalance()
+				institution.getCreditBalance(),
+				institution.isPurchasesSuspended(),
+				institution.isWelcomeCreditsGranted()
 		);
 	}
 }

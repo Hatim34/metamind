@@ -68,7 +68,13 @@ public class CreditMovementEntity {
 		this.amount = amount;
 		this.enrichment = enrichment;
 		this.balanceAfter = institution.getCreditBalance();
-		this.description = type == CreditMovementType.ACHAT ? "Achat de credits" : "Extraction de metadonnees";
+		this.description = switch (type) {
+			case ACHAT -> "Achat de credits";
+			case CONSOMMATION -> "Extraction de metadonnees";
+			case REMBOURSEMENT -> "Remboursement de credits";
+			case AJUSTEMENT_ADMIN -> "Ajustement administratif";
+			case OFFRE_BIENVENUE -> "Offre de bienvenue";
+		};
 	}
 
 	public Long getId() {

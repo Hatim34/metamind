@@ -63,12 +63,6 @@ public class CreditController {
 		return service.getBalance(userId);
 	}
 
-	@PostMapping("/users/{userId}/credits/purchase")
-	public CreditBalanceResponse purchase(@PathVariable long userId, @RequestHeader("Authorization") String authorization, @Valid @RequestBody CreditPurchaseRequest request) {
-		accountService.authenticateSelfOrAdmin(userId, authorization);
-		return service.purchase(userId, request);
-	}
-
 	@GetMapping("/users/{userId}/credits/movements")
 	public List<CreditMovementResponse> movements(@PathVariable long userId, @RequestHeader("Authorization") String authorization) {
 		accountService.authenticateSelfOrAdmin(userId, authorization);

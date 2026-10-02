@@ -10,8 +10,11 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.persistence.Transient;
 import jakarta.persistence.UniqueConstraint;
+import jakarta.persistence.Version;
+import org.hibernate.annotations.Check;
 
 @Entity
+@Check(constraints = "solde_credits >= 0")
 @Table(
 		name = "institutions",
 		uniqueConstraints = @UniqueConstraint(name = "uk_institutions_domaine_email", columnNames = "domaine_email")
@@ -27,11 +30,20 @@ public class InstitutionEntity {
 	@Column(name = "domaine_email", length = 255)
 	private String emailDomain;
 
-	@Transient
+	@Column(name = "actif", nullable = false)
 	private boolean active = true;
 
 	@Column(name = "solde_credits", nullable = false)
 	private int creditBalance;
+
+	@Column(name = "credits_bienvenue_accordes", nullable = false, columnDefinition = "boolean default false")
+	private boolean welcomeCreditsGranted;
+
+	@Column(name = "achats_suspendus", nullable = false, columnDefinition = "boolean default false")
+	private boolean purchasesSuspended;
+
+	@Version
+	private long version;
 
 	@Column(name = "date_creation", nullable = false)
 	private LocalDateTime createdAt = LocalDateTime.now();
@@ -74,8 +86,37 @@ public class InstitutionEntity {
 		return active;
 	}
 
+	public void activate() {
+		active = true;
+	}
+
 	public int getCreditBalance() {
 		return creditBalance;
+	}
+
+	public boolean isWelcomeCreditsGranted() {
+		return welcomeCreditsGranted;
+	}
+
+	public boolean isPurchasesSuspended() {
+		return purchasesSuspended;
+	}
+
+	public void suspendPurchases(boolean suspended) {
+		purchasesSuspended = suspended;
+	}
+
+	public boolean grantWelcomeCredits(int amount) {
+		if (welcomeCreditsGranted) {
+			return false;
+		}
+		addCredits(amount);
+		welcomeCreditsGranted = true;
+		return true;
+	}
+
+	public void markWelcomeCreditsGranted() {
+		welcomeCreditsGranted = true;
 	}
 
 	public LocalDateTime getCreatedAt() {
@@ -91,6 +132,9 @@ public class InstitutionEntity {
 	}
 
 	public void consumeCredit() {
+		if (!hasCredits()) {
+			throw new IllegalStateException("Le solde de credits ne peut pas devenir negatif.");
+		}
 		creditBalance -= 1;
 	}
 

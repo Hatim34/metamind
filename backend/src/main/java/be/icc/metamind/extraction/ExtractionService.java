@@ -22,10 +22,12 @@ import be.icc.metamind.credit.CreditMovementEntity;
 import be.icc.metamind.credit.CreditMovementRepository;
 import be.icc.metamind.credit.CreditMovementType;
 import be.icc.metamind.institution.InstitutionEntity;
+import be.icc.metamind.institution.InstitutionRepository;
 import be.icc.metamind.user.UserEntity;
 import be.icc.metamind.user.UserRole;
 
 import org.springframework.http.HttpStatus;
+import jakarta.persistence.EntityManager;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -36,22 +38,27 @@ public class ExtractionService {
 	private final EnrichmentRepository enrichmentRepository;
 	private final MetadataSuggestionRepository suggestionRepository;
 	private final CreditMovementRepository movementRepository;
+	private final InstitutionRepository institutionRepository;
+	private final EntityManager entityManager;
 	private final MetadataExtractionProvider extractionProvider;
-	private final MetadataExtractionProvider fallbackProvider = new LocalMetadataExtractionProvider();
 
 	public ExtractionService(
 			DocumentRepository documentRepository,
 			MetadataRepository metadataRepository,
 			EnrichmentRepository enrichmentRepository,
-			MetadataSuggestionRepository suggestionRepository,
-			CreditMovementRepository movementRepository,
-			MetadataExtractionProvider extractionProvider
+		MetadataSuggestionRepository suggestionRepository,
+		CreditMovementRepository movementRepository,
+		InstitutionRepository institutionRepository,
+		EntityManager entityManager,
+		MetadataExtractionProvider extractionProvider
 	) {
 		this.documentRepository = documentRepository;
 		this.metadataRepository = metadataRepository;
 		this.enrichmentRepository = enrichmentRepository;
 		this.suggestionRepository = suggestionRepository;
 		this.movementRepository = movementRepository;
+		this.institutionRepository = institutionRepository;
+		this.entityManager = entityManager;
 		this.extractionProvider = extractionProvider;
 	}
 
@@ -74,6 +81,10 @@ public class ExtractionService {
 		if (!institution.hasCredits()) {
 			throw new ApiException(HttpStatus.PAYMENT_REQUIRED, "Le solde de credits est insuffisant.");
 		}
+		if (institutionRepository.reserveCredit(institution.getId()) != 1) {
+			throw new ApiException(HttpStatus.PAYMENT_REQUIRED, "Le solde de credits est insuffisant.");
+		}
+		entityManager.refresh(institution);
 
 		document.updateStatus(DocumentStatus.EXTRACTION);
 		EnrichmentEntity enrichment = enrichmentRepository.save(new EnrichmentEntity(
@@ -89,21 +100,10 @@ public class ExtractionService {
 			metadata = extractionProvider.extract(document);
 		}
 		catch (RuntimeException primaryException) {
-			if (extractionProvider instanceof LocalMetadataExtractionProvider) {
-				// Le mode local a echoue : il n'y a rien de plus a tenter.
-				enrichment.markFailed(failureMessage(primaryException));
-				document.markExtractionFailed();
-				throw toApiException(primaryException);
-			}
-			// Le fournisseur IA (ex. Gemini) est indisponible : repli sur l'extraction locale pour ne pas bloquer le flux.
-			try {
-				metadata = fallbackProvider.extract(document);
-			}
-			catch (RuntimeException fallbackException) {
-				enrichment.markFailed("Extraction interrompue.");
-				document.markExtractionFailed();
-				throw new ApiException(HttpStatus.BAD_GATEWAY, "L'extraction des metadonnees a echoue.");
-			}
+			enrichment.markFailed(failureMessage(primaryException));
+			document.markExtractionFailed();
+			refundCredit(institution);
+			throw toApiException(primaryException);
 		}
 
 		document.markExtractionCompleted(String.join(",", metadata.keywords()));
@@ -112,7 +112,7 @@ public class ExtractionService {
 		metadataEntity.markGenerated(metadata.title(), metadata.summary(), metadata.classification());
 		enrichment.markCompleted(rawResponse(metadata));
 		saveSuggestions(enrichment, metadata);
-		institution.consumeCredit();
+		entityManager.refresh(institution);
 		movementRepository.save(new CreditMovementEntity(
 				institution,
 				CreditMovementType.CONSOMMATION,
@@ -130,6 +130,18 @@ public class ExtractionService {
 				metadata.keywords(),
 				institution.getCreditBalance()
 		);
+	}
+
+	private void refundCredit(InstitutionEntity institution) {
+		institutionRepository.refundCredit(institution.getId());
+		entityManager.refresh(institution);
+		movementRepository.save(new CreditMovementEntity(
+				institution,
+				CreditMovementType.REMBOURSEMENT,
+				1,
+				institution.getCreditBalance(),
+				"Remboursement apres echec de l'extraction"
+		));
 	}
 
 	private String failureMessage(RuntimeException exception) {

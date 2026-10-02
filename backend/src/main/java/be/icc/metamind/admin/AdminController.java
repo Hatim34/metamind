@@ -58,6 +58,16 @@ public class AdminController {
 		return service.listInstitutions();
 	}
 
+	@PatchMapping("/institutions/{id}")
+	public InstitutionResponse updateInstitution(
+			@PathVariable long id,
+			@RequestHeader("Authorization") String authorization,
+			@RequestBody AdminInstitutionUpdateRequest request
+	) {
+		UserEntity admin = accountService.authenticateAdmin(authorization);
+		return service.updateInstitution(id, request, admin);
+	}
+
 	@GetMapping("/config")
 	public Map<String, String> configuration(@RequestHeader("Authorization") String authorization) {
 		accountService.authenticateAdmin(authorization);

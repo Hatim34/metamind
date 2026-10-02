@@ -15,6 +15,9 @@ import be.icc.metamind.document.ConfigurationRepository;
 import be.icc.metamind.document.DocumentRepository;
 import be.icc.metamind.document.MetadataEntity;
 import be.icc.metamind.document.MetadataRepository;
+import be.icc.metamind.credit.CreditMovementEntity;
+import be.icc.metamind.credit.CreditMovementRepository;
+import be.icc.metamind.credit.CreditMovementType;
 import be.icc.metamind.institution.InstitutionRepository;
 import be.icc.metamind.institution.InstitutionResponse;
 import be.icc.metamind.user.UserEntity;
@@ -47,6 +50,7 @@ public class AdminService {
 	private final AuditLogRepository auditLogRepository;
 	private final DocumentRepository documentRepository;
 	private final MetadataRepository metadataRepository;
+	private final CreditMovementRepository creditMovementRepository;
 
 	public AdminService(
 			UserRepository userRepository,
@@ -54,7 +58,8 @@ public class AdminService {
 			ConfigurationRepository configurationRepository,
 			AuditLogRepository auditLogRepository,
 			DocumentRepository documentRepository,
-			MetadataRepository metadataRepository
+			MetadataRepository metadataRepository,
+			CreditMovementRepository creditMovementRepository
 	) {
 		this.userRepository = userRepository;
 		this.institutionRepository = institutionRepository;
@@ -62,6 +67,7 @@ public class AdminService {
 		this.auditLogRepository = auditLogRepository;
 		this.documentRepository = documentRepository;
 		this.metadataRepository = metadataRepository;
+		this.creditMovementRepository = creditMovementRepository;
 	}
 
 	@Transactional(readOnly = true)
@@ -94,6 +100,40 @@ public class AdminService {
 		return institutionRepository.findAll().stream()
 				.map(InstitutionResponse::from)
 				.toList();
+	}
+
+	@Transactional
+	public InstitutionResponse updateInstitution(long id, AdminInstitutionUpdateRequest request, UserEntity admin) {
+		var institution = institutionRepository.findById(id)
+				.orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "L'institution est introuvable."));
+		if (request.actif() != null) {
+			if (request.actif()) {
+				institution.activate();
+			} else {
+				institution.deactivate();
+			}
+		}
+		if (request.purchasesSuspended() != null) {
+			institution.suspendPurchases(request.purchasesSuspended());
+		}
+		if (Boolean.TRUE.equals(request.actif()) && institution.grantWelcomeCredits(20)) {
+			creditMovementRepository.save(new CreditMovementEntity(
+					institution,
+					CreditMovementType.OFFRE_BIENVENUE,
+					20,
+					institution.getCreditBalance(),
+					"Offre de bienvenue accordee lors de l'activation"
+			));
+		}
+		auditLogRepository.save(new AuditLogEntity(
+				admin,
+				"MODIFICATION_INSTITUTION",
+				"institutions",
+				id,
+				"Activation ou suspension des achats modifiee",
+				ClientIpResolver.current()
+		));
+		return InstitutionResponse.from(institution);
 	}
 
 	@Transactional(readOnly = true)

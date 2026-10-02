@@ -34,7 +34,6 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class CreditService {
 	private static final List<CreditPackOptionResponse> PACK_OPTIONS = List.of(
-			new CreditPackOptionResponse(1, 20, new BigDecimal("0.00"), "EUR", "Pack decouverte"),
 			new CreditPackOptionResponse(2, 100, new BigDecimal("50.00"), "EUR", "Pack standard"),
 			new CreditPackOptionResponse(3, 500, new BigDecimal("200.00"), "EUR", "Pack volume")
 	);
@@ -54,9 +53,10 @@ public class CreditService {
 			CreditMovementRepository movementRepository,
 			CreditPackRepository packRepository,
 			AuditLogRepository auditLogRepository,
-			@Value("${metamind.public-url:https://metamind-app.duckdns.org}") String publicUrl,
-			@Value("${metamind.stripe.secret-key:}") String stripeSecretKey,
-			@Value("${metamind.stripe.webhook-secret:}") String stripeWebhookSecret
+		@Value("${metamind.public-url:https://metamind-app.duckdns.org}") String publicUrl,
+		@Value("${metamind.stripe.secret-key:}") String stripeSecretKey,
+		@Value("${metamind.stripe.webhook-secret:}") String stripeWebhookSecret,
+		@Value("${spring.profiles.active:}") String activeProfile
 	) {
 		this.userRepository = userRepository;
 		this.institutionRepository = institutionRepository;
@@ -66,18 +66,15 @@ public class CreditService {
 		this.publicUrl = publicUrl;
 		this.stripeSecretKey = stripeSecretKey == null ? "" : stripeSecretKey.trim();
 		this.stripeWebhookSecret = stripeWebhookSecret == null ? "" : stripeWebhookSecret.trim();
+		if ("prod".equalsIgnoreCase(activeProfile) && !this.stripeSecretKey.isBlank()
+				&& this.stripeWebhookSecret.isBlank()) {
+			throw new IllegalStateException("STRIPE_WEBHOOK_SECRET est obligatoire en production.");
+		}
 	}
 
 	@Transactional(readOnly = true)
 	public CreditBalanceResponse getBalance(long userId) {
 		return toResponse(findUser(userId).getInstitution());
-	}
-
-	@Transactional
-	public CreditBalanceResponse purchase(long userId, CreditPurchaseRequest request) {
-		InstitutionEntity institution = findUser(userId).getInstitution();
-		addPurchasedCredits(institution, request.amount(), "Achat de credits");
-		return toResponse(institution);
 	}
 
 	@Transactional(readOnly = true)
@@ -99,6 +96,9 @@ public class CreditService {
 
 	@Transactional
 	public CreditCheckoutResponse startCheckout(UserEntity user, CreditCheckoutRequest request) {
+		if (user.getInstitution().isPurchasesSuspended()) {
+			throw new ApiException(HttpStatus.FORBIDDEN, "Les achats de credits sont suspendus pour cette institution.");
+		}
 		CreditPackOptionResponse option = findPackOption(request.packId());
 		String reference = "pay_" + UUID.randomUUID().toString().replace("-", "");
 		CreditPackEntity pack = packRepository.save(new CreditPackEntity(
@@ -138,9 +138,6 @@ public class CreditService {
 	}
 
 	private String createCheckoutUrl(CreditPackOptionResponse option, String reference, long packId) {
-		if (option.amount().compareTo(BigDecimal.ZERO) == 0) {
-			return publicUrl + "/paiement/confirmation?reference=" + reference + "&pack=" + packId;
-		}
 		if (!isStripeEnabled()) {
 			throw new ApiException(HttpStatus.SERVICE_UNAVAILABLE, "Le paiement Stripe n'est pas configure.");
 		}
@@ -240,7 +237,7 @@ public class CreditService {
 				institution.consumeCredit();
 			}
 		}
-		CreditMovementType type = request.amount() > 0 ? CreditMovementType.ACHAT : CreditMovementType.CONSOMMATION;
+		CreditMovementType type = CreditMovementType.AJUSTEMENT_ADMIN;
 		movementRepository.save(new CreditMovementEntity(
 				institution,
 				type,
@@ -283,7 +280,8 @@ public class CreditService {
 	}
 
 	private boolean isCompletedPayment(String type) {
-		return type == null || type.isBlank() || type.equals("checkout.session.completed");
+		return "checkout.session.completed".equals(type)
+				|| "checkout.session.async_payment_succeeded".equals(type);
 	}
 
 	private String normalReason(String reason) {

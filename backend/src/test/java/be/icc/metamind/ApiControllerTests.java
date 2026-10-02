@@ -472,7 +472,7 @@ class ApiControllerTests {
 	}
 
 	@Test
-	void creditCheckoutRequiresPaymentConfirmation() throws Exception {
+	void freeCreditPackIsRejected() throws Exception {
 		String body = """
 				{
 				  "pack_id": 1,
@@ -480,55 +480,20 @@ class ApiControllerTests {
 				}
 				""";
 
-		String response = mockMvc.perform(post("/api/v1/credits")
+		mockMvc.perform(post("/api/v1/credits")
 						.header("Authorization", bearerToken())
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(body))
-				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.checkout_url", startsWith("https://metamind-app.duckdns.org/paiement/confirmation")))
-				.andExpect(jsonPath("$.reference", startsWith("pay_")))
-				.andReturn()
-				.getResponse()
-				.getContentAsString();
-
-		String reference = response.replaceFirst(".*\\\"reference\\\"\\s*:\\s*\\\"([^\\\"]+)\\\".*", "$1");
-		assertThat(creditMovementRepository.count()).isZero();
-
-		mockMvc.perform(post("/api/v1/webhooks/stripe")
-						.contentType(MediaType.APPLICATION_JSON)
-						.content("{\"reference\":\"" + reference + "\",\"type\":\"checkout.session.completed\"}"))
-				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.solde_credits", is(20)));
+				.andExpect(status().isNotFound());
 	}
 
 	@Test
 	void stripeWebhookAcceptsCheckoutSessionEventPayload() throws Exception {
-		String response = mockMvc.perform(post("/api/v1/credits")
+		mockMvc.perform(post("/api/v1/credits")
 						.header("Authorization", bearerToken())
 						.contentType(MediaType.APPLICATION_JSON)
-						.content("{\"pack_id\":1,\"cgv_acceptees\":true}"))
-				.andExpect(status().isOk())
-				.andReturn()
-				.getResponse()
-				.getContentAsString();
-
-		String reference = response.replaceFirst(".*\\\"reference\\\"\\s*:\\s*\\\"([^\\\"]+)\\\".*", "$1");
-		String event = """
-				{
-				  "type": "checkout.session.completed",
-				  "data": {
-				    "object": {
-				      "client_reference_id": "%s"
-				    }
-				  }
-				}
-				""".formatted(reference);
-
-		mockMvc.perform(post("/api/v1/webhooks/stripe")
-						.contentType(MediaType.APPLICATION_JSON)
-						.content(event))
-				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.solde_credits", is(20)));
+					.content("{\"pack_id\":2,\"cgv_acceptees\":true}"))
+				.andExpect(status().isServiceUnavailable());
 	}
 
 	@Test
@@ -547,6 +512,43 @@ class ApiControllerTests {
 						.content(body))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.solde_credits", is(30)));
+	}
+
+	@Test
+	void administratorActivationGrantsWelcomeCreditsOnlyOnce() throws Exception {
+		InstitutionEntity institution = institutionRepository.findByNameIgnoreCase("Institution A").orElseThrow();
+
+		mockMvc.perform(patch("/api/v1/admin/institutions/" + institution.getId())
+					.header("Authorization", adminBearerToken())
+					.contentType(MediaType.APPLICATION_JSON)
+					.content("{\"actif\":true}"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.solde_credits", is(20)))
+				.andExpect(jsonPath("$.credits_bienvenue_accordes", is(true)));
+
+		mockMvc.perform(patch("/api/v1/admin/institutions/" + institution.getId())
+					.header("Authorization", adminBearerToken())
+					.contentType(MediaType.APPLICATION_JSON)
+					.content("{\"actif\":true}"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.solde_credits", is(20)));
+	}
+
+	@Test
+	void suspendedInstitutionCannotStartCreditCheckout() throws Exception {
+		InstitutionEntity institution = institutionRepository.findByNameIgnoreCase("Institution A").orElseThrow();
+
+		mockMvc.perform(patch("/api/v1/admin/institutions/" + institution.getId())
+					.header("Authorization", adminBearerToken())
+					.contentType(MediaType.APPLICATION_JSON)
+					.content("{\"achatsSuspendus\":true}"))
+				.andExpect(status().isOk());
+
+		mockMvc.perform(post("/api/v1/credits")
+					.header("Authorization", bearerToken())
+					.contentType(MediaType.APPLICATION_JSON)
+					.content("{\"pack_id\":2,\"cgv_acceptees\":true}"))
+				.andExpect(status().isForbidden());
 	}
 
 	@Test
@@ -692,13 +694,8 @@ class ApiControllerTests {
 		UserEntity user = userRepository.findByEmailIgnoreCase("sarah@institution-a.example").orElseThrow();
 		DocumentEntity publication = documentRepository.findAll().getFirst();
 		String authorization = bearerToken();
-
-		mockMvc.perform(post("/api/v1/users/" + user.getId() + "/credits/purchase")
-						.header("Authorization", authorization)
-						.contentType(MediaType.APPLICATION_JSON)
-						.content("{\"amount\":3}"))
-				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.solde_credits", is(3)));
+		user.getInstitution().addCredits(3);
+		institutionRepository.save(user.getInstitution());
 
 		mockMvc.perform(post("/api/v1/publications/" + publication.getId() + "/extraction")
 						.header("Authorization", authorization))
@@ -711,7 +708,7 @@ class ApiControllerTests {
 		mockMvc.perform(get("/api/v1/users/" + user.getId() + "/credits/movements")
 						.header("Authorization", authorization))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$", hasSize(2)))
+				.andExpect(jsonPath("$", hasSize(1)))
 				.andExpect(jsonPath("$[0].solde_apres", is(2)));
 	}
 
@@ -722,13 +719,8 @@ class ApiControllerTests {
 				.filter(document -> document.getInstitution().getId().equals(user.getInstitution().getId()))
 				.toList();
 		String authorization = bearerToken();
-
-		mockMvc.perform(post("/api/v1/users/" + user.getId() + "/credits/purchase")
-						.header("Authorization", authorization)
-						.contentType(MediaType.APPLICATION_JSON)
-						.content("{\"amount\":3}"))
-				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.solde_credits", is(3)));
+		user.getInstitution().addCredits(3);
+		institutionRepository.save(user.getInstitution());
 
 		String body = """
 				{

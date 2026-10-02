@@ -549,6 +549,33 @@ paths:
                 type: array
                 items: { $ref: '#/components/schemas/Institution' }
 
+  /admin/institutions/{id}:
+    patch:
+      tags: [Administration]
+      summary: Activer une institution et suspendre ses achats (ADMIN)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer, format: int64 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                actif: { type: boolean }
+                achatsSuspendus: { type: boolean }
+      responses:
+        '200':
+          description: Institution mise a jour
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Institution' }
+        '403': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
+
   /admin/config:
     get:
       tags: [Administration]
@@ -766,6 +793,8 @@ components:
         domaine_email: { type: string, example: institution-a.example }
         actif: { type: boolean, example: true }
         solde_credits: { type: integer, example: 320 }
+        achats_suspendus: { type: boolean, example: false }
+        credits_bienvenue_accordes: { type: boolean, example: true }
 
     CreditBalance:
       type: object
