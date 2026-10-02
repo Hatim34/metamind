@@ -143,20 +143,23 @@ public class CreditService {
 
 	@Transactional
 	public CreditBalanceResponse confirmStripePayment(StripeWebhookRequest request) {
-		return confirmPaymentReference(request.reference(), request.type(), request.eventId());
+		return confirmPaymentReference(request.reference(), request.type(), request.eventId(), request.amountTotal(), request.currency());
 	}
 
 	@Transactional
 	public CreditBalanceResponse confirmStripePayment(String payload, String signature) {
 		StripeWebhookRequest request = parseWebhookPayload(payload, signature);
-		return confirmPaymentReference(request.reference(), request.type(), request.eventId());
+		return confirmPaymentReference(request.reference(), request.type(), request.eventId(), request.amountTotal(), request.currency());
 	}
 
-	private CreditBalanceResponse confirmPaymentReference(String reference, String type, String eventId) {
+	private CreditBalanceResponse confirmPaymentReference(String reference, String type, String eventId, Long amountTotal, String currency) {
 		CreditPackEntity pack = packRepository.findByPaymentReference(reference)
 				.orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "La reference de paiement est introuvable."));
 		if (eventId != null && stripeProcessedEventRepository.existsByEventId(eventId)) {
 			return toResponse(pack.getInstitution());
+		}
+		if (eventId != null && !matchesPackAmount(pack, amountTotal, currency)) {
+			throw new ApiException(HttpStatus.BAD_REQUEST, "Le montant du paiement ne correspond pas au pack.");
 		}
 		if (!isCompletedPayment(type)) {
 			pack.markFailed();
@@ -169,6 +172,14 @@ public class CreditService {
 		}
 		markStripeEvent(eventId, type);
 		return toResponse(pack.getInstitution());
+	}
+
+	private boolean matchesPackAmount(CreditPackEntity pack, Long amountTotal, String currency) {
+		if (amountTotal == null || currency == null) {
+			return false;
+		}
+		long expectedCents = pack.getPaidAmount().movePointRight(2).longValueExact();
+		return expectedCents == amountTotal && "eur".equalsIgnoreCase(currency);
 	}
 
 	private void markStripeEvent(String eventId, String eventType) {
@@ -233,6 +244,8 @@ public class CreditService {
 			JsonObject root = JsonParser.parseString(payload).getAsJsonObject();
 			String eventId = text(root, "id");
 			String type = text(root, "type");
+			Long amountTotal = number(object(root, "data", "object"), "amount_total");
+			String currency = text(object(root, "data", "object"), "currency");
 			String reference = text(root, "reference");
 			JsonObject object = root.has("data") && root.get("data").isJsonObject()
 					? root.getAsJsonObject("data").getAsJsonObject("object")
@@ -249,12 +262,28 @@ public class CreditService {
 			if (eventId == null) {
 				throw new ApiException(HttpStatus.BAD_REQUEST, "L'identifiant de l'evenement Stripe est manquant.");
 			}
-			return new StripeWebhookRequest(reference, type, eventId);
+			return new StripeWebhookRequest(reference, type, eventId, amountTotal, currency);
 		} catch (ApiException exception) {
 			throw exception;
 		} catch (Exception exception) {
 			throw new ApiException(HttpStatus.BAD_REQUEST, "Le contenu du webhook est invalide.");
 		}
+	}
+
+	private JsonObject object(JsonObject root, String parent, String child) {
+		if (root == null || !root.has(parent) || !root.get(parent).isJsonObject()) {
+			return null;
+		}
+		JsonObject parentObject = root.getAsJsonObject(parent);
+		return parentObject.has(child) && parentObject.get(child).isJsonObject()
+				? parentObject.getAsJsonObject(child) : null;
+	}
+
+	private Long number(JsonObject node, String field) {
+		if (node == null || !node.has(field) || node.get(field).isJsonNull()) {
+			return null;
+		}
+		return node.get(field).getAsLong();
 	}
 
 	private String text(JsonObject node, String field) {
