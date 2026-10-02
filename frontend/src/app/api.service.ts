@@ -370,11 +370,6 @@ export class ApiService {
       .pipe(map((response) => this.toStatistics(response)));
   }
 
-  purchaseCredits(userId: number, amount: number): Observable<CreditBalance> {
-    return this.http.post<unknown>(`${this.baseUrl}/users/${userId}/credits/purchase`, { amount }, { headers: this.authHeaders() })
-      .pipe(map((response) => this.toCreditBalance(response)));
-  }
-
   extractMetadata(publicationId: number): Observable<MetadataExtraction> {
     return this.http.post<unknown>(`${this.baseUrl}/publications/${publicationId}/extraction`, {}, { headers: this.authHeaders() })
       .pipe(map((response) => this.toMetadataExtraction(response)));

@@ -57,11 +57,9 @@ describe('AppComponent', () => {
       'getCreditAccount',
       'getCreditPacks',
       'startCreditCheckout',
-      'confirmCreditPayment',
       'getCreditBalance',
       'getCreditMovements',
       'getStatistics',
-      'purchaseCredits',
       'extractMetadata',
       'getMetadata',
       'validateMetadata',
@@ -214,29 +212,6 @@ describe('AppComponent', () => {
     expect(api.getStatistics).toHaveBeenCalled();
     expect(component.statistics?.totalPublications).toBe(2);
     expect(component.creditBalance).toBe(20);
-  });
-
-  it('met a jour le solde apres un achat de credits', () => {
-    const balance: CreditBalance = { institutionId: 1, institution: 'Institution A', balance: 30 };
-    api.startCreditCheckout.and.returnValue(of({ checkout_url: '/paiement/confirmation', reference: 'pay_123' }));
-    api.confirmCreditPayment.and.returnValue(of(balance));
-    api.getStatistics.and.returnValue(of({
-      scope: 'Institution A',
-      totalPublications: 2,
-      publishedPublications: 1,
-      pendingValidationPublications: 1,
-      publicPublications: 1,
-      institutionOnlyPublications: 1,
-      creditBalance: 30
-    }));
-    component.session = authResponse.user;
-
-    component.purchaseCredits(1);
-
-    expect(api.startCreditCheckout).toHaveBeenCalledWith(1);
-    expect(api.confirmCreditPayment).toHaveBeenCalledWith('pay_123');
-    expect(api.getCreditMovements).toHaveBeenCalledWith(10);
-    expect(component.creditBalance).toBe(30);
   });
 
   it('refuse de creer une publication incomplete', () => {

@@ -1268,22 +1268,7 @@ export class AppComponent implements OnInit {
 
     this.api.startCreditCheckout(packId).subscribe({
       next: (checkout) => {
-        const pack = this.creditPacks.find((item) => item.id === packId);
-        if (pack && pack.amount > 0) {
-          window.location.assign(checkout.checkout_url);
-          return;
-        }
-        this.api.confirmCreditPayment(checkout.reference).subscribe({
-          next: (credits) => {
-            this.creditBalance = credits.balance;
-            this.loadCreditMovements();
-            this.loadStatistics();
-            this.message = this.t('checkoutStarted');
-          },
-          error: () => {
-            this.message = this.t('purchaseFailed');
-          }
-        });
+        window.location.assign(checkout.checkout_url);
       },
       error: () => {
         this.message = this.t('purchaseFailed');
