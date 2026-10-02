@@ -34,7 +34,9 @@ services:
       - key: METAMIND_H2_CONSOLE
         value: "false"
       - key: METAMIND_SEED_DATA
-        value: "true"
+        value: "false"
+      - key: SPRING_PROFILES_ACTIVE
+        value: prod
       - key: METAMIND_JWT_SECRET
         generateValue: true
       - key: METAMIND_LLM_PROVIDER
@@ -42,14 +44,11 @@ services:
       - key: JAVA_OPTS
         value: -Xmx384m
       - key: METAMIND_PUBLIC_URL
-        fromService:
-          type: web
-          name: metamind
-          envVarKey: RENDER_EXTERNAL_URL
+        value: https://metamind-app.duckdns.org
       - key: GEMINI_API_KEY
         sync: false
       - key: GEMINI_MODEL
-        value: gemini-2.5-flash-lite
+        value: gemini-3.5-flash-lite
       - key: STRIPE_SECRET_KEY
         sync: false
       - key: STRIPE_WEBHOOK_SECRET
