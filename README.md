@@ -78,5 +78,3 @@ Fichiers ajoutes pour Render :
 - `Dockerfile`
 - `render.yaml`
 - `scripts/render-start.sh`
-
-Sur l'offre gratuite Render, le stockage local du service web est ephemere : les fichiers importes peuvent etre perdus lors d'un redeploiement ou d'un redemarrage. Les donnees relationnelles restent dans PostgreSQL. Pour conserver durablement les fichiers importes, il faut passer le service web sur une offre compatible avec Render Disk, monter un disque persistant et définir `METAMIND_DOCUMENTS_DIR=/app/storage/documents`.
