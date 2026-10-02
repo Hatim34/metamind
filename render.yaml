@@ -35,6 +35,8 @@ services:
         value: "false"
       - key: METAMIND_SEED_DATA
         value: "false"
+      - key: METAMIND_SEED_PASSWORD
+        sync: false
       - key: SPRING_PROFILES_ACTIVE
         value: prod
       - key: METAMIND_JWT_SECRET

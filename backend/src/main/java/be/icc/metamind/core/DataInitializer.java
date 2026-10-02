@@ -51,6 +51,7 @@ public class DataInitializer implements ApplicationRunner {
 	private final PasswordService passwordService;
 	private final boolean enabled;
 	private final boolean resetSeed;
+	private final String seedPassword;
 	private final JdbcTemplate jdbcTemplate;
 	private final CreditMovementRepository creditMovementRepository;
 
@@ -68,7 +69,8 @@ public class DataInitializer implements ApplicationRunner {
 			JdbcTemplate jdbcTemplate,
 			CreditMovementRepository creditMovementRepository,
 			@Value("${metamind.seed-data:true}") boolean enabled,
-			@Value("${metamind.seed-reset:false}") boolean resetSeed
+			@Value("${metamind.seed-reset:false}") boolean resetSeed,
+			@Value("${metamind.seed-password:demo-password-change-me}") String seedPassword
 	) {
 		this.institutionRepository = institutionRepository;
 		this.userRepository = userRepository;
@@ -84,6 +86,7 @@ public class DataInitializer implements ApplicationRunner {
 		this.creditMovementRepository = creditMovementRepository;
 		this.enabled = enabled;
 		this.resetSeed = resetSeed;
+		this.seedPassword = seedPassword;
 	}
 
 	@Override
@@ -99,7 +102,7 @@ public class DataInitializer implements ApplicationRunner {
 		seedCredits(institutionA);
 		seedCredits(institutionB);
 
-		String password = passwordService.hash("558435");
+		String password = passwordService.hash(seedPassword);
 		UserEntity sarah = createUserIfMissing("Sarah", "Lemaire", "sarah@institution-a.example", password, UserRole.LIBRARIAN, institutionA);
 		UserEntity jan = createUserIfMissing("Jan", "Peeters", "jan@institution-b.example", password, UserRole.LIBRARIAN, institutionB);
 		createUserIfMissing("Nadia", "Benali", "admin@metamind.example", password, UserRole.ADMIN, platform);
