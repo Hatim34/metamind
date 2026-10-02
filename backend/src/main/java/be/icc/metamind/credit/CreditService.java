@@ -45,6 +45,7 @@ public class CreditService {
 	private final CreditPackRepository packRepository;
 	private final AuditLogRepository auditLogRepository;
 	private final PaymentConsentRepository paymentConsentRepository;
+	private final StripeProcessedEventRepository stripeProcessedEventRepository;
 	private final String publicUrl;
 	private final String stripeSecretKey;
 	private final String stripeWebhookSecret;
@@ -56,6 +57,7 @@ public class CreditService {
 			CreditPackRepository packRepository,
 			AuditLogRepository auditLogRepository,
 			PaymentConsentRepository paymentConsentRepository,
+			StripeProcessedEventRepository stripeProcessedEventRepository,
 		@Value("${metamind.public-url:https://metamind-app.duckdns.org}") String publicUrl,
 		@Value("${metamind.stripe.secret-key:}") String stripeSecretKey,
 		@Value("${metamind.stripe.webhook-secret:}") String stripeWebhookSecret,
@@ -67,6 +69,7 @@ public class CreditService {
 		this.packRepository = packRepository;
 		this.auditLogRepository = auditLogRepository;
 		this.paymentConsentRepository = paymentConsentRepository;
+		this.stripeProcessedEventRepository = stripeProcessedEventRepository;
 		this.publicUrl = publicUrl;
 		this.stripeSecretKey = stripeSecretKey == null ? "" : stripeSecretKey.trim();
 		this.stripeWebhookSecret = stripeWebhookSecret == null ? "" : stripeWebhookSecret.trim();
@@ -136,27 +139,38 @@ public class CreditService {
 
 	@Transactional
 	public CreditBalanceResponse confirmStripePayment(StripeWebhookRequest request) {
-		return confirmPaymentReference(request.reference(), request.type());
+		return confirmPaymentReference(request.reference(), request.type(), request.eventId());
 	}
 
 	@Transactional
 	public CreditBalanceResponse confirmStripePayment(String payload, String signature) {
 		StripeWebhookRequest request = parseWebhookPayload(payload, signature);
-		return confirmPaymentReference(request.reference(), request.type());
+		return confirmPaymentReference(request.reference(), request.type(), request.eventId());
 	}
 
-	private CreditBalanceResponse confirmPaymentReference(String reference, String type) {
+	private CreditBalanceResponse confirmPaymentReference(String reference, String type, String eventId) {
 		CreditPackEntity pack = packRepository.findByPaymentReference(reference)
 				.orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "La reference de paiement est introuvable."));
+		if (eventId != null && stripeProcessedEventRepository.existsByEventId(eventId)) {
+			return toResponse(pack.getInstitution());
+		}
 		if (!isCompletedPayment(type)) {
 			pack.markFailed();
+			markStripeEvent(eventId, type);
 			return toResponse(pack.getInstitution());
 		}
 		if (!pack.isPaid()) {
 			pack.markPaid();
 			addPurchasedCredits(pack.getInstitution(), pack.getQuantite(), "Paiement confirme " + pack.getPaymentReference());
 		}
+		markStripeEvent(eventId, type);
 		return toResponse(pack.getInstitution());
+	}
+
+	private void markStripeEvent(String eventId, String eventType) {
+		if (eventId != null && !eventId.isBlank()) {
+			stripeProcessedEventRepository.save(new StripeProcessedEventEntity(eventId, eventType, Instant.now()));
+		}
 	}
 
 	private String createCheckoutUrl(UserEntity user, CreditPackOptionResponse option, String reference, long packId) {
@@ -213,6 +227,7 @@ public class CreditService {
 		}
 		try {
 			JsonObject root = JsonParser.parseString(payload).getAsJsonObject();
+			String eventId = text(root, "id");
 			String type = text(root, "type");
 			String reference = text(root, "reference");
 			JsonObject object = root.has("data") && root.get("data").isJsonObject()
@@ -227,7 +242,10 @@ public class CreditService {
 			if (reference == null) {
 				throw new ApiException(HttpStatus.BAD_REQUEST, "La reference de paiement est manquante.");
 			}
-			return new StripeWebhookRequest(reference, type);
+			if (eventId == null) {
+				throw new ApiException(HttpStatus.BAD_REQUEST, "L'identifiant de l'evenement Stripe est manquant.");
+			}
+			return new StripeWebhookRequest(reference, type, eventId);
 		} catch (ApiException exception) {
 			throw exception;
 		} catch (Exception exception) {

@@ -41,6 +41,9 @@ class CreditServiceTests {
 	@Autowired
 	private CreditPackRepository packRepository;
 
+	@Autowired
+	private StripeProcessedEventRepository stripeProcessedEventRepository;
+
 	@Test
 	void freePackIsNotAvailable() {
 		UserEntity user = saveUser();
@@ -62,6 +65,21 @@ class CreditServiceTests {
 
 		assertThat(creditService.getBalance(user.getId()).balance()).isEqualTo(100);
 		assertThat(movementRepository.count()).isEqualTo(1);
+	}
+
+	@Test
+	void sameStripeEventIdIsStoredAndIgnored() {
+		UserEntity user = saveUser();
+		String reference = "pay_event";
+		packRepository.save(new be.icc.metamind.document.CreditPackEntity(
+				user.getInstitution(), 100, new BigDecimal("50.00"), reference, CreditPackStatus.EN_ATTENTE));
+
+		StripeWebhookRequest event = new StripeWebhookRequest(reference, "checkout.session.completed", "evt_123");
+		creditService.confirmStripePayment(event);
+		creditService.confirmStripePayment(event);
+
+		assertThat(creditService.getBalance(user.getId()).balance()).isEqualTo(100);
+		assertThat(stripeProcessedEventRepository.count()).isEqualTo(1);
 	}
 
 	@Test
