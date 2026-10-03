@@ -44,6 +44,15 @@ MOTIFS_REJET = [
     "Fichier incomplet : annexes manquantes.",
 ]
 
+TYPE_DOCUMENT_METAMIND = {
+    "report": "rapport",
+    "review": "article",
+    "journal-article": "article",
+    "dissertation": "these",
+    "book-chapter": "chapitre",
+    "proceedings-article": "communication",
+}
+
 
 class Api:
     def __init__(self, base, dry_run=False):
@@ -167,7 +176,7 @@ def validation_body(gt, visibility):
         "auteurs": [{"nom_complet": a["nom_complet"], "orcid": a.get("orcid")} for a in gt["auteurs"][:20]],
         "mots_cles": gt.get("mots_cles", [])[:30],
         "langue": gt.get("langue"),
-        "type_document": gt.get("type_document"),
+        "type_document": TYPE_DOCUMENT_METAMIND.get(gt.get("type_document"), gt.get("type_document")),
         "doi": gt.get("doi"),
     }
 
