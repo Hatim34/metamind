@@ -15,3 +15,5 @@ frontend/package-lock.json
 *.class
 seed/.venv/
 seed/data/
+__pycache__/
+*.pyc
