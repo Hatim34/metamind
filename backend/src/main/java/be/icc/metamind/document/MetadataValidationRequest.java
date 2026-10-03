@@ -36,6 +36,20 @@ public record MetadataValidationRequest(
 
 		@JsonProperty("mots_cles")
 		@Size(max = 30)
-		List<String> keywords
+		List<String> keywords,
+
+		/** Code de langue ISO 639-1 (fr, nl, en). Null efface la langue. */
+		@JsonProperty("langue")
+		@Size(max = 10)
+		String language,
+
+		/** Code du vocabulaire controle des types de documents. Null efface le type. */
+		@JsonProperty("type_document")
+		@Size(max = 50)
+		String documentType,
+
+		@JsonProperty("doi")
+		@Size(max = 255)
+		String doi
 ) {
 }

@@ -154,6 +154,17 @@ public class MetadataEntity {
 		this.doi = doi;
 	}
 
+	/** Pre-remplit aussi la date proposee par l'extraction ; elle reste a valider. */
+	public void updateExtractedReferences(
+			LanguageEntity language,
+			DocumentTypeEntity documentType,
+			String doi,
+			LocalDate publicationDate
+	) {
+		updateExtractedReferences(language, documentType, doi);
+		this.publicationDate = publicationDate;
+	}
+
 	public void validate(String titre, String resume, LocalDate publicationDate, String classification, UserEntity validatedBy) {
 		this.titre = titre;
 		this.resume = resume;
@@ -162,6 +173,23 @@ public class MetadataEntity {
 		this.status = MetadataStatus.VALIDE;
 		this.validatedBy = validatedBy;
 		this.validatedAt = LocalDateTime.now();
+	}
+
+	/** Validation complete : les references bibliographiques sont arbitrees comme les autres champs. */
+	public void validate(
+			String titre,
+			String resume,
+			LocalDate publicationDate,
+			String classification,
+			LanguageEntity language,
+			DocumentTypeEntity documentType,
+			String doi,
+			UserEntity validatedBy
+	) {
+		validate(titre, resume, publicationDate, classification, validatedBy);
+		this.language = language;
+		this.documentType = documentType;
+		this.doi = doi;
 	}
 
 	public void reject(UserEntity rejectedBy) {

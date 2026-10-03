@@ -1,6 +1,8 @@
 package be.icc.metamind.document;
 
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -25,6 +27,9 @@ public class MetadataService {
 	private final DocumentKeywordRepository documentKeywordRepository;
 	private final AuditLogRepository auditLogRepository;
 	private final DspacePublisher dspacePublisher;
+	private final ValidationDecisionRecorder validationDecisionRecorder;
+	private final LanguageRepository languageRepository;
+	private final DocumentTypeRepository documentTypeRepository;
 
 	public MetadataService(
 			DocumentRepository documentRepository,
@@ -34,7 +39,10 @@ public class MetadataService {
 			DocumentAuthorRepository documentAuthorRepository,
 			DocumentKeywordRepository documentKeywordRepository,
 			AuditLogRepository auditLogRepository,
-			DspacePublisher dspacePublisher
+			DspacePublisher dspacePublisher,
+			ValidationDecisionRecorder validationDecisionRecorder,
+			LanguageRepository languageRepository,
+			DocumentTypeRepository documentTypeRepository
 	) {
 		this.documentRepository = documentRepository;
 		this.metadataRepository = metadataRepository;
@@ -44,6 +52,9 @@ public class MetadataService {
 		this.documentKeywordRepository = documentKeywordRepository;
 		this.auditLogRepository = auditLogRepository;
 		this.dspacePublisher = dspacePublisher;
+		this.validationDecisionRecorder = validationDecisionRecorder;
+		this.languageRepository = languageRepository;
+		this.documentTypeRepository = documentTypeRepository;
 	}
 
 	@Transactional(readOnly = true)
@@ -79,11 +90,17 @@ public class MetadataService {
 		String previousVisibility = document.getVisibility() == null ? null : document.getVisibility().name();
 		String previousAuthors = authorsValue(document);
 		String previousKeywords = keywordsValue(document);
+		String previousLanguage = metadata.getLanguage() == null ? null : metadata.getLanguage().getCode();
+		String previousDocumentType = metadata.getDocumentType() == null ? null : metadata.getDocumentType().getCode();
+		String previousDoi = metadata.getDoi();
 
 		String title = cleanRequired(request.title(), "Le titre est obligatoire.");
 		String summary = cleanOptional(request.summary());
 		String classification = cleanOptional(request.classification());
-		metadata.validate(title, summary, request.publicationDate(), classification, user);
+		String doi = cleanOptional(request.doi());
+		LanguageEntity language = resolveLanguage(request.language());
+		DocumentTypeEntity documentType = resolveDocumentType(request.documentType());
+		metadata.validate(title, summary, request.publicationDate(), classification, language, documentType, doi, user);
 		replaceAuthors(document, request.authors());
 		replaceKeywords(document, request.keywords());
 		document.publish(request.visibility(), searchText(title, summary, classification, request.keywords()));
@@ -94,6 +111,22 @@ public class MetadataService {
 		recordMetadataHistory(document, "visibilite", previousVisibility, request.visibility().name(), user);
 		recordMetadataHistory(document, "auteurs", previousAuthors, authorsValue(document), user);
 		recordMetadataHistory(document, "mots_cles", previousKeywords, keywordsValue(document), user);
+		recordMetadataHistory(document, "langue", previousLanguage, request.language(), user);
+		recordMetadataHistory(document, "type_document", previousDocumentType, request.documentType(), user);
+		recordMetadataHistory(document, "doi", previousDoi, doi, user);
+		// Trace l'arbitrage humain champ par champ : base de la mesure de fiabilite du LLM.
+		Map<String, String> publishedValues = new LinkedHashMap<>();
+		publishedValues.put("titre", nullSafe(title));
+		publishedValues.put("resume", nullSafe(summary));
+		publishedValues.put("classification", nullSafe(classification));
+		publishedValues.put("auteurs", authorsValue(document));
+		publishedValues.put("mots_cles", keywordsValue(document));
+		publishedValues.put("langue", language == null ? "" : language.getCode());
+		publishedValues.put("type_document", documentType == null ? "" : documentType.getCode());
+		publishedValues.put("doi", nullSafe(doi));
+		publishedValues.put("date_publication",
+				request.publicationDate() == null ? "" : request.publicationDate().toString());
+		validationDecisionRecorder.recordValidation(document, publishedValues);
 		dspacePublisher.publish(document, metadata,
 				documentAuthorRepository.findByDocument_IdOrderByAuthorOrderAsc(document.getId()),
 				documentKeywordRepository.findByDocument_Id(document.getId()).stream()
@@ -115,6 +148,7 @@ public class MetadataService {
 		MetadataEntity metadata = metadataRepository.findByDocumentId(document.getId())
 				.orElseThrow(() -> new ApiException(HttpStatus.BAD_REQUEST, "Aucune metadonnee a rejeter."));
 		metadata.reject(user);
+		validationDecisionRecorder.recordRejection(document);
 		recordMetadataHistory(document, "rejet", metadata.getStatus().name(), reason, user);
 		return toResponse(metadata);
 	}
@@ -174,6 +208,34 @@ public class MetadataService {
 		));
 	}
 
+	private String nullSafe(String value) {
+		return value == null ? "" : value;
+	}
+
+	/**
+	 * Resout un code de langue du vocabulaire de reference.
+	 * Un code inconnu est refuse plutot que silencieusement ignore : le bibliothecaire doit le savoir.
+	 */
+	private LanguageEntity resolveLanguage(String code) {
+		String cleanCode = cleanOptional(code);
+		if (cleanCode == null) {
+			return null;
+		}
+		return languageRepository.findByCodeIgnoreCase(cleanCode)
+				.orElseThrow(() -> new ApiException(HttpStatus.BAD_REQUEST,
+						"La langue '" + cleanCode + "' ne fait pas partie des langues reconnues."));
+	}
+
+	private DocumentTypeEntity resolveDocumentType(String code) {
+		String cleanCode = cleanOptional(code);
+		if (cleanCode == null) {
+			return null;
+		}
+		return documentTypeRepository.findByCodeIgnoreCase(cleanCode)
+				.orElseThrow(() -> new ApiException(HttpStatus.BAD_REQUEST,
+						"Le type de document '" + cleanCode + "' ne fait pas partie des types reconnus."));
+	}
+
 	private String historyValue(String value) {
 		if (value == null || value.trim().isBlank()) {
 			return "";
@@ -215,6 +277,29 @@ public class MetadataService {
 		}
 		String cleanValue = value.trim().replaceAll("\\s+", " ");
 		return cleanValue.isBlank() ? null : cleanValue;
+	}
+
+	private Map<String, String> decisionValues(
+			String title,
+			String summary,
+			String classification,
+			String doi,
+			LanguageEntity language,
+			DocumentTypeEntity documentType,
+			MetadataValidationRequest request,
+			DocumentEntity document
+	) {
+		Map<String, String> values = new LinkedHashMap<>();
+		values.put("titre", nullSafe(title));
+		values.put("resume", nullSafe(summary));
+		values.put("date_publication", request.publicationDate() == null ? "" : request.publicationDate().toString());
+		values.put("classification", nullSafe(classification));
+		values.put("langue", language == null ? "" : language.getCode());
+		values.put("type_document", documentType == null ? "" : documentType.getCode());
+		values.put("doi", nullSafe(doi));
+		values.put("auteurs", authorsValue(document));
+		values.put("mots_cles", keywordsValue(document));
+		return values;
 	}
 
 	private String searchText(String title, String summary, String classification, List<String> keywords) {

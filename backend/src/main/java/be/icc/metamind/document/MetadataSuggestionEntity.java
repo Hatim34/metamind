@@ -1,6 +1,10 @@
 package be.icc.metamind.document;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.util.Arrays;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -21,6 +25,9 @@ import jakarta.persistence.Table;
 		indexes = @Index(name = "idx_suggestions_enrichissement_id", columnList = "enrichissement_id")
 )
 public class MetadataSuggestionEntity {
+	/** Champs dont la valeur est une liste separee par des virgules. */
+	private static final Set<String> MULTI_VALUED_FIELDS = Set.of("auteurs", "mots_cles");
+
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
@@ -91,6 +98,47 @@ public class MetadataSuggestionEntity {
 		this.segments = segments;
 		this.source = source == null ? MetadataSuggestionSource.LLM : source;
 		this.sourceUrl = sourceUrl;
+	}
+
+	/**
+	 * Compare la valeur publiee a la valeur suggeree et conserve la trace de l'arbitrage humain.
+	 * C'est cette trace qui permet de mesurer le taux d'acceptation et l'ampleur des corrections.
+	 */
+	public void recordDecision(String publishedValue) {
+		String suggested = comparable(suggestedValue);
+		String published = comparable(publishedValue);
+		this.finalValue = publishedValue;
+		if (suggested.equals(published)) {
+			this.decision = SuggestionDecision.ACCEPTE;
+			this.editDistance = BigDecimal.ZERO.setScale(3);
+			return;
+		}
+		this.decision = published.isEmpty() ? SuggestionDecision.VIDE : SuggestionDecision.MODIFIE;
+		this.editDistance = BigDecimal.valueOf(EditDistance.normalized(suggested, published))
+				.setScale(3, RoundingMode.HALF_UP);
+	}
+
+	/**
+	 * Met la valeur sous une forme comparable. Pour les champs qui portent une liste,
+	 * les elements sont tries : reordonner des auteurs ou des mots-cles n'est pas une correction.
+	 */
+	private String comparable(String value) {
+		String normalized = EditDistance.normalize(value);
+		if (!MULTI_VALUED_FIELDS.contains(champ) || normalized.isEmpty()) {
+			return normalized;
+		}
+		return Arrays.stream(normalized.split(","))
+				.map(String::trim)
+				.filter(part -> !part.isEmpty())
+				.sorted()
+				.collect(Collectors.joining(", "));
+	}
+
+	/** Les metadonnees ont ete rejetees : aucune valeur n'a ete publiee. */
+	public void markRejected() {
+		this.decision = SuggestionDecision.REJETE;
+		this.finalValue = null;
+		this.editDistance = null;
 	}
 
 	public Long getId() {

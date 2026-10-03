@@ -42,6 +42,15 @@ public record MetadataResponse(
 		@JsonProperty("mots_cles")
 		List<String> keywords,
 
+		@JsonProperty("langue")
+		String language,
+
+		@JsonProperty("type_document")
+		String documentType,
+
+		@JsonProperty("doi")
+		String doi,
+
 		@JsonProperty("texte_extrait")
 		String extractedText
 ) {
@@ -63,6 +72,9 @@ public record MetadataResponse(
 				keywords.stream()
 						.map(keyword -> keyword.getKeyword().getLibelle())
 						.toList(),
+				metadata.getLanguage() == null ? null : metadata.getLanguage().getCode(),
+				metadata.getDocumentType() == null ? null : metadata.getDocumentType().getCode(),
+				metadata.getDoi(),
 				metadata.getDocument().getExtractedText()
 		);
 	}
