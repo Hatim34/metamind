@@ -1,0 +1,11 @@
+{
+  "_note": "Institutions de démonstration. 'openalex_search' sert à retrouver l'institution dans OpenAlex (pays BE). 'domain' est un domaine .test réservé : aucun email ne peut partir vers une vraie adresse. 'langs' = langues des publications à privilégier.",
+  "institutions": [
+    {"code": "ULB",  "name": "Université libre de Bruxelles", "openalex_search": "Université Libre de Bruxelles", "domain": "ulb.demo-metamind.test", "city": "Bruxelles", "langs": ["fr", "en"], "target": 30},
+    {"code": "UCL",  "name": "UCLouvain", "openalex_search": "Université Catholique de Louvain", "domain": "uclouvain.demo-metamind.test", "city": "Louvain-la-Neuve", "langs": ["fr", "en"], "target": 30},
+    {"code": "ULG",  "name": "Université de Liège", "openalex_search": "University of Liège", "domain": "uliege.demo-metamind.test", "city": "Liège", "langs": ["fr", "en"], "target": 25},
+    {"code": "KUL",  "name": "KU Leuven", "openalex_search": "KU Leuven", "domain": "kuleuven.demo-metamind.test", "city": "Leuven", "langs": ["nl", "en"], "target": 30},
+    {"code": "UGE",  "name": "Universiteit Gent", "openalex_search": "Ghent University", "domain": "ugent.demo-metamind.test", "city": "Gent", "langs": ["nl", "en"], "target": 25},
+    {"code": "VUB",  "name": "Vrije Universiteit Brussel", "openalex_search": "Vrije Universiteit Brussel", "domain": "vub.demo-metamind.test", "city": "Bruxelles", "langs": ["nl", "en"], "target": 20}
+  ]
+}

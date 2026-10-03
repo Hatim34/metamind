@@ -13,3 +13,5 @@ frontend/package-lock.json
 .vscode/
 *.log
 *.class
+seed/.venv/
+seed/data/
