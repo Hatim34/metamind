@@ -14,9 +14,13 @@ import be.icc.metamind.document.DocumentKeywordEntity;
 import be.icc.metamind.document.DocumentKeywordRepository;
 import be.icc.metamind.document.DocumentRepository;
 import be.icc.metamind.document.DocumentStatus;
+import be.icc.metamind.document.DocumentTypeEntity;
+import be.icc.metamind.document.DocumentTypeRepository;
 import be.icc.metamind.document.DocumentVisibility;
 import be.icc.metamind.document.KeywordEntity;
 import be.icc.metamind.document.KeywordRepository;
+import be.icc.metamind.document.LanguageEntity;
+import be.icc.metamind.document.LanguageRepository;
 import be.icc.metamind.document.MetadataEntity;
 import be.icc.metamind.document.MetadataRepository;
 import be.icc.metamind.document.MetadataStatus;
@@ -54,6 +58,8 @@ public class DataInitializer implements ApplicationRunner {
 	private final String seedPassword;
 	private final JdbcTemplate jdbcTemplate;
 	private final CreditMovementRepository creditMovementRepository;
+	private final LanguageRepository languageRepository;
+	private final DocumentTypeRepository documentTypeRepository;
 
 	public DataInitializer(
 			InstitutionRepository institutionRepository,
@@ -68,6 +74,8 @@ public class DataInitializer implements ApplicationRunner {
 			PasswordService passwordService,
 			JdbcTemplate jdbcTemplate,
 			CreditMovementRepository creditMovementRepository,
+			LanguageRepository languageRepository,
+			DocumentTypeRepository documentTypeRepository,
 			@Value("${metamind.seed-data:true}") boolean enabled,
 			@Value("${metamind.seed-reset:false}") boolean resetSeed,
 			@Value("${metamind.seed-password:demo-password-change-me}") String seedPassword
@@ -84,6 +92,8 @@ public class DataInitializer implements ApplicationRunner {
 		this.passwordService = passwordService;
 		this.jdbcTemplate = jdbcTemplate;
 		this.creditMovementRepository = creditMovementRepository;
+		this.languageRepository = languageRepository;
+		this.documentTypeRepository = documentTypeRepository;
 		this.enabled = enabled;
 		this.resetSeed = resetSeed;
 		this.seedPassword = seedPassword;
@@ -95,6 +105,7 @@ public class DataInitializer implements ApplicationRunner {
 		if (!enabled) {
 			return;
 		}
+		seedReferenceData();
 
 		InstitutionEntity institutionA = findOrCreateInstitution("INST-A", "Institution A", "institution-a.example");
 		InstitutionEntity institutionB = findOrCreateInstitution("INST-B", "Institution B", "institution-b.example");
@@ -110,6 +121,30 @@ public class DataInitializer implements ApplicationRunner {
 			jdbcTemplate.execute("TRUNCATE TABLE documents CASCADE");
 		}
 		createDocumentsIfMissing(institutionA, institutionB, sarah, jan);
+	}
+
+	private void seedReferenceData() {
+		seedLanguage("fr", "Francais");
+		seedLanguage("nl", "Nederlands");
+		seedLanguage("en", "English");
+		seedDocumentType("article", "Article scientifique");
+		seedDocumentType("these", "These");
+		seedDocumentType("memoire", "Memoire");
+		seedDocumentType("rapport", "Rapport de recherche");
+		seedDocumentType("chapitre", "Chapitre");
+		seedDocumentType("communication", "Communication");
+		seedDocumentType("preprint", "Prepublication");
+		seedDocumentType("autre", "Autre");
+	}
+
+	private void seedLanguage(String code, String label) {
+		languageRepository.findByCodeIgnoreCase(code)
+				.orElseGet(() -> languageRepository.save(new LanguageEntity(code, label)));
+	}
+
+	private void seedDocumentType(String code, String label) {
+		documentTypeRepository.findByCodeIgnoreCase(code)
+				.orElseGet(() -> documentTypeRepository.save(new DocumentTypeEntity(code, label)));
 	}
 
 	private InstitutionEntity findOrCreateInstitution(String code, String name, String emailDomain) {
