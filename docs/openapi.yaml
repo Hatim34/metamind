@@ -178,6 +178,37 @@ paths:
         '402': { description: Solde de credits insuffisant, $ref: '#/components/responses/Error' }
         '404': { $ref: '#/components/responses/Error' }
 
+  /references:
+    get:
+      tags: [Metadonnees]
+      summary: Vocabulaires controles (langues, types de documents)
+      description: >
+        Donnees de reference non sensibles, accessibles sans jeton. La validation refuse tout code
+        absent de ces listes : l'interface doit les lire ici plutot que de les recopier.
+      security: []
+      responses:
+        '200':
+          description: Vocabulaires de reference
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  langues:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        code: { type: string, example: fr }
+                        libelle: { type: string, example: Francais }
+                  types_documents:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        code: { type: string, example: these }
+                        libelle: { type: string, example: These }
+
   /documents/{id}/metadata:
     get:
       tags: [Metadonnees]
@@ -277,7 +308,7 @@ paths:
               schema:
                 type: object
                 properties:
-                  checkout_url: { type: string, example: https://metamind-app.duckdns.org/paiement/confirmation?reference=pay_abc123 }
+                  checkout_url: { type: string, example: "https://metamind-app.duckdns.org/paiement/confirmation?reference=pay_abc123" }
                   reference: { type: string, example: pay_abc123 }
         '400': { description: CGV non acceptees, $ref: '#/components/responses/Error' }
 
