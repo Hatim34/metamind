@@ -18,6 +18,7 @@ import be.icc.metamind.document.KeywordRepository;
 import be.icc.metamind.document.MetadataEntity;
 import be.icc.metamind.document.MetadataRepository;
 import be.icc.metamind.document.MetadataSuggestionRepository;
+import be.icc.metamind.document.MetadataSuggestionSource;
 import be.icc.metamind.credit.CreditMovementRepository;
 import be.icc.metamind.credit.CreditMovementType;
 import be.icc.metamind.institution.InstitutionEntity;
@@ -116,6 +117,10 @@ class ExtractionServiceTests {
 				.filteredOn(suggestion -> suggestion.getEnrichment().getId().equals(enrichment.getId()))
 				.extracting("champ")
 				.containsExactlyInAnyOrder("titre", "auteurs", "resume", "classification", "mots_cles");
+		assertThat(suggestionRepository.findAll())
+				.filteredOn(suggestion -> suggestion.getEnrichment().getId().equals(enrichment.getId()))
+				.extracting(suggestion -> suggestion.getSource())
+				.containsOnly(MetadataSuggestionSource.LLM);
 		assertThat(movementRepository.findByInstitutionIdOrderByCreatedAtDesc(institution.getId()))
 				.hasSize(1)
 				.first()

@@ -45,6 +45,25 @@ public class MetadataSuggestionEntity {
 	@Column(name = "valeur_finale", columnDefinition = "text")
 	private String finalValue;
 
+	@Column(name = "preuve", columnDefinition = "text")
+	private String evidence;
+
+	@Column(name = "signaux", columnDefinition = "text")
+	private String signals;
+
+	@Column(name = "segments", columnDefinition = "text")
+	private String segments;
+
+	@Enumerated(EnumType.STRING)
+	@Column(nullable = false, length = 20)
+	private MetadataSuggestionSource source = MetadataSuggestionSource.LLM;
+
+	@Column(name = "url_source", columnDefinition = "text")
+	private String sourceUrl;
+
+	@Column(name = "distance_edition", precision = 4, scale = 3)
+	private BigDecimal editDistance;
+
 	protected MetadataSuggestionEntity() {
 	}
 
@@ -53,6 +72,25 @@ public class MetadataSuggestionEntity {
 		this.champ = champ;
 		this.suggestedValue = suggestedValue;
 		this.confidenceScore = confidenceScore;
+	}
+
+	public MetadataSuggestionEntity(
+			EnrichmentEntity enrichment,
+			String champ,
+			String suggestedValue,
+			BigDecimal confidenceScore,
+			String evidence,
+			String signals,
+			String segments,
+			MetadataSuggestionSource source,
+			String sourceUrl
+	) {
+		this(enrichment, champ, suggestedValue, confidenceScore);
+		this.evidence = evidence;
+		this.signals = signals;
+		this.segments = segments;
+		this.source = source == null ? MetadataSuggestionSource.LLM : source;
+		this.sourceUrl = sourceUrl;
 	}
 
 	public Long getId() {
@@ -81,5 +119,29 @@ public class MetadataSuggestionEntity {
 
 	public String getFinalValue() {
 		return finalValue;
+	}
+
+	public String getEvidence() {
+		return evidence;
+	}
+
+	public String getSignals() {
+		return signals;
+	}
+
+	public String getSegments() {
+		return segments;
+	}
+
+	public MetadataSuggestionSource getSource() {
+		return source;
+	}
+
+	public String getSourceUrl() {
+		return sourceUrl;
+	}
+
+	public BigDecimal getEditDistance() {
+		return editDistance;
 	}
 }
