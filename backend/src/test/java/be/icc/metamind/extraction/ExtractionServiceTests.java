@@ -10,11 +10,15 @@ import be.icc.metamind.document.DocumentEntity;
 import be.icc.metamind.document.DocumentKeywordRepository;
 import be.icc.metamind.document.DocumentRepository;
 import be.icc.metamind.document.DocumentStatus;
+import be.icc.metamind.document.DocumentTypeEntity;
+import be.icc.metamind.document.DocumentTypeRepository;
 import be.icc.metamind.document.DocumentVisibility;
 import be.icc.metamind.document.EnrichmentEntity;
 import be.icc.metamind.document.EnrichmentRepository;
 import be.icc.metamind.document.EnrichmentStatus;
 import be.icc.metamind.document.KeywordRepository;
+import be.icc.metamind.document.LanguageEntity;
+import be.icc.metamind.document.LanguageRepository;
 import be.icc.metamind.document.MetadataEntity;
 import be.icc.metamind.document.MetadataRepository;
 import be.icc.metamind.document.MetadataSuggestionRepository;
@@ -76,8 +80,16 @@ class ExtractionServiceTests {
 	@Autowired
 	private MetadataSuggestionRepository suggestionRepository;
 
+	@Autowired
+	private LanguageRepository languageRepository;
+
+	@Autowired
+	private DocumentTypeRepository documentTypeRepository;
+
 	@Test
 	void extractionConsumesOneCreditAndUpdatesPublication() {
+		languageRepository.save(new LanguageEntity("fr", "Francais"));
+		documentTypeRepository.save(new DocumentTypeEntity("autre", "Autre"));
 		InstitutionEntity institution = institutionRepository.save(new InstitutionEntity("INST-A", "Institution A", "institution-a.example"));
 		institution.addCredits(2);
 		UserEntity user = userRepository.save(new UserEntity(
@@ -108,6 +120,8 @@ class ExtractionServiceTests {
 		assertThat(metadata.getTitre()).isEqualTo("analyse automatique des metadonnees pour les depots institutionnels");
 		assertThat(metadata.getResume()).contains("Analyse automatique des metadonnees");
 		assertThat(metadata.getClassification()).isEqualTo("Sciences de l'information");
+		assertThat(metadata.getLanguage().getCode()).isEqualTo("fr");
+		assertThat(metadata.getDocumentType().getCode()).isEqualTo("autre");
 		EnrichmentEntity enrichment = enrichmentRepository.findAll().stream()
 				.filter(item -> item.getDocument().getId().equals(publication.getId()))
 				.findFirst()
@@ -116,7 +130,7 @@ class ExtractionServiceTests {
 		assertThat(suggestionRepository.findAll())
 				.filteredOn(suggestion -> suggestion.getEnrichment().getId().equals(enrichment.getId()))
 				.extracting("champ")
-				.containsExactlyInAnyOrder("titre", "auteurs", "resume", "classification", "mots_cles");
+				.containsExactlyInAnyOrder("titre", "auteurs", "resume", "classification", "mots_cles", "langue", "type_document");
 		assertThat(suggestionRepository.findAll())
 				.filteredOn(suggestion -> suggestion.getEnrichment().getId().equals(enrichment.getId()))
 				.extracting(suggestion -> suggestion.getSource())

@@ -12,6 +12,7 @@ import be.icc.metamind.api.ApiException;
 import be.icc.metamind.document.DocumentEntity;
 import be.icc.metamind.document.DocumentRepository;
 import be.icc.metamind.document.DocumentStatus;
+import be.icc.metamind.document.DocumentTypeRepository;
 import be.icc.metamind.document.EnrichmentEntity;
 import be.icc.metamind.document.EnrichmentRepository;
 import be.icc.metamind.document.EnrichmentStatus;
@@ -20,6 +21,7 @@ import be.icc.metamind.document.MetadataRepository;
 import be.icc.metamind.document.MetadataSuggestionEntity;
 import be.icc.metamind.document.MetadataSuggestionRepository;
 import be.icc.metamind.document.MetadataSuggestionSource;
+import be.icc.metamind.document.LanguageRepository;
 import be.icc.metamind.credit.CreditMovementEntity;
 import be.icc.metamind.credit.CreditMovementRepository;
 import be.icc.metamind.credit.CreditMovementType;
@@ -45,6 +47,8 @@ public class ExtractionService {
 	private final MetadataExtractionProvider extractionProvider;
 	private final TextPreparationService textPreparationService;
 	private final ConfidenceScorer confidenceScorer;
+	private final LanguageRepository languageRepository;
+	private final DocumentTypeRepository documentTypeRepository;
 
 	public ExtractionService(
 			DocumentRepository documentRepository,
@@ -56,7 +60,9 @@ public class ExtractionService {
 		EntityManager entityManager,
 		MetadataExtractionProvider extractionProvider,
 		TextPreparationService textPreparationService,
-		ConfidenceScorer confidenceScorer
+		ConfidenceScorer confidenceScorer,
+		LanguageRepository languageRepository,
+		DocumentTypeRepository documentTypeRepository
 	) {
 		this.documentRepository = documentRepository;
 		this.metadataRepository = metadataRepository;
@@ -68,6 +74,8 @@ public class ExtractionService {
 		this.extractionProvider = extractionProvider;
 		this.textPreparationService = textPreparationService;
 		this.confidenceScorer = confidenceScorer;
+		this.languageRepository = languageRepository;
+		this.documentTypeRepository = documentTypeRepository;
 	}
 
 	@Transactional(noRollbackFor = ApiException.class)
@@ -114,12 +122,22 @@ public class ExtractionService {
 			throw toApiException(primaryException);
 		}
 
+		PreparedDocument preparedDocument = textPreparationService.prepare(document.getExtractedText());
 		document.markExtractionCompleted(String.join(",", metadata.keywords()));
 		MetadataEntity metadataEntity = metadataRepository.findByDocumentId(document.getId())
 				.orElseGet(() -> metadataRepository.save(new MetadataEntity(document, document.getFileName(), null, null, null, be.icc.metamind.document.MetadataStatus.EN_ATTENTE)));
 		metadataEntity.markGenerated(metadata.title(), metadata.summary(), metadata.classification());
+		metadataEntity.updateExtractedReferences(
+				languageRepository.findByCodeIgnoreCase(preparedDocument.language()).orElse(null),
+				documentTypeRepository.findByCodeIgnoreCase("autre").orElse(null),
+				preparedDocument.dois().stream().findFirst().orElse(null)
+		);
 		enrichment.markCompleted(rawResponse(metadata));
-		saveSuggestions(enrichment, metadata, textPreparationService.prepare(document.getExtractedText()));
+		saveSuggestions(enrichment, metadata, preparedDocument);
+		saveSuggestion(enrichment, "langue", preparedDocument.language(), preparedDocument);
+		saveSuggestion(enrichment, "type_document", "autre", preparedDocument);
+		preparedDocument.dois().stream().findFirst()
+				.ifPresent(doi -> saveSuggestion(enrichment, "doi", doi, preparedDocument));
 		entityManager.refresh(institution);
 		movementRepository.save(new CreditMovementEntity(
 				institution,

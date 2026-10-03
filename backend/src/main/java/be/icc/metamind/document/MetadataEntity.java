@@ -52,6 +52,9 @@ public class MetadataEntity {
 	@JoinColumn(name = "type_document_id")
 	private DocumentTypeEntity documentType;
 
+	@Column(length = 255)
+	private String doi;
+
 	@Enumerated(EnumType.STRING)
 	@Column(name = "statut", nullable = false, length = 20)
 	private MetadataStatus status = MetadataStatus.EN_ATTENTE;
@@ -110,6 +113,10 @@ public class MetadataEntity {
 		return documentType;
 	}
 
+	public String getDoi() {
+		return doi;
+	}
+
 	public MetadataStatus getStatus() {
 		return status;
 	}
@@ -139,6 +146,12 @@ public class MetadataEntity {
 		this.classification = classification;
 		this.status = MetadataStatus.EN_ATTENTE;
 		this.generatedAt = LocalDateTime.now();
+	}
+
+	public void updateExtractedReferences(LanguageEntity language, DocumentTypeEntity documentType, String doi) {
+		this.language = language;
+		this.documentType = documentType;
+		this.doi = doi;
 	}
 
 	public void validate(String titre, String resume, LocalDate publicationDate, String classification, UserEntity validatedBy) {
