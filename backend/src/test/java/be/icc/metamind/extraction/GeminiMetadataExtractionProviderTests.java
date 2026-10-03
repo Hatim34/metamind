@@ -2,6 +2,7 @@ package be.icc.metamind.extraction;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.springframework.test.web.client.match.MockRestRequestMatchers.header;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
 
@@ -28,7 +29,8 @@ class GeminiMetadataExtractionProviderTests {
 				restClientBuilder,
 				new ObjectMapper(),
 				"secret",
-				"gemini-test"
+				"gemini-test",
+				new TextPreparationService(15_000)
 		);
 		String response = """
 				{
@@ -45,7 +47,8 @@ class GeminiMetadataExtractionProviderTests {
 				  ]
 				}
 				""";
-		server.expect(requestTo("https://generativelanguage.googleapis.com/v1beta/models/gemini-test:generateContent?key=secret"))
+		server.expect(requestTo("https://generativelanguage.googleapis.com/v1beta/models/gemini-test:generateContent"))
+				.andExpect(header("x-goog-api-key", "secret"))
 				.andRespond(withSuccess(response, MediaType.APPLICATION_JSON));
 
 		MetadataExtractionData metadata = provider.extract(publication());
@@ -64,7 +67,8 @@ class GeminiMetadataExtractionProviderTests {
 				RestClient.builder(),
 				new ObjectMapper(),
 				"",
-				"gemini-test"
+				"gemini-test",
+				new TextPreparationService(15_000)
 		);
 
 		assertThatThrownBy(() -> provider.extract(publication()))
