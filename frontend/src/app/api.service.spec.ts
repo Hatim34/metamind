@@ -237,7 +237,10 @@ describe('ApiService', () => {
       classification: 'Sciences de l information',
       visibilite: 'PUBLIC',
       auteurs: [{ nom_complet: 'Sarah Lemaire' }],
-      mots_cles: ['Dublin Core']
+      mots_cles: ['Dublin Core'],
+      langue: 'fr',
+      type_document: 'article',
+      doi: '10.1234/reel.2026'
     }).subscribe((response) => {
       expect(response.statut).toBe('VALIDE');
     });

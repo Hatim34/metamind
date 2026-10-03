@@ -123,6 +123,9 @@ export interface MetadataDetails {
   validee_par: number | null;
   auteurs: MetadataAuthor[];
   mots_cles: string[];
+  langue?: string | null;
+  type_document?: string | null;
+  doi?: string | null;
   texte_extrait?: string | null;
 }
 
@@ -134,6 +137,45 @@ export interface MetadataValidationRequest {
   visibilite: 'PUBLIC' | 'INSTITUTION';
   auteurs: MetadataAuthor[];
   mots_cles: string[];
+  langue: string | null;
+  type_document: string | null;
+  doi: string | null;
+}
+
+export interface ReferenceValue {
+  code: string;
+  libelle: string;
+}
+
+export interface ReferenceData {
+  langues: ReferenceValue[];
+  types_documents: ReferenceValue[];
+}
+
+export interface ExtractionFieldQuality {
+  champ: string;
+  arbitrees: number;
+  acceptees: number;
+  modifiees: number;
+  videes: number;
+  rejetees: number;
+  taux_acceptation: number;
+  distance_edition_moyenne: number;
+}
+
+export interface ExtractionCalibrationBucket {
+  tranche: string;
+  arbitrees: number;
+  acceptees: number;
+  taux_acceptation: number;
+}
+
+export interface ExtractionQuality {
+  scope: string;
+  suggestions_arbitrees: number;
+  taux_acceptation_global: number;
+  par_champ: ExtractionFieldQuality[];
+  calibration_score: ExtractionCalibrationBucket[];
 }
 
 export interface AuthResponse {
@@ -398,6 +440,14 @@ export class ApiService {
 
   validateMetadata(publicationId: number, request: MetadataValidationRequest): Observable<MetadataDetails> {
     return this.http.put<MetadataDetails>(`${this.baseUrl}/documents/${publicationId}/metadata`, request, { headers: this.authHeaders() });
+  }
+
+  getReferences(): Observable<ReferenceData> {
+    return this.http.get<ReferenceData>(`${this.baseUrl}/references`);
+  }
+
+  getExtractionQuality(): Observable<ExtractionQuality> {
+    return this.http.get<ExtractionQuality>(`${this.baseUrl}/stats/qualite-extraction`, { headers: this.authHeaders() });
   }
 
   rejectMetadata(publicationId: number, reason: string): Observable<unknown> {

@@ -199,3 +199,105 @@
   content: "#";
   opacity: 0.5;
 }
+
+/* Panneau de fiabilite mesuree du LLM (indicateurs calcules sur les arbitrages reels). */
+.quality-panel {
+  margin-top: 3rem;
+  padding-top: 2rem;
+  border-top: 1px solid var(--line-strong);
+}
+
+.quality-panel h3 {
+  margin: 2rem 0 0.3rem;
+  font-family: var(--f-display);
+  font-size: 1rem;
+}
+
+.quality-panel .hint {
+  margin: 0 0 1rem;
+  max-width: var(--measure);
+  font-size: 0.78rem;
+  color: var(--ink-faint);
+}
+
+.quality-kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.8rem;
+}
+
+.quality-kpis article {
+  padding: 1rem 1.1rem;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--surface);
+}
+
+.quality-kpis span {
+  display: block;
+  margin-bottom: 0.35rem;
+  font-family: var(--f-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+.quality-kpis strong {
+  font-family: var(--f-display);
+  font-size: 1.6rem;
+  color: var(--teal-dark);
+}
+
+/* Les tableaux larges defilent dans leur conteneur, jamais la page. */
+.quality-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+}
+
+.quality-table {
+  width: 100%;
+  min-width: 34rem;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+}
+
+.quality-table th,
+.quality-table td {
+  padding: 0.6rem 0.9rem;
+  text-align: left;
+  border-bottom: 1px solid var(--line);
+}
+
+.quality-table thead th {
+  font-family: var(--f-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  background: var(--teal-soft);
+}
+
+.quality-table tbody tr:last-child th,
+.quality-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.quality-table tbody th {
+  font-weight: 600;
+  color: var(--ink);
+}
+
+/* Jauge discrete doublant le pourcentage affiche (lisible sans la couleur seule). */
+.quality-bar {
+  display: inline-block;
+  width: 3.5rem;
+  height: 0.4rem;
+  margin-right: 0.5rem;
+  border-radius: 2px;
+  background: var(--line);
+  vertical-align: middle;
+  background-image: linear-gradient(to right, var(--teal) var(--quality-rate, 0%), transparent var(--quality-rate, 0%));
+}

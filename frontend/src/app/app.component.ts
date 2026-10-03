@@ -3,7 +3,7 @@ import { Component, HostListener, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Meta, Title } from '@angular/platform-browser';
 
-import { ApiService, AuditLog, AuthResponse, CreditMovement, CreditPackOption, DashboardStatistics, Institution, MetadataDetails, MetadataExtraction, Publication, PublicationStatus, SearchFilters, UserSession } from './api.service';
+import { ApiService, AuditLog, AuthResponse, CreditMovement, CreditPackOption, DashboardStatistics, ExtractionQuality, Institution, MetadataDetails, MetadataExtraction, Publication, PublicationStatus, ReferenceData, SearchFilters, UserSession } from './api.service';
 import { NavigationLabels, NavbarComponent } from './navbar.component';
 import { PublicationCardLabels, PublicationCardComponent } from './publication-card.component';
 import { PublicationDetailComponent, PublicationDetailLabels } from './publication-detail.component';
@@ -137,6 +137,33 @@ const translations = {
     publish: 'Publier',
     validateMetadataAction: 'Valider les métadonnées',
     editMetadata: 'Corriger les métadonnées',
+    metadataTitle: 'Titre',
+    metadataSummary: 'Résumé',
+    metadataClassification: 'Classification',
+    metadataAuthors: 'Auteurs',
+    metadataKeywords: 'Mots-clés',
+    metadataLanguage: 'Langue',
+    metadataDocumentType: 'Type de document',
+    metadataDoi: 'DOI',
+    metadataPublicationDate: 'Date de publication',
+    averageProcessingLabel: 'Temps moyen import vers publication',
+    languageNotSet: 'Non renseignée',
+    documentTypeNotSet: 'Non renseigné',
+    doiPlaceholderHint: 'Identifiant DOI, sans https://doi.org/',
+    qualityHeading: 'Fiabilité mesurée de l\'IA',
+    qualityIntro: 'Calculé sur les décisions réelles des bibliothécaires, champ par champ.',
+    qualityNoData: 'Aucune métadonnée validée pour le moment : les indicateurs apparaîtront après la première validation.',
+    qualityArbitrated: 'Suggestions arbitrées',
+    qualityOverallAcceptance: 'Taux d\'acceptation global',
+    qualityField: 'Champ',
+    qualityAccepted: 'Acceptées',
+    qualityModified: 'Corrigées',
+    qualityEmptied: 'Effacées',
+    qualityAcceptanceRate: 'Taux d\'acceptation',
+    qualityEditDistance: 'Ampleur des corrections',
+    qualityCalibration: 'Calibration du score de confiance',
+    qualityCalibrationIntro: 'Si le score est fiable, le taux d\'acceptation doit augmenter d\'une tranche à la suivante.',
+    qualityRange: 'Tranche de score',
     summary: 'Résumé',
     extractedText: 'Texte extrait',
     noExtractedText: 'Aucun texte extrait disponible.',
@@ -313,6 +340,33 @@ const translations = {
     publish: 'Publiceren',
     validateMetadataAction: 'Metadata valideren',
     editMetadata: 'Metadata corrigeren',
+    metadataTitle: 'Titel',
+    metadataSummary: 'Samenvatting',
+    metadataClassification: 'Classificatie',
+    metadataAuthors: 'Auteurs',
+    metadataKeywords: 'Trefwoorden',
+    metadataLanguage: 'Taal',
+    metadataDocumentType: 'Documenttype',
+    metadataDoi: 'DOI',
+    metadataPublicationDate: 'Publicatiedatum',
+    averageProcessingLabel: 'Gemiddelde tijd van import tot publicatie',
+    languageNotSet: 'Niet ingevuld',
+    documentTypeNotSet: 'Niet ingevuld',
+    doiPlaceholderHint: 'DOI-identificatie, zonder https://doi.org/',
+    qualityHeading: 'Gemeten betrouwbaarheid van de AI',
+    qualityIntro: 'Berekend op de werkelijke beslissingen van de bibliothecarissen, veld per veld.',
+    qualityNoData: 'Nog geen gevalideerde metadata: de indicatoren verschijnen na de eerste validatie.',
+    qualityArbitrated: 'Beoordeelde suggesties',
+    qualityOverallAcceptance: 'Globaal aanvaardingspercentage',
+    qualityField: 'Veld',
+    qualityAccepted: 'Aanvaard',
+    qualityModified: 'Gecorrigeerd',
+    qualityEmptied: 'Gewist',
+    qualityAcceptanceRate: 'Aanvaardingspercentage',
+    qualityEditDistance: 'Omvang van de correcties',
+    qualityCalibration: 'Kalibratie van de betrouwbaarheidsscore',
+    qualityCalibrationIntro: 'Als de score betrouwbaar is, moet het aanvaardingspercentage per schijf stijgen.',
+    qualityRange: 'Scoreschijf',
     summary: 'Samenvatting',
     extractedText: 'Geextraheerde tekst',
     noExtractedText: 'Geen geextraheerde tekst beschikbaar.',
@@ -489,6 +543,33 @@ const translations = {
     publish: 'Publish',
     validateMetadataAction: 'Validate metadata',
     editMetadata: 'Edit metadata',
+    metadataTitle: 'Title',
+    metadataSummary: 'Summary',
+    metadataClassification: 'Classification',
+    metadataAuthors: 'Authors',
+    metadataKeywords: 'Keywords',
+    metadataLanguage: 'Language',
+    metadataDocumentType: 'Document type',
+    metadataDoi: 'DOI',
+    metadataPublicationDate: 'Publication date',
+    averageProcessingLabel: 'Average time from import to publication',
+    languageNotSet: 'Not set',
+    documentTypeNotSet: 'Not set',
+    doiPlaceholderHint: 'DOI identifier, without https://doi.org/',
+    qualityHeading: 'Measured reliability of the AI',
+    qualityIntro: 'Computed from the librarians\' actual decisions, field by field.',
+    qualityNoData: 'No validated metadata yet: the indicators appear after the first validation.',
+    qualityArbitrated: 'Reviewed suggestions',
+    qualityOverallAcceptance: 'Overall acceptance rate',
+    qualityField: 'Field',
+    qualityAccepted: 'Accepted',
+    qualityModified: 'Corrected',
+    qualityEmptied: 'Cleared',
+    qualityAcceptanceRate: 'Acceptance rate',
+    qualityEditDistance: 'Extent of corrections',
+    qualityCalibration: 'Confidence score calibration',
+    qualityCalibrationIntro: 'If the score is reliable, the acceptance rate should rise from one band to the next.',
+    qualityRange: 'Score band',
     summary: 'Summary',
     extractedText: 'Extracted text',
     noExtractedText: 'No extracted text available.',
@@ -612,6 +693,9 @@ export class AppComponent implements OnInit {
     visibility: 'PUBLIC' as 'PUBLIC' | 'INSTITUTION',
     authors: '',
     keywords: '',
+    language: '',
+    documentType: '',
+    doi: '',
     extractedText: '',
     rejectReason: ''
   };
@@ -650,6 +734,8 @@ export class AppComponent implements OnInit {
   publicationFeedback: { type: 'success' | 'error'; text: string } | null = null;
   importFeedback: { type: 'success' | 'error'; text: string } | null = null;
   statistics: DashboardStatistics | null = null;
+  extractionQuality: ExtractionQuality | null = null;
+  references: ReferenceData = { langues: [], types_documents: [] };
   extractionResult: MetadataExtraction | null = null;
   selectedMetadataPublicationId: number | null = null;
   extractingPublicationIds = new Set<number>();
@@ -682,6 +768,7 @@ export class AppComponent implements OnInit {
     }
     this.loadPublications();
     this.loadCreditPacks();
+    this.loadReferences();
     this.updateSeo(this.t(this.pageTitleKey(this.page)), '');
     try {
       window.history.replaceState({ page: this.page }, '', '#/' + this.page);
@@ -734,6 +821,7 @@ export class AppComponent implements OnInit {
     this.page = page;
     if (page === 'validation') {
       this.loadValidationQueue();
+      this.loadStatistics();
     }
     if (page === 'administration') {
       this.loadInstitutions();
@@ -1258,6 +1346,7 @@ export class AppComponent implements OnInit {
   loadStatistics(): void {
     if (!this.session) {
       this.statistics = null;
+      this.extractionQuality = null;
       return;
     }
 
@@ -1270,6 +1359,52 @@ export class AppComponent implements OnInit {
         this.statistics = null;
       }
     });
+    this.loadExtractionQuality();
+  }
+
+  /** Fiabilite mesuree du LLM : calculee sur les arbitrages reels du bibliothecaire. */
+  loadExtractionQuality(): void {
+    if (!this.session) {
+      this.extractionQuality = null;
+      return;
+    }
+
+    this.api.getExtractionQuality().subscribe({
+      next: (quality) => {
+        this.extractionQuality = quality;
+      },
+      error: () => {
+        this.extractionQuality = null;
+      }
+    });
+  }
+
+  /** Vocabulaires controles : le backend refuse tout code absent de ces listes. */
+  loadReferences(): void {
+    this.api.getReferences().subscribe({
+      next: (references) => {
+        this.references = references;
+      },
+      error: () => {
+        this.references = { langues: [], types_documents: [] };
+      }
+    });
+  }
+
+  /** Libelle lisible d'un champ mesure, pour le tableau de qualite. */
+  fieldLabel(field: string): string {
+    const labels: Record<string, string> = {
+      titre: this.t('metadataTitle'),
+      resume: this.t('metadataSummary'),
+      classification: this.t('metadataClassification'),
+      auteurs: this.t('metadataAuthors'),
+      mots_cles: this.t('metadataKeywords'),
+      langue: this.t('metadataLanguage'),
+      type_document: this.t('metadataDocumentType'),
+      doi: this.t('metadataDoi'),
+      date_publication: this.t('metadataPublicationDate')
+    };
+    return labels[field] || field;
   }
 
   purchaseCredits(packId: number): void {
@@ -1361,6 +1496,9 @@ export class AppComponent implements OnInit {
           visibility: publication.visibility,
           authors: publication.author,
           keywords: publication.keywords.join(', '),
+          language: '',
+          documentType: '',
+          doi: '',
           extractedText: '',
           rejectReason: ''
         };
@@ -1387,7 +1525,10 @@ export class AppComponent implements OnInit {
         .map((author) => ({ nom_complet: author })),
       mots_cles: this.metadataForm.keywords.split(',')
         .map((keyword) => keyword.trim())
-        .filter(Boolean)
+        .filter(Boolean),
+      langue: this.metadataForm.language || null,
+      type_document: this.metadataForm.documentType || null,
+      doi: this.metadataForm.doi.trim() || null
     }).subscribe({
       next: () => {
         this.cancelMetadataValidation();
@@ -1414,6 +1555,9 @@ export class AppComponent implements OnInit {
       visibility: 'PUBLIC',
       authors: '',
       keywords: '',
+      language: '',
+      documentType: '',
+      doi: '',
       extractedText: '',
       rejectReason: ''
     };
@@ -1585,6 +1729,7 @@ export class AppComponent implements OnInit {
     this.creditBalance = null;
     this.creditMovements = [];
     this.statistics = null;
+    this.extractionQuality = null;
     this.extractionResult = null;
     this.selectedPublication = null;
     this.deletionRequested = false;
@@ -1808,6 +1953,9 @@ export class AppComponent implements OnInit {
       visibility: metadata.visibilite || publication.visibility,
       authors: metadata.auteurs.length > 0 ? metadata.auteurs.map((author) => author.nom_complet).join(', ') : publication.author,
       keywords: metadata.mots_cles.length > 0 ? metadata.mots_cles.join(', ') : publication.keywords.join(', '),
+      language: metadata.langue || '',
+      documentType: metadata.type_document || '',
+      doi: metadata.doi || '',
       extractedText: metadata.texte_extrait || '',
       rejectReason: ''
     };

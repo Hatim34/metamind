@@ -60,6 +60,8 @@ describe('AppComponent', () => {
       'getCreditBalance',
       'getCreditMovements',
       'getStatistics',
+      'getExtractionQuality',
+      'getReferences',
       'extractMetadata',
       'getMetadata',
       'validateMetadata',
@@ -107,6 +109,17 @@ describe('AppComponent', () => {
       publicPublications: 1,
       institutionOnlyPublications: 1,
       creditBalance: 20
+    }));
+    api.getExtractionQuality.and.returnValue(of({
+      scope: 'Institution A',
+      suggestions_arbitrees: 0,
+      taux_acceptation_global: 0,
+      par_champ: [],
+      calibration_score: []
+    }));
+    api.getReferences.and.returnValue(of({
+      langues: [{ code: 'fr', libelle: 'Francais' }],
+      types_documents: [{ code: 'article', libelle: 'Article scientifique' }]
     }));
     api.getAdminUsers.and.returnValue(of([]));
     api.getAdminConfig.and.returnValue(of({ prix_credit_eur: '0.50' }));
@@ -292,6 +305,9 @@ describe('AppComponent', () => {
       visibility: 'PUBLIC',
       authors: 'Sarah Lemaire',
       keywords: 'Dublin Core',
+      language: 'fr',
+      documentType: 'article',
+      doi: '10.1234/reel.2026',
       extractedText: '',
       rejectReason: ''
     };

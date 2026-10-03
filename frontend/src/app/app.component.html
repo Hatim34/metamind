@@ -165,6 +165,25 @@
               {{ t('keywords') }}
               <input name="metadataKeywords{{ publication.id }}" [(ngModel)]="metadataForm.keywords" required maxlength="500" />
             </label>
+            <label>
+              {{ t('metadataLanguage') }}
+              <select name="metadataLanguage{{ publication.id }}" [(ngModel)]="metadataForm.language">
+                <option value="">{{ t('languageNotSet') }}</option>
+                <option *ngFor="let language of references.langues" [value]="language.code">{{ language.libelle }}</option>
+              </select>
+            </label>
+            <label>
+              {{ t('metadataDocumentType') }}
+              <select name="metadataDocumentType{{ publication.id }}" [(ngModel)]="metadataForm.documentType">
+                <option value="">{{ t('documentTypeNotSet') }}</option>
+                <option *ngFor="let type of references.types_documents" [value]="type.code">{{ type.libelle }}</option>
+              </select>
+            </label>
+            <label>
+              {{ t('metadataDoi') }}
+              <input name="metadataDoi{{ publication.id }}" [(ngModel)]="metadataForm.doi" maxlength="255"
+                     [title]="t('doiPlaceholderHint')" />
+            </label>
             <div class="actions">
               <button class="primary" type="submit" [disabled]="!isMetadataFormValid()">{{ t('validateMetadataAction') }}</button>
               <button type="button" class="danger" (click)="toggleRejectForm()">{{ t('rejectMetadata') }}</button>
@@ -235,6 +254,9 @@
             <label>{{ t('classification') }}<input name="queueClassification{{ publication.id }}" [(ngModel)]="metadataForm.classification" maxlength="255" /></label>
             <label>{{ t('visibility') }}<select name="queueVisibility{{ publication.id }}" [(ngModel)]="metadataForm.visibility"><option value="PUBLIC">{{ t('publicVisibility') }}</option><option value="INSTITUTION">{{ t('institutionOnly') }}</option></select></label>
             <label>{{ t('keywords') }}<input name="queueKeywords{{ publication.id }}" [(ngModel)]="metadataForm.keywords" required maxlength="500" /></label>
+            <label>{{ t('metadataLanguage') }}<select name="queueLanguage{{ publication.id }}" [(ngModel)]="metadataForm.language"><option value="">{{ t('languageNotSet') }}</option><option *ngFor="let language of references.langues" [value]="language.code">{{ language.libelle }}</option></select></label>
+            <label>{{ t('metadataDocumentType') }}<select name="queueDocumentType{{ publication.id }}" [(ngModel)]="metadataForm.documentType"><option value="">{{ t('documentTypeNotSet') }}</option><option *ngFor="let type of references.types_documents" [value]="type.code">{{ type.libelle }}</option></select></label>
+            <label>{{ t('metadataDoi') }}<input name="queueDoi{{ publication.id }}" [(ngModel)]="metadataForm.doi" maxlength="255" [title]="t('doiPlaceholderHint')" /></label>
             <div class="actions"><button class="primary" type="submit" [disabled]="!isMetadataFormValid()">{{ t('validateMetadataAction') }}</button><button type="button" class="danger" (click)="toggleRejectForm()">{{ t('rejectMetadata') }}</button><button type="button" (click)="cancelMetadataValidation()">{{ t('cancel') }}</button></div>
             <div class="reject-box" *ngIf="showRejectForm">
               <label>{{ t('rejectReasonLabel') }}<textarea name="queueRejectReason{{ publication.id }}" [(ngModel)]="metadataForm.rejectReason" maxlength="1000" required></textarea></label>
@@ -245,6 +267,90 @@
         </div>
       </app-publication-card>
     </div>
+
+    <section class="quality-panel" *ngIf="session">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">{{ t('qualityHeading') }}</p>
+          <h2>{{ t('qualityIntro') }}</h2>
+        </div>
+      </div>
+
+      <p class="notice" *ngIf="!extractionQuality || extractionQuality.suggestions_arbitrees === 0">
+        {{ t('qualityNoData') }}
+      </p>
+
+      <ng-container *ngIf="extractionQuality && extractionQuality.suggestions_arbitrees > 0">
+        <div class="quality-kpis">
+          <article>
+            <span>{{ t('qualityArbitrated') }}</span>
+            <strong>{{ extractionQuality.suggestions_arbitrees }}</strong>
+          </article>
+          <article>
+            <span>{{ t('qualityOverallAcceptance') }}</span>
+            <strong>{{ extractionQuality.taux_acceptation_global }}%</strong>
+          </article>
+          <article *ngIf="statistics?.averageProcessingHours !== undefined">
+            <span>{{ t('averageProcessingLabel') }}</span>
+            <strong>{{ statistics?.averageProcessingHours }} h</strong>
+          </article>
+        </div>
+
+        <div class="quality-table-wrap">
+          <table class="quality-table">
+            <thead>
+              <tr>
+                <th>{{ t('qualityField') }}</th>
+                <th>{{ t('qualityAccepted') }}</th>
+                <th>{{ t('qualityModified') }}</th>
+                <th>{{ t('qualityEmptied') }}</th>
+                <th>{{ t('qualityAcceptanceRate') }}</th>
+                <th>{{ t('qualityEditDistance') }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let field of extractionQuality.par_champ">
+                <th scope="row">{{ fieldLabel(field.champ) }}</th>
+                <td>{{ field.acceptees }}</td>
+                <td>{{ field.modifiees }}</td>
+                <td>{{ field.videes }}</td>
+                <td>
+                  <span class="quality-bar" [style.--quality-rate.%]="field.taux_acceptation"></span>
+                  {{ field.taux_acceptation }}%
+                </td>
+                <td>{{ field.distance_edition_moyenne }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>{{ t('qualityCalibration') }}</h3>
+        <p class="hint">{{ t('qualityCalibrationIntro') }}</p>
+        <div class="quality-table-wrap">
+          <table class="quality-table">
+            <thead>
+              <tr>
+                <th>{{ t('qualityRange') }}</th>
+                <th>{{ t('qualityArbitrated') }}</th>
+                <th>{{ t('qualityAccepted') }}</th>
+                <th>{{ t('qualityAcceptanceRate') }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let bucket of extractionQuality.calibration_score">
+                <th scope="row">{{ bucket.tranche }}</th>
+                <td>{{ bucket.arbitrees }}</td>
+                <td>{{ bucket.acceptees }}</td>
+                <td>
+                  <span class="quality-bar" [style.--quality-rate.%]="bucket.taux_acceptation"></span>
+                  {{ bucket.taux_acceptation }}%
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </ng-container>
+    </section>
   </section>
 
   <app-publication-detail
