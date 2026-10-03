@@ -1,9 +1,11 @@
+-- Idempotent : sur une base historique, Hibernate (ddl-auto=update) a deja pu creer
+-- ces colonnes nullables. Flyway doit pouvoir rejouer sans tomber sur "column already exists".
 ALTER TABLE suggestions_metadonnees
-    ADD COLUMN preuve TEXT,
-    ADD COLUMN signaux TEXT,
-    ADD COLUMN segments TEXT,
-    ADD COLUMN source VARCHAR(20) NOT NULL DEFAULT 'LLM',
-    ADD COLUMN url_source TEXT,
-    ADD COLUMN distance_edition NUMERIC(4,3);
+    ADD COLUMN IF NOT EXISTS preuve TEXT,
+    ADD COLUMN IF NOT EXISTS signaux TEXT,
+    ADD COLUMN IF NOT EXISTS segments TEXT,
+    ADD COLUMN IF NOT EXISTS source VARCHAR(20) NOT NULL DEFAULT 'LLM',
+    ADD COLUMN IF NOT EXISTS url_source TEXT,
+    ADD COLUMN IF NOT EXISTS distance_edition NUMERIC(4,3);
 
-CREATE INDEX idx_suggestions_source ON suggestions_metadonnees(source);
+CREATE INDEX IF NOT EXISTS idx_suggestions_source ON suggestions_metadonnees(source);
