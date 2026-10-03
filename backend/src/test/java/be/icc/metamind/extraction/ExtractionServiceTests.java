@@ -121,6 +121,15 @@ class ExtractionServiceTests {
 				.filteredOn(suggestion -> suggestion.getEnrichment().getId().equals(enrichment.getId()))
 				.extracting(suggestion -> suggestion.getSource())
 				.containsOnly(MetadataSuggestionSource.LLM);
+		assertThat(suggestionRepository.findAll())
+				.filteredOn(suggestion -> suggestion.getEnrichment().getId().equals(enrichment.getId()))
+				.filteredOn(suggestion -> suggestion.getChamp().equals("titre"))
+				.singleElement()
+				.satisfies(suggestion -> {
+					assertThat(suggestion.getEvidence()).contains("Analyse automatique des metadonnees");
+					assertThat(suggestion.getSignals()).contains("preuve retrouvee");
+					assertThat(suggestion.getSegments()).isEqualTo("S1");
+				});
 		assertThat(movementRepository.findByInstitutionIdOrderByCreatedAtDesc(institution.getId()))
 				.hasSize(1)
 				.first()
