@@ -138,7 +138,7 @@ public class DocumentEntity {
 	}
 
 	public void markExtractionFailed() {
-		this.status = DocumentStatus.EN_ATTENTE;
+		this.status = DocumentStatus.ECHEC;
 	}
 
 	public void completeImportProcessing(String extractedText, String coverImagePath) {

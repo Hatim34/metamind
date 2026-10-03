@@ -302,7 +302,10 @@ public class PublicationService {
 		if (!canManage(document, currentUser)) {
 			throw new ApiException(HttpStatus.FORBIDDEN, "Cette publication ne peut pas etre modifiee avec ce compte.");
 		}
-		if (request.status() == PublicationStatus.EN_ATTENTE || request.status() == PublicationStatus.EXTRACTION) {
+		if (request.status() == PublicationStatus.EN_ATTENTE
+				|| request.status() == PublicationStatus.EN_FILE
+				|| request.status() == PublicationStatus.EXTRACTION
+				|| request.status() == PublicationStatus.ECHEC) {
 			throw new ApiException(HttpStatus.BAD_REQUEST, "Ce statut est reserve au traitement interne.");
 		}
 		document.updateStatus(toDocumentStatus(request.status()));

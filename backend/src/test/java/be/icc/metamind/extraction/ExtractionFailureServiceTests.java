@@ -103,7 +103,7 @@ class ExtractionFailureServiceTests {
 				() -> extractionService.extract(document.getId(), user));
 		assertThat(exception.getStatus()).isEqualTo(HttpStatus.SERVICE_UNAVAILABLE);
 		assertThat(institution.getCreditBalance()).isEqualTo(2);
-		assertThat(document.getStatus()).isEqualTo(DocumentStatus.EN_ATTENTE);
+		assertThat(document.getStatus()).isEqualTo(DocumentStatus.ECHEC);
 		assertThat(movementRepository.findByInstitutionIdOrderByCreatedAtDesc(institution.getId()))
 				.singleElement().satisfies(movement -> {
 					assertThat(movement.getType()).isEqualTo(CreditMovementType.REMBOURSEMENT);
