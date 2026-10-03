@@ -74,7 +74,8 @@ class CreditServiceTests {
 		packRepository.save(new be.icc.metamind.document.CreditPackEntity(
 				user.getInstitution(), 100, new BigDecimal("50.00"), reference, CreditPackStatus.EN_ATTENTE));
 
-		StripeWebhookRequest event = new StripeWebhookRequest(reference, "checkout.session.completed", "evt_123");
+		StripeWebhookRequest event = new StripeWebhookRequest(
+				reference, "checkout.session.completed", "evt_123", 5000L, "eur");
 		creditService.confirmStripePayment(event);
 		creditService.confirmStripePayment(event);
 

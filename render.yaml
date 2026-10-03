@@ -30,7 +30,7 @@ services:
           name: metamind-db
           property: password
       - key: METAMIND_JPA_DDL_AUTO
-        value: update
+        value: validate
       - key: METAMIND_H2_CONSOLE
         value: "false"
       - key: METAMIND_SEED_DATA

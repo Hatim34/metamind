@@ -489,12 +489,12 @@ class ApiControllerTests {
 	}
 
 	@Test
-	void stripeWebhookAcceptsCheckoutSessionEventPayload() throws Exception {
+	void librarianCannotStartCreditCheckout() throws Exception {
 		mockMvc.perform(post("/api/v1/credits")
 						.header("Authorization", bearerToken())
 						.contentType(MediaType.APPLICATION_JSON)
 					.content("{\"pack_id\":2,\"cgv_acceptees\":true,\"renonciation_retractation_acceptee\":true}"))
-				.andExpect(status().isServiceUnavailable());
+				.andExpect(status().isForbidden());
 	}
 
 	@Test
