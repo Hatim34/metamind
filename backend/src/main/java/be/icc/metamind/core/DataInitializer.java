@@ -76,7 +76,7 @@ public class DataInitializer implements ApplicationRunner {
 			CreditMovementRepository creditMovementRepository,
 			LanguageRepository languageRepository,
 			DocumentTypeRepository documentTypeRepository,
-			@Value("${metamind.seed-data:true}") boolean enabled,
+			@Value("${metamind.seed-data:false}") boolean enabled,
 			@Value("${metamind.seed-reset:false}") boolean resetSeed,
 			@Value("${metamind.seed-password:demo-password-change-me}") String seedPassword
 	) {
