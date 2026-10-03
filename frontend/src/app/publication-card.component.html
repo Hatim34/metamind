@@ -10,7 +10,7 @@
     </div>
   </div>
 
-  <ol class="doc-pipeline" *ngIf="publication.status !== 'SUPPRIME'" aria-hidden="true">
+  <ol class="doc-pipeline" *ngIf="showWorkflow && publication.status !== 'SUPPRIME'" aria-hidden="true">
     <li *ngFor="let step of steps" [class]="'pipe-' + step.state">
       <span class="pipe-dot"></span>
       <span class="pipe-label">{{ step.label }}</span>

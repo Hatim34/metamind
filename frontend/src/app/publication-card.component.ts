@@ -37,6 +37,7 @@ export class PublicationCardComponent implements OnChanges, OnDestroy {
   @Input() allowEdit = false;
   @Input() allowDelete = false;
   @Input() allowRetry = false;
+  @Input() showWorkflow = false;
 
   @Output() consult = new EventEmitter<Publication>();
   @Output() extract = new EventEmitter<Publication>();
