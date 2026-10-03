@@ -513,6 +513,48 @@ paths:
                     type: object
                     additionalProperties: { type: integer }
 
+  /stats/qualite-extraction:
+    get:
+      tags: [Statistiques]
+      summary: Fiabilite mesuree du LLM (taux d'acceptation par champ, calibration du score)
+      description: >
+        Indicateurs calcules a partir des arbitrages reels du bibliothecaire enregistres a la
+        validation. Cloisonne par institution ; l'administrateur obtient la vue globale.
+      responses:
+        '200':
+          description: Qualite d'extraction mesuree
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  scope: { type: string, example: Institution A }
+                  suggestions_arbitrees: { type: integer, example: 240 }
+                  taux_acceptation_global: { type: number, format: double, example: 71.25 }
+                  par_champ:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        champ: { type: string, example: titre }
+                        arbitrees: { type: integer, example: 48 }
+                        acceptees: { type: integer, example: 41 }
+                        modifiees: { type: integer, example: 6 }
+                        videes: { type: integer, example: 1 }
+                        rejetees: { type: integer, example: 0 }
+                        taux_acceptation: { type: number, format: double, example: 85.42 }
+                        distance_edition_moyenne: { type: number, format: double, example: 0.071 }
+                  calibration_score:
+                    type: array
+                    description: Taux d'acceptation par tranche de score ; il doit croitre si le score est calibre.
+                    items:
+                      type: object
+                      properties:
+                        tranche: { type: string, example: 0.85-1.00 }
+                        arbitrees: { type: integer, example: 120 }
+                        acceptees: { type: integer, example: 109 }
+                        taux_acceptation: { type: number, format: double, example: 90.83 }
+
   /admin/users:
     get:
       tags: [Administration]
@@ -810,8 +852,9 @@ components:
         texte_extrait: { type: string, description: Texte extrait du fichier pour la validation cote a cote }
         date_publication: { type: string, format: date, example: "2023-05-12" }
         classification: { type: string, example: Chimie }
-        langue: { type: string, example: fr }
-        type_document: { type: string, example: article }
+        langue: { type: string, nullable: true, description: Code ISO 639-1, example: fr }
+        type_document: { type: string, nullable: true, description: Code du vocabulaire controle, example: article }
+        doi: { type: string, nullable: true, example: "10.1234/reel.2026" }
         statut: { type: string, enum: [EN_ATTENTE, VALIDE, REJETE], example: VALIDE }
         visibilite: { type: string, enum: [PUBLIC, INSTITUTION], example: PUBLIC }
         date_validation: { type: string, format: date-time }

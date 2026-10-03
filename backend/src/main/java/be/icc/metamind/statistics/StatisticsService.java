@@ -15,6 +15,7 @@ import be.icc.metamind.document.DocumentStatus;
 import be.icc.metamind.document.DocumentVisibility;
 import be.icc.metamind.document.MetadataEntity;
 import be.icc.metamind.document.MetadataRepository;
+import be.icc.metamind.document.MetadataStatus;
 import be.icc.metamind.institution.InstitutionRepository;
 import be.icc.metamind.user.UserEntity;
 import be.icc.metamind.user.UserRole;
@@ -47,7 +48,7 @@ public class StatisticsService {
 		long pendingValidation = countStatus(documents, DocumentStatus.A_VALIDER);
 		long publicDocuments = countVisibility(documents, DocumentVisibility.PUBLIC);
 		long institutionOnlyDocuments = countVisibility(documents, DocumentVisibility.INSTITUTION);
-		long rejected = countStatus(documents, DocumentStatus.SUPPRIME);
+		long rejected = countRejectedMetadata(documents);
 		int creditBalance = creditBalance(currentUser);
 		String scope = currentUser.getRole() == UserRole.ADMIN ? "GLOBAL" : currentUser.getInstitution().getName();
 		return new StatisticsResponse(
@@ -90,6 +91,14 @@ public class StatisticsService {
 
 	private long countStatus(List<DocumentEntity> documents, DocumentStatus status) {
 		return documents.stream().filter(document -> document.getStatus() == status).count();
+	}
+
+	private long countRejectedMetadata(List<DocumentEntity> documents) {
+		return documents.stream()
+				.map(document -> metadataRepository.findByDocumentId(document.getId()).orElse(null))
+				.filter(Objects::nonNull)
+				.filter(metadata -> metadata.getStatus() == MetadataStatus.REJETE)
+				.count();
 	}
 
 	private long countVisibility(List<DocumentEntity> documents, DocumentVisibility visibility) {

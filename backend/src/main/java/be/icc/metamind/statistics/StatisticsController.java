@@ -15,10 +15,16 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping({"/api/v1/stats", "/api/v1/statistics"})
 public class StatisticsController {
 	private final StatisticsService service;
+	private final ExtractionQualityService extractionQualityService;
 	private final AccountService accountService;
 
-	public StatisticsController(StatisticsService service, AccountService accountService) {
+	public StatisticsController(
+			StatisticsService service,
+			ExtractionQualityService extractionQualityService,
+			AccountService accountService
+	) {
 		this.service = service;
+		this.extractionQualityService = extractionQualityService;
 		this.accountService = accountService;
 	}
 
@@ -30,5 +36,12 @@ public class StatisticsController {
 	) {
 		UserEntity currentUser = accountService.authenticate(authorization);
 		return service.getStatistics(currentUser, startDate, endDate);
+	}
+
+	/** Fiabilite mesuree du LLM : taux d'acceptation par champ et calibration du score de confiance. */
+	@GetMapping("/qualite-extraction")
+	public ExtractionQualityResponse getExtractionQuality(@RequestHeader("Authorization") String authorization) {
+		UserEntity currentUser = accountService.authenticate(authorization);
+		return extractionQualityService.getQuality(currentUser);
 	}
 }
