@@ -26,6 +26,29 @@ class TextPreparationServiceTests {
 	}
 
 	@Test
+	void deducesTheDocumentTypeFromItsOwnWording() {
+		assertThat(service.detectDocumentType("These de doctorat presentee par Sarah Lemaire")).isEqualTo("these");
+		assertThat(service.detectDocumentType("Memoire de master en sciences informatiques")).isEqualTo("memoire");
+		assertThat(service.detectDocumentType("Rapport technique numero 12")).isEqualTo("rapport");
+		assertThat(service.detectDocumentType("Proceedings of the 4th conference on metadata")).isEqualTo("communication");
+		assertThat(service.detectDocumentType("Journal of Information Science, received: 2026")).isEqualTo("article");
+	}
+
+	@Test
+	void doesNotInventADocumentTypeWhenNoClueIsPresent() {
+		assertThat(service.detectDocumentType("Analyse automatique des metadonnees")).isNull();
+		assertThat(service.detectDocumentType("")).isNull();
+		assertThat(service.detectDocumentType(null)).isNull();
+	}
+
+	@Test
+	void prefersTheMostSpecificClueWhenSeveralMatch() {
+		// Une these citant une revue reste une these.
+		assertThat(service.detectDocumentType("These de doctorat publiee dans la revue Journal of Testing"))
+				.isEqualTo("these");
+	}
+
+	@Test
 	void boundsTheExcerptWhileKeepingTheStartAndEnd() {
 		String text = "START " + "a".repeat(2_000) + " END";
 

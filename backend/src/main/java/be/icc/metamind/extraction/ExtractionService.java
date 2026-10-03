@@ -2,10 +2,16 @@ package be.icc.metamind.extraction;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDate;
+import java.time.Year;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import be.icc.metamind.api.ApiException;
@@ -37,6 +43,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class ExtractionService {
+	private static final Pattern YEAR_PATTERN = Pattern.compile("\\b(1[89]\\d{2}|20\\d{2}|21\\d{2})\\b");
+
 	private final DocumentRepository documentRepository;
 	private final MetadataRepository metadataRepository;
 	private final EnrichmentRepository enrichmentRepository;
@@ -108,7 +116,7 @@ public class ExtractionService {
 				user,
 				EnrichmentStatus.EN_COURS,
 				extractionProvider.modelName(),
-				"v1"
+				extractionProvider.promptVersion()
 		));
 
 		MetadataExtractionData metadata;
@@ -126,18 +134,27 @@ public class ExtractionService {
 		document.markExtractionCompleted(String.join(",", metadata.keywords()));
 		MetadataEntity metadataEntity = metadataRepository.findByDocumentId(document.getId())
 				.orElseGet(() -> metadataRepository.save(new MetadataEntity(document, document.getFileName(), null, null, null, be.icc.metamind.document.MetadataStatus.EN_ATTENTE)));
+		// Le DOI annonce par le modele ne vaut que s'il est confirme par le texte ; sinon on garde celui detecte.
+		String detectedDoi = preparedDocument.dois().stream().findFirst().orElse(null);
+		String doi = confirmedDoi(metadata.doi(), preparedDocument, detectedDoi);
+		LocalDate publicationDate = parsePublicationDate(metadata.publicationDate());
+
 		metadataEntity.markGenerated(metadata.title(), metadata.summary(), metadata.classification());
 		metadataEntity.updateExtractedReferences(
-				languageRepository.findByCodeIgnoreCase(preparedDocument.language()).orElse(null),
-				documentTypeRepository.findByCodeIgnoreCase("autre").orElse(null),
-				preparedDocument.dois().stream().findFirst().orElse(null)
+				referenceByCode(preparedDocument.language(), languageRepository::findByCodeIgnoreCase),
+				referenceByCode(preparedDocument.documentType(), documentTypeRepository::findByCodeIgnoreCase),
+				doi,
+				publicationDate
 		);
 		enrichment.markCompleted(rawResponse(metadata));
 		saveSuggestions(enrichment, metadata, preparedDocument);
 		saveSuggestion(enrichment, "langue", preparedDocument.language(), preparedDocument);
-		saveSuggestion(enrichment, "type_document", "autre", preparedDocument);
-		preparedDocument.dois().stream().findFirst()
-				.ifPresent(doi -> saveSuggestion(enrichment, "doi", doi, preparedDocument));
+		saveSuggestion(enrichment, "type_document", preparedDocument.documentType(), preparedDocument);
+		saveSuggestion(enrichment, "date_publication",
+				publicationDate == null ? null : publicationDate.toString(), preparedDocument, metadata);
+		if (doi != null) {
+			saveSuggestion(enrichment, "doi", doi, preparedDocument, metadata);
+		}
 		entityManager.refresh(institution);
 		movementRepository.save(new CreditMovementEntity(
 				institution,
@@ -156,6 +173,54 @@ public class ExtractionService {
 				metadata.keywords(),
 				institution.getCreditBalance()
 		);
+	}
+
+	/**
+	 * Retient le DOI annonce par le modele seulement s'il apparait reellement dans le document.
+	 * Un DOI invente est ecarte au profit de celui detecte par expression reguliere, s'il existe.
+	 */
+	private String confirmedDoi(String modelDoi, PreparedDocument preparedDocument, String detectedDoi) {
+		if (modelDoi == null || modelDoi.isBlank()) {
+			return detectedDoi;
+		}
+		String candidate = modelDoi.trim();
+		boolean presentInText = preparedDocument.dois().stream().anyMatch(candidate::equalsIgnoreCase)
+				|| preparedDocument.normalizedText().toLowerCase(Locale.ROOT)
+						.contains(candidate.toLowerCase(Locale.ROOT));
+		return presentInText ? candidate : detectedDoi;
+	}
+
+	/** Lit la date proposee par le modele ; une date illisible est ignoree plutot que corrigee. */
+	private LocalDate parsePublicationDate(String value) {
+		if (value == null || value.isBlank()) {
+			return null;
+		}
+		try {
+			return LocalDate.parse(value.trim());
+		}
+		catch (DateTimeParseException ignored) {
+			return yearOnly(value.trim());
+		}
+	}
+
+	private LocalDate yearOnly(String value) {
+		Matcher matcher = YEAR_PATTERN.matcher(value);
+		if (!matcher.find()) {
+			return null;
+		}
+		int year = Integer.parseInt(matcher.group());
+		if (year < 1900 || year > Year.now().getValue() + 1) {
+			return null;
+		}
+		return LocalDate.of(year, 1, 1);
+	}
+
+	/** Resout une valeur de reference sans interroger la base quand le code n'a pas ete detecte. */
+	private <T> T referenceByCode(String code, java.util.function.Function<String, java.util.Optional<T>> finder) {
+		if (code == null || code.isBlank()) {
+			return null;
+		}
+		return finder.apply(code).orElse(null);
 	}
 
 	private void refundCredit(InstitutionEntity institution) {
@@ -214,16 +279,28 @@ public class ExtractionService {
 	}
 
 	private void saveSuggestions(EnrichmentEntity enrichment, MetadataExtractionData metadata, PreparedDocument preparedDocument) {
-		saveSuggestion(enrichment, "titre", metadata.title(), preparedDocument);
-		saveSuggestion(enrichment, "auteurs", metadata.author(), preparedDocument);
-		saveSuggestion(enrichment, "resume", metadata.summary(), preparedDocument);
-		saveSuggestion(enrichment, "classification", metadata.classification(), preparedDocument);
-		saveSuggestion(enrichment, "mots_cles", String.join(", ", metadata.keywords()), preparedDocument);
+		saveSuggestion(enrichment, "titre", metadata.title(), preparedDocument, metadata);
+		saveSuggestion(enrichment, "auteurs", metadata.author(), preparedDocument, metadata);
+		saveSuggestion(enrichment, "resume", metadata.summary(), preparedDocument, metadata);
+		saveSuggestion(enrichment, "classification", metadata.classification(), preparedDocument, metadata);
+		saveSuggestion(enrichment, "mots_cles", String.join(", ", metadata.keywords()), preparedDocument, metadata);
 	}
 
+	/** Champs deduits localement (langue, type, DOI) : le modele n'annonce aucune confiance pour eux. */
 	private void saveSuggestion(EnrichmentEntity enrichment, String field, String value, PreparedDocument preparedDocument) {
+		saveSuggestion(enrichment, field, value, preparedDocument, null);
+	}
+
+	private void saveSuggestion(
+			EnrichmentEntity enrichment,
+			String field,
+			String value,
+			PreparedDocument preparedDocument,
+			MetadataExtractionData metadata
+	) {
 		String evidence = evidenceFor(value, preparedDocument.normalizedText());
-		ConfidenceScore score = confidenceScorer.score(field, value, evidence, 0.5, preparedDocument);
+		Double modelConfidence = metadata == null ? null : metadata.modelConfidenceOf(field);
+		ConfidenceScore score = confidenceScorer.score(field, value, evidence, modelConfidence, preparedDocument);
 		suggestionRepository.save(new MetadataSuggestionEntity(
 				enrichment,
 				field,

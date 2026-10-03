@@ -121,7 +121,8 @@ class ExtractionServiceTests {
 		assertThat(metadata.getResume()).contains("Analyse automatique des metadonnees");
 		assertThat(metadata.getClassification()).isEqualTo("Sciences de l'information");
 		assertThat(metadata.getLanguage().getCode()).isEqualTo("fr");
-		assertThat(metadata.getDocumentType().getCode()).isEqualTo("autre");
+		// Aucun indice de type dans ce document : le type reste vide au lieu d'etre invente.
+		assertThat(metadata.getDocumentType()).isNull();
 		EnrichmentEntity enrichment = enrichmentRepository.findAll().stream()
 				.filter(item -> item.getDocument().getId().equals(publication.getId()))
 				.findFirst()
@@ -130,7 +131,9 @@ class ExtractionServiceTests {
 		assertThat(suggestionRepository.findAll())
 				.filteredOn(suggestion -> suggestion.getEnrichment().getId().equals(enrichment.getId()))
 				.extracting("champ")
-				.containsExactlyInAnyOrder("titre", "auteurs", "resume", "classification", "mots_cles", "langue", "type_document");
+				.containsExactlyInAnyOrder(
+						"titre", "auteurs", "resume", "classification", "mots_cles",
+						"langue", "type_document", "date_publication");
 		assertThat(suggestionRepository.findAll())
 				.filteredOn(suggestion -> suggestion.getEnrichment().getId().equals(enrichment.getId()))
 				.extracting(suggestion -> suggestion.getSource())

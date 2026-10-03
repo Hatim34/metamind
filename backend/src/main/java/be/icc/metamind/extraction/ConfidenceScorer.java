@@ -16,11 +16,16 @@ public class ConfidenceScorer {
 			"article", "these", "memoire", "rapport", "chapitre", "communication", "preprint", "autre"
 	);
 
+	/**
+	 * @param modelConfidence confiance annoncee par le modele, ou null s'il n'en a pas fourni.
+	 *                        Dans ce cas le score repose uniquement sur les verifications locales :
+	 *                        aucune valeur de remplacement n'est inventee.
+	 */
 	public ConfidenceScore score(
 			String field,
 			String value,
 			String evidence,
-			double modelConfidence,
+			Double modelConfidence,
 			PreparedDocument document
 	) {
 		List<String> signals = new ArrayList<>();
@@ -45,7 +50,14 @@ public class ConfidenceScorer {
 			case "type_document" -> vocabularyScore(value, DOCUMENT_TYPES, heuristic, signals);
 			default -> heuristic;
 		};
-		double score = clamp((0.4 * clamp(modelConfidence)) + (0.6 * heuristic));
+		double score;
+		if (modelConfidence == null) {
+			signals.add("confiance du modele non fournie : score fonde sur les verifications locales");
+			score = clamp(heuristic);
+		} else {
+			signals.add("confiance annoncee par le modele : " + Math.round(clamp(modelConfidence) * 100) + "%");
+			score = clamp((0.4 * clamp(modelConfidence)) + (0.6 * heuristic));
+		}
 		if (!evidenceFound) {
 			score = Math.min(score, 0.30);
 		}

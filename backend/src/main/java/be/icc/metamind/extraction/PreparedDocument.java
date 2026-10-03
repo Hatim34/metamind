@@ -8,6 +8,7 @@ public record PreparedDocument(
 		String excerpt,
 		List<Segment> segments,
 		String language,
+		String documentType,
 		Set<String> dois,
 		Set<String> orcids
 ) {

@@ -12,10 +12,35 @@ class ConfidenceScorerTests {
 	void capsTheScoreWhenEvidenceIsInvented() {
 		PreparedDocument document = preparationService.prepare("Titre reel de la publication.");
 
-		ConfidenceScore score = scorer.score("titre", "Titre reel de la publication", "citation inventee", 1, document);
+		ConfidenceScore score = scorer.score("titre", "Titre reel de la publication", "citation inventee", 1.0, document);
 
 		assertThat(score.value()).isLessThanOrEqualTo(0.30);
 		assertThat(score.level()).isEqualTo("ROUGE");
+	}
+
+	@Test
+	void doesNotInventAModelConfidenceWhenTheProviderGivesNone() {
+		PreparedDocument document = preparationService.prepare("Titre reel de la publication.");
+
+		ConfidenceScore score = scorer.score(
+				"titre", "Titre reel de la publication", "Titre reel de la publication", null, document);
+
+		assertThat(score.signals()).contains("confiance du modele non fournie : score fonde sur les verifications locales");
+		assertThat(score.value()).isGreaterThan(0.30);
+	}
+
+	@Test
+	void takesTheAnnouncedModelConfidenceIntoAccountWhenItIsProvided() {
+		PreparedDocument document = preparationService.prepare("Titre reel de la publication.");
+
+		ConfidenceScore confident = scorer.score(
+				"titre", "Titre reel de la publication", "Titre reel de la publication", 1.0, document);
+		ConfidenceScore doubtful = scorer.score(
+				"titre", "Titre reel de la publication", "Titre reel de la publication", 0.0, document);
+
+		assertThat(confident.value()).isGreaterThan(doubtful.value());
+		assertThat(confident.signals()).contains("confiance annoncee par le modele : 100%");
+		assertThat(doubtful.signals()).contains("confiance annoncee par le modele : 0%");
 	}
 
 	@Test

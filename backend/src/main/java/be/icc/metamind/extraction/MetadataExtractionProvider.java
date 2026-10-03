@@ -8,4 +8,9 @@ public interface MetadataExtractionProvider {
 	default String modelName() {
 		return "local";
 	}
+
+	/** Version du prompt reellement utilisee, conservee dans enrichissements pour la tracabilite. */
+	default String promptVersion() {
+		return "local-v1";
+	}
 }

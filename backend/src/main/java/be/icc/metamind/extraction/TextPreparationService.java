@@ -1,5 +1,6 @@
 package be.icc.metamind.extraction;
 
+import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -27,6 +28,39 @@ public class TextPreparationService {
 	);
 	private static final int DEFAULT_MAX_INPUT_CHARS = 15_000;
 	private static final int MAX_SEGMENT_CHARS = 1_500;
+
+	private record TypeCue(String type, List<String> markers) {
+	}
+
+	/** Indices ordonnes du plus specifique au plus general (le premier qui correspond gagne). */
+	private static final List<TypeCue> DOCUMENT_TYPE_CUES = List.of(
+			new TypeCue("these", List.of(
+					"these de doctorat", "these presentee", "doctoral thesis", "phd thesis",
+					"doctor of philosophy", "proefschrift", "doctoraatsproefschrift"
+			)),
+			new TypeCue("memoire", List.of(
+					"memoire de master", "memoire presente", "master thesis", "master's thesis",
+					"masterproef", "bachelorproef", "travail de fin d etudes", "travail de fin d etude"
+			)),
+			new TypeCue("preprint", List.of(
+					"preprint", "arxiv:", "biorxiv", "not peer reviewed", "submitted for publication"
+			)),
+			new TypeCue("chapitre", List.of(
+					"chapitre de livre", "book chapter", "boekhoofdstuk", "in: handbook", "chapter in"
+			)),
+			new TypeCue("communication", List.of(
+					"actes du colloque", "actes de la conference", "conference proceedings",
+					"proceedings of the", "communication presentee", "congresbijdrage"
+			)),
+			new TypeCue("rapport", List.of(
+					"rapport technique", "rapport de recherche", "rapport annuel", "technical report",
+					"working paper", "onderzoeksrapport", "research report"
+			)),
+			new TypeCue("article", List.of(
+					"journal of", "peer-reviewed", "peer reviewed", "publie dans la revue",
+					"tijdschrift", "received:", "accepted:"
+			))
+	);
 	private final int defaultMaxInputChars;
 
 	public TextPreparationService(@Value("${metamind.llm.max-input-chars:15000}") int defaultMaxInputChars) {
@@ -45,6 +79,7 @@ public class TextPreparationService {
 				excerpt,
 				segments(excerpt),
 				detectLanguage(normalized),
+				detectDocumentType(excerpt),
 				detect(DOI_PATTERN, normalized),
 				detect(ORCID_PATTERN, normalized)
 		);
@@ -116,6 +151,27 @@ public class TextPreparationService {
 
 	private String trimTrailingPunctuation(String value) {
 		return value.replaceAll("[.,;:]+$", "");
+	}
+
+	/**
+	 * Deduit le type de document a partir d'indices presents dans l'extrait.
+	 * Retourne null quand aucun indice fiable n'est trouve : aucune valeur n'est inventee.
+	 */
+	String detectDocumentType(String excerpt) {
+		if (excerpt == null || excerpt.isBlank()) {
+			return null;
+		}
+		String haystack = foldAccents(excerpt.toLowerCase(Locale.ROOT)).replaceAll("\\s+", " ");
+		return DOCUMENT_TYPE_CUES.stream()
+				.filter(cue -> cue.markers().stream().anyMatch(haystack::contains))
+				.map(TypeCue::type)
+				.findFirst()
+				.orElse(null);
+	}
+
+	private String foldAccents(String value) {
+		return Normalizer.normalize(value, Normalizer.Form.NFD)
+				.replaceAll("\\p{InCombiningDiacriticalMarks}+", "");
 	}
 
 	private String detectLanguage(String text) {
