@@ -33,6 +33,9 @@
 @media (max-width: 720px) {
   .hero {
     grid-template-columns: 1fr;
+    min-height: 360px;
+    padding: 2rem 1.25rem;
+    background-position: 58% center;
   }
 
   .hero-visual {

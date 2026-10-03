@@ -122,31 +122,22 @@
   padding: clamp(1.5rem, 3vw, 2.5rem) clamp(1.1rem, 4vw, 2rem) 4rem;
 }
 
-/* --- Hero typographique (pas de bloc colore, pas de graphique) --- */
+/* --- Hero catalogue : le visuel montre le resultat de l'extraction, pas une illustration abstraite. --- */
 .hero {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 180px;
-  gap: 2rem;
-  align-items: center;
-  padding: clamp(1.4rem, 3vw, 2.1rem);
+  min-height: 410px;
+  padding: clamp(2rem, 6vw, 4.5rem);
   margin-bottom: 2rem;
-  border: 1px solid var(--line);
-  border-top: 3px solid var(--teal);
-  border-radius: 8px;
-  background: var(--surface);
-  box-shadow: 0 4px 18px rgba(24, 42, 43, 0.05);
+  border: 0;
+  border-radius: 0;
+  background-color: #152d2e;
+  background-image: url('/assets/metamind/hero-1.jpg');
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
 }
 
 .hero-visual {
-  display: grid;
-  place-items: center;
-  min-height: 150px;
-  border-left: 1px solid var(--line);
-}
-
-.hero-visual svg {
-  width: 112px;
-  height: 112px;
+  display: none;
 }
 
 .hero-copy {
@@ -157,20 +148,25 @@
   max-width: 30ch;
   font-size: clamp(1.8rem, 3.5vw, 2.45rem);
   margin-bottom: 0.6rem;
+  color: #ffffff;
 }
 
 .hero .lead {
-  color: var(--ink-soft);
+  color: #e1eeed;
   font-size: 0.98rem;
   max-width: var(--measure);
   margin: 0 0 1.4rem;
 }
 
+.hero .eyebrow {
+  color: #b8d8d7;
+}
+
 .hero .hero-search {
   max-width: 720px;
   height: 48px;
-  border-color: var(--teal);
-  box-shadow: 0 2px 7px rgba(18, 120, 123, 0.08);
+  border-color: #ffffff;
+  box-shadow: 0 2px 7px rgba(0, 0, 0, 0.2);
 }
 
 /* --- Indicateurs : ligne de statistiques en filet, pas de cartes --- */
