@@ -51,7 +51,61 @@ TYPE_DOCUMENT_METAMIND = {
     "dissertation": "these",
     "book-chapter": "chapitre",
     "proceedings-article": "communication",
+    "preprint": "preprint",
+    "posted-content": "preprint",
+    "book": "autre",
+    "monograph": "autre",
+    "reference-entry": "chapitre",
+    "dataset": "autre",
+    "editorial": "autre",
+    "letter": "autre",
+    "paratext": "autre",
+    "other": "autre",
+    "standard": "autre",
+    "peer-review": "autre",
 }
+
+# Vocabulaires acceptes par l'API, lus au demarrage via /references.
+# L'API refuse tout code inconnu (400) : on n'envoie donc que ce qu'elle connait.
+VOCABULAIRES = {"langues": set(), "types_documents": set()}
+
+
+def charger_vocabulaires(api):
+    """Lit les vocabulaires controles. Sans eux, langue et type ne sont pas envoyes."""
+    try:
+        refs = api.call("GET", "/references")
+    except Exception as erreur:
+        print(f"Vocabulaires indisponibles ({erreur}) : langue et type seront laisses vides.")
+        return
+    VOCABULAIRES["langues"] = {v["code"] for v in refs.get("langues", [])}
+    VOCABULAIRES["types_documents"] = {v["code"] for v in refs.get("types_documents", [])}
+    print(f"Vocabulaires : {len(VOCABULAIRES['langues'])} langues, "
+          f"{len(VOCABULAIRES['types_documents'])} types de documents.")
+
+
+def langue_connue(code):
+    """Garde la langue seulement si l'API la connait, sinon la laisse vide."""
+    if not code or not VOCABULAIRES["langues"]:
+        return None
+    code = str(code).strip().lower()
+    return code if code in VOCABULAIRES["langues"] else None
+
+
+def type_connu(type_openalex):
+    """
+    Traduit le type OpenAlex vers le vocabulaire Metamind.
+    Ordre : correspondance explicite, puis code brut s'il est deja valide
+    (OpenAlex emet 'article', qui est aussi un code Metamind), puis repli sur 'autre'.
+    """
+    if not type_openalex or not VOCABULAIRES["types_documents"]:
+        return None
+    brut = str(type_openalex).strip().lower()
+    code = TYPE_DOCUMENT_METAMIND.get(brut)
+    if code and code in VOCABULAIRES["types_documents"]:
+        return code
+    if brut in VOCABULAIRES["types_documents"]:
+        return brut
+    return "autre" if "autre" in VOCABULAIRES["types_documents"] else None
 
 
 class Api:
@@ -175,8 +229,8 @@ def validation_body(gt, visibility):
         "visibilite": visibility,
         "auteurs": [{"nom_complet": a["nom_complet"], "orcid": a.get("orcid")} for a in gt["auteurs"][:20]],
         "mots_cles": gt.get("mots_cles", [])[:30],
-        "langue": gt.get("langue"),
-        "type_document": TYPE_DOCUMENT_METAMIND.get(gt.get("type_document"), gt.get("type_document")),
+        "langue": langue_connue(gt.get("langue")),
+        "type_document": type_connu(gt.get("type_document")),
         "doi": gt.get("doi"),
     }
 
@@ -206,6 +260,7 @@ def main():
         docs = docs[: args.limit]
     rng = random.Random(args.seed)
     api = Api(args.api, args.dry_run)
+    charger_vocabulaires(api)
     admin = api.login(admin_email, admin_pwd)
 
     result = {"institutions": {}, "documents": []}
