@@ -97,6 +97,19 @@ def wait_status(api, token, doc_id, wanted, timeout=90):
     return status
 
 
+def start_extraction_when_ready(api, token, doc_id, timeout=90):
+    """The document processor writes extracted text asynchronously after upload."""
+    end = time.time() + timeout
+    while time.time() < end:
+        try:
+            return api.call("POST", f"/documents/{doc_id}/extraction", token)
+        except RuntimeError as exc:
+            if "ne contient pas de texte extrait" not in str(exc):
+                raise
+            time.sleep(2)
+    raise RuntimeError(f"Le texte du document {doc_id} n'a pas ete extrait dans le delai imparti.")
+
+
 def ensure_institution(api, admin, inst):
     existing = api.call("GET", "/institutions", admin) or []
     for e in existing if isinstance(existing, list) else []:
@@ -168,6 +181,7 @@ def main():
     ap.add_argument("--pending", type=float, default=0.10)
     ap.add_argument("--private", type=float, default=0.15, help="part des documents publiés en visibilité INSTITUTION")
     ap.add_argument("--limit", type=int, help="nombre max de documents (test rapide)")
+    ap.add_argument("--skip", type=int, default=0, help="documents initiaux a ignorer pour reprendre un import interrompu")
     ap.add_argument("--dry-run", action="store_true")
     args = ap.parse_args()
 
@@ -178,7 +192,9 @@ def main():
         sys.exit("Définis METAMIND_ADMIN_EMAIL, METAMIND_ADMIN_PASSWORD et METAMIND_DEMO_PASSWORD (12 caractères min).")
 
     manifest = json.loads((DATA / "manifest.json").read_text(encoding="utf-8"))
-    docs = manifest["documents"][: args.limit] if args.limit else manifest["documents"]
+    docs = manifest["documents"][args.skip :]
+    if args.limit:
+        docs = docs[: args.limit]
     rng = random.Random(args.seed)
     api = Api(args.api, args.dry_run)
     admin = api.login(admin_email, admin_pwd)
@@ -221,7 +237,7 @@ def main():
             print(f"  #{doc_id} {target:<10} {gt['titre'][:70]}")
 
             if target != "EN_ATTENTE":
-                api.call("POST", f"/documents/{doc_id}/extraction", token)
+                start_extraction_when_ready(api, token, doc_id)
                 wait_status(api, token, doc_id, {"A_VALIDER"})
                 llm = api.call("GET", f"/documents/{doc_id}/metadata", token)
                 eval_rows.append({
