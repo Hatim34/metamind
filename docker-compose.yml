@@ -30,9 +30,17 @@ services:
       METAMIND_PUBLIC_URL: https://${METAMIND_DOMAIN:-metamind-app.duckdns.org}
       METAMIND_LLM_PROVIDER: ${METAMIND_LLM_PROVIDER:-local}
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
-      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.5-flash-lite}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-3.5-flash-lite}
       STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
       STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
+    volumes:
+      # Les PDF importes et les couvertures generees vivent ici.
+      # Sans volume, ils sont detruits a chaque reconstruction du conteneur
+      # alors que la base conserve leurs chemins : les images deviennent introuvables.
+      - documents_storage:/app/storage
+    ports:
+      # Expose l'API en local pour les scripts du jeu de demonstration (seed/).
+      - "127.0.0.1:8080:8080"
     depends_on:
       database:
         condition: service_healthy
@@ -73,5 +81,6 @@ services:
 
 volumes:
   postgres_data:
+  documents_storage:
   caddy_data:
   caddy_config:
