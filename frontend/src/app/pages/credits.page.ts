@@ -124,9 +124,20 @@ export class CreditsPage implements OnDestroy {
       next: (checkout) => window.location.assign(checkout.checkout_url),
       error: (e) => {
         this.busy.set(false);
-        this.toasts.show(this.i18n.t(e?.status === 403 ? 'Les achats sont suspendus pour votre institution.' : 'Le paiement n\'a pas pu démarrer.'), 'error');
+        this.toasts.show(this.i18n.t(this.paymentErrorMessage(e)), 'error');
       }
     });
+  }
+
+  private paymentErrorMessage(error: { status?: number; error?: { message?: string } }): string {
+    if (error?.status === 401) return 'Votre session a expiré. Connectez-vous de nouveau.';
+    if (error?.status === 403 && error.error?.message?.includes('gestionnaire financier')) {
+      return 'Un gestionnaire financier doit effectuer cet achat.';
+    }
+    if (error?.status === 403) return 'Les achats sont suspendus pour votre institution.';
+    if (error?.status === 503) return 'Le paiement Stripe n’est pas configuré pour cet environnement.';
+    if (error?.status === 502) return 'Stripe n’a pas pu créer la session de paiement. Vérifiez la configuration Stripe.';
+    return 'Le paiement n\'a pas pu démarrer.';
   }
 
   ngOnDestroy(): void {

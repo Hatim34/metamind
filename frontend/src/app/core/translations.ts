@@ -296,6 +296,10 @@ export const NL: Record<string, string> = {
   'À valider en priorité': 'Eerst te valideren',
   'à compléter': 'aan te vullen',
   'à relire': 'na te lezen',
+  'Votre session a expiré. Connectez-vous de nouveau.': 'Uw sessie is verlopen. Meld u opnieuw aan.',
+  'Un gestionnaire financier doit effectuer cet achat.': 'Een financieel beheerder moet deze aankoop uitvoeren.',
+  'Le paiement Stripe n’est pas configuré pour cet environnement.': 'Stripe-betaling is niet geconfigureerd voor deze omgeving.',
+  'Stripe n’a pas pu créer la session de paiement. Vérifiez la configuration Stripe.': 'Stripe kon de betaalsessie niet maken. Controleer de Stripe-configuratie.',
   'Échec de l\'import': 'Import mislukt',
 };
 
@@ -596,5 +600,9 @@ export const EN: Record<string, string> = {
   'À valider en priorité': 'Review first',
   'à compléter': 'to complete',
   'à relire': 'to review',
+  'Votre session a expiré. Connectez-vous de nouveau.': 'Your session has expired. Sign in again.',
+  'Un gestionnaire financier doit effectuer cet achat.': 'A financial manager must complete this purchase.',
+  'Le paiement Stripe n’est pas configuré pour cet environnement.': 'Stripe payment is not configured for this environment.',
+  'Stripe n’a pas pu créer la session de paiement. Vérifiez la configuration Stripe.': 'Stripe could not create the payment session. Check the Stripe configuration.',
   'Échec de l\'import': 'Import failed',
 };
