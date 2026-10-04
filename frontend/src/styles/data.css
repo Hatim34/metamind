@@ -91,6 +91,117 @@
   color: var(--ink-soft);
 }
 
+/* Espace credits : le paiement reste bloque tant que les deux consentements ne sont pas coches. */
+.credits-page {
+  width: min(100%, var(--maxw-app));
+  margin: 0 auto;
+}
+
+.credits-heading {
+  margin-bottom: 1.5rem;
+}
+
+.credits-heading h1,
+.credits-heading p {
+  margin: 0;
+}
+
+.credits-heading h1 {
+  margin-bottom: 0.35rem;
+  font-size: 2.15rem;
+}
+
+.credits-heading > p:last-child {
+  color: var(--ink-soft);
+}
+
+.credits-balance {
+  display: grid;
+  gap: 0.25rem;
+  padding: 1.5rem;
+  border-radius: var(--radius-sheet);
+  background: var(--ink);
+  color: #fff;
+  box-shadow: var(--shadow-sheet-lifted);
+}
+
+.credits-balance span,
+.credits-balance p {
+  margin: 0;
+  color: #dce5e6;
+  font-size: 0.88rem;
+}
+
+.credits-balance strong {
+  font-family: var(--f-display);
+  font-size: clamp(2.5rem, 6vw, 4.5rem);
+  font-weight: 500;
+  line-height: 1;
+}
+
+.credits-section {
+  margin-top: 1.75rem;
+  padding: 1.25rem;
+  border-radius: var(--radius-sheet);
+  background: var(--surface);
+  box-shadow: var(--shadow-sheet);
+}
+
+.credits-section .section-heading {
+  margin-bottom: 1rem;
+}
+
+.credits-section .section-heading h2 {
+  margin: 0;
+}
+
+.credits-consents {
+  display: grid;
+  gap: 0.7rem;
+  margin-bottom: 1.25rem;
+}
+
+.credits-packs {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  gap: 0.75rem;
+}
+
+.credits-packs button {
+  min-height: 7rem;
+  display: grid;
+  align-content: space-between;
+  justify-items: start;
+  padding: 1rem;
+  border: 1px solid var(--line-input);
+  border-radius: var(--radius-control);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.credits-packs button:hover:not(:disabled) {
+  border-color: var(--teal);
+  background: var(--teal-row);
+}
+
+.credits-packs button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.credits-packs strong {
+  font-family: var(--f-display);
+  font-size: 2rem;
+  font-weight: 500;
+}
+
+.credits-packs span {
+  color: var(--ink-soft);
+}
+
 /* Formulaire d'administration */
 .admin-form {
   grid-template-columns: repeat(4, minmax(0, 1fr));

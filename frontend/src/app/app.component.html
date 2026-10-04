@@ -565,54 +565,22 @@
     </p>
     <p class="notice" *ngIf="profileSaved">{{ t('profileUpdated') }}</p>
 
-    <div *ngIf="session" class="credit-history">
-      <h3>{{ t('availablePacks') }}</h3>
-      <label class="checkbox-row">
-        <input type="checkbox" name="paymentTermsAccepted" [(ngModel)]="paymentTermsAccepted" />
-        {{ t('paymentTerms') }}
-      </label>
-      <label class="checkbox-row">
-        <input type="checkbox" name="paymentWithdrawalWaiverAccepted" [(ngModel)]="paymentWithdrawalWaiverAccepted" />
-        {{ t('paymentWithdrawalWaiver') }}
-      </label>
-      <div class="pack-grid">
-        <button type="button" *ngFor="let pack of creditPacks" (click)="purchaseCredits(pack.id)" [disabled]="!paymentTermsAccepted || !paymentWithdrawalWaiverAccepted">
-          <strong>{{ pack.credits }}</strong>
-          <span>{{ pack.amount | number:'1.2-2' }} {{ pack.currency }}</span>
-        </button>
-      </div>
-    </div>
-
-    <div *ngIf="session" class="credit-history">
-      <h3>{{ t('creditHistory') }}</h3>
-      <p class="notice" *ngIf="creditMovements.length === 0">{{ t('noCreditMovement') }}</p>
-      <div class="table-wrap" *ngIf="creditMovements.length > 0">
-        <table>
-          <thead>
-            <tr>
-              <th>{{ t('movementDate') }}</th>
-              <th>{{ t('movementType') }}</th>
-              <th>{{ t('movementAmount') }}</th>
-              <th>{{ t('movementBalance') }}</th>
-              <th>{{ t('movementDescription') }}</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let movement of creditMovements">
-              <td>{{ movement.createdAt | date:'dd/MM/yyyy HH:mm' }}</td>
-              <td>{{ movement.type }}</td>
-              <td>{{ movement.amount > 0 ? '+' : '' }}{{ movement.amount }}</td>
-              <td>{{ movement.balanceAfter }}</td>
-              <td>{{ movement.description }}</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-
     <ng-template #noSession>
       <p class="notice">{{ t('loginRequiredProfile') }}</p>
     </ng-template>
+  </section>
+
+  <section *ngIf="page === 'credits'" class="credits-page" [attr.aria-label]="t('credits')">
+    <header class="credits-heading"><p class="eyebrow">{{ t('credits') }}</p><h1>{{ t('credits') }}</h1><p>{{ t('creditHistory') }}</p></header>
+    <p class="notice" *ngIf="!session">{{ t('loginRequiredProfile') }}</p>
+    <ng-container *ngIf="session">
+      <section class="credits-balance"><span>{{ t('credits') }}</span><strong>{{ creditBalance ?? '-' }}</strong><p>{{ session.institution }}</p></section>
+      <section class="credits-section"><div class="section-heading"><div><h2>{{ t('availablePacks') }}</h2></div></div>
+        <div class="credits-consents"><label class="checkbox-row"><input type="checkbox" name="creditsPaymentTermsAccepted" [(ngModel)]="paymentTermsAccepted" />{{ t('paymentTerms') }}</label><label class="checkbox-row"><input type="checkbox" name="creditsPaymentWithdrawalWaiverAccepted" [(ngModel)]="paymentWithdrawalWaiverAccepted" />{{ t('paymentWithdrawalWaiver') }}</label></div>
+        <div class="credits-packs"><button type="button" *ngFor="let pack of creditPacks" (click)="purchaseCredits(pack.id)" [disabled]="!paymentTermsAccepted || !paymentWithdrawalWaiverAccepted"><strong>{{ pack.credits }}</strong><span>{{ pack.amount | number:'1.2-2' }} {{ pack.currency }}</span></button></div>
+      </section>
+      <section class="credits-section"><div class="section-heading"><div><h2>{{ t('creditHistory') }}</h2></div></div><p class="notice" *ngIf="creditMovements.length === 0">{{ t('noCreditMovement') }}</p><div class="table-wrap" *ngIf="creditMovements.length > 0"><table><thead><tr><th>{{ t('movementDate') }}</th><th>{{ t('movementAmount') }}</th><th>{{ t('movementBalance') }}</th><th>{{ t('movementDescription') }}</th></tr></thead><tbody><tr *ngFor="let movement of creditMovements"><td>{{ movement.createdAt | date:'dd/MM/yyyy HH:mm' }}</td><td>{{ movement.amount > 0 ? '+' : '' }}{{ movement.amount }}</td><td>{{ movement.balanceAfter }}</td><td>{{ movement.description }}</td></tr></tbody></table></div></section>
+    </ng-container>
   </section>
 
   <section *ngIf="page === 'administration'" class="panel">

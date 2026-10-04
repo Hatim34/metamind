@@ -8,7 +8,7 @@ import { NavigationLabels, NavbarComponent } from './navbar.component';
 import { PublicationCardLabels, PublicationCardComponent } from './publication-card.component';
 import { PublicationDetailComponent, PublicationDetailLabels } from './publication-detail.component';
 
-type Page = 'accueil' | 'catalogue' | 'detail' | 'connexion' | 'inscription' | 'profil' | 'publication' | 'validation' | 'administration' | 'password-reset' | 'legal';
+type Page = 'accueil' | 'catalogue' | 'detail' | 'connexion' | 'inscription' | 'profil' | 'publication' | 'validation' | 'credits' | 'administration' | 'password-reset' | 'legal';
 type Language = 'fr' | 'nl' | 'en';
 
 const translations = {
@@ -911,6 +911,11 @@ export class AppComponent implements OnInit {
       this.loadValidationQueue();
       this.loadStatistics();
     }
+    if (page === 'credits') {
+      this.loadCredits();
+      this.loadCreditMovements();
+      this.loadCreditPacks();
+    }
     if (page === 'administration') {
       this.loadInstitutions();
       this.loadAdminData();
@@ -926,6 +931,7 @@ export class AppComponent implements OnInit {
       case 'catalogue': return 'catalogue';
       case 'publication': return 'newPublication';
       case 'validation': return 'validationQueue';
+      case 'credits': return 'credits';
       case 'administration': return 'administration';
       case 'profil': return 'profile';
       case 'connexion': return 'login';
@@ -984,6 +990,7 @@ export class AppComponent implements OnInit {
       catalogue: this.t('catalogue'),
       newPublication: this.t('newPublication'),
       validationQueue: this.t('validationQueue'),
+      credits: this.t('credits'),
       administration: this.t('administration'),
       profile: this.t('profile'),
       login: this.t('login'),
