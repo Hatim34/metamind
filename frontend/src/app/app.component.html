@@ -19,7 +19,7 @@
 
 <main class="app-shell" [class.auth-shell]="page === 'connexion'">
 
-  <section class="summary-grid" *ngIf="page === 'catalogue' || page === 'profil'" [attr.aria-label]="t('indicators')">
+  <section class="summary-grid" *ngIf="page === 'profil'" [attr.aria-label]="t('indicators')">
     <article>
       <span>{{ t('publications') }}</span>
       <strong>{{ statistics?.totalPublications ?? publications.length }}</strong>
@@ -49,6 +49,38 @@
       <strong>{{ institutions.length }}</strong>
     </article>
   </section>
+
+  <ng-container *ngIf="page === 'accueil'">
+    <section class="home-hero" aria-labelledby="home-title">
+      <div class="home-hero-copy">
+        <p class="eyebrow">Metamind</p>
+        <h1 id="home-title">{{ t('homeTitle') }}</h1>
+        <p>{{ t('homeDescription') }}</p>
+        <form class="home-search" (ngSubmit)="openCatalogueSearch()" role="search">
+          <label class="sr-only" for="home-search-input">{{ t('catalogue') }}</label>
+          <input id="home-search-input" name="homeSearch" type="search" [(ngModel)]="search" [placeholder]="t('homeSearchPlaceholder')" />
+          <button type="submit" class="primary">{{ t('exploreCatalogue') }}</button>
+        </form>
+      </div>
+      <img src="/assets/metamind/accueil-hero.jpg" alt="" />
+      <div class="home-kpis">
+        <article><strong>{{ publications.length }}</strong><span>{{ t('openPublications') }}</span></article>
+        <article><strong>{{ catalogueInstitutionCount }}</strong><span>{{ t('representedInstitutions') }}</span></article>
+      </div>
+    </section>
+
+    <section class="home-latest" aria-labelledby="latest-publications-title">
+      <div class="section-heading">
+        <div><p class="eyebrow">{{ t('catalogue') }}</p><h2 id="latest-publications-title">{{ t('latestPublications') }}</h2></div>
+        <button type="button" class="home-catalogue-link" (click)="navigate('catalogue')">{{ t('exploreCatalogue') }}</button>
+      </div>
+      <div class="home-publications" *ngIf="publications.length > 0">
+        <app-publication-card *ngFor="let publication of publications | slice:0:4" [publication]="publication" [labels]="publicationCardLabels" (consult)="openPublication($event)"></app-publication-card>
+      </div>
+      <p class="notice" *ngIf="loading">{{ t('loadingCatalogue') }}</p>
+      <p class="notice" *ngIf="!loading && publications.length === 0">{{ t('noPublications') }}</p>
+    </section>
+  </ng-container>
 
   <ng-container *ngIf="page === 'catalogue'">
     <section class="catalogue-page" aria-labelledby="catalogue-title">

@@ -8,12 +8,19 @@ import { NavigationLabels, NavbarComponent } from './navbar.component';
 import { PublicationCardLabels, PublicationCardComponent } from './publication-card.component';
 import { PublicationDetailComponent, PublicationDetailLabels } from './publication-detail.component';
 
-type Page = 'catalogue' | 'detail' | 'connexion' | 'inscription' | 'profil' | 'publication' | 'validation' | 'administration' | 'password-reset' | 'legal';
+type Page = 'accueil' | 'catalogue' | 'detail' | 'connexion' | 'inscription' | 'profil' | 'publication' | 'validation' | 'administration' | 'password-reset' | 'legal';
 type Language = 'fr' | 'nl' | 'en';
 
 const translations = {
   fr: {
     title: 'Gestion des métadonnées académiques',
+    homeTitle: 'Les publications des universités, décrites et vérifiées.',
+    homeDescription: 'Articles, thèses et rapports en libre accès. Chaque notice est proposée par une IA puis relue par un bibliothécaire.',
+    homeSearchPlaceholder: 'Titre, auteur, mot-clé, DOI…',
+    exploreCatalogue: 'Explorer le catalogue',
+    openPublications: 'publications en libre accès',
+    representedInstitutions: 'institutions représentées',
+    latestPublications: 'Dernières publications',
     catalogue: 'Catalogue',
     login: 'Connexion',
     register: 'Inscription',
@@ -239,6 +246,13 @@ const translations = {
   },
   nl: {
     title: 'Beheer van academische metadata',
+    homeTitle: 'Universitaire publicaties, beschreven en gecontroleerd.',
+    homeDescription: 'Artikelen, proefschriften en rapporten in open access. Elke fiche wordt voorgesteld door AI en nagelezen door een bibliothecaris.',
+    homeSearchPlaceholder: 'Titel, auteur, trefwoord, DOI…',
+    exploreCatalogue: 'Catalogus verkennen',
+    openPublications: 'open-accesspublicaties',
+    representedInstitutions: 'vertegenwoordigde instellingen',
+    latestPublications: 'Laatste publicaties',
     catalogue: 'Catalogus',
     login: 'Aanmelden',
     register: 'Registreren',
@@ -464,6 +478,13 @@ const translations = {
   },
   en: {
     title: 'Academic metadata management',
+    homeTitle: 'University publications, described and verified.',
+    homeDescription: 'Open-access articles, theses and reports. Each record is proposed by AI and reviewed by a librarian.',
+    homeSearchPlaceholder: 'Title, author, keyword, DOI…',
+    exploreCatalogue: 'Explore the catalogue',
+    openPublications: 'open-access publications',
+    representedInstitutions: 'represented institutions',
+    latestPublications: 'Latest publications',
     catalogue: 'Catalogue',
     login: 'Sign in',
     register: 'Register',
@@ -700,7 +721,7 @@ type TranslationKey = keyof typeof translations.fr;
 })
 export class AppComponent implements OnInit {
   private static readonly sessionStorageKey = 'metamind.session';
-  page: Page = 'catalogue';
+  page: Page = 'accueil';
   language: Language = 'fr';
   search = '';
   deletionRequested = false;
@@ -901,6 +922,7 @@ export class AppComponent implements OnInit {
 
   private pageTitleKey(page: Page): TranslationKey {
     switch (page) {
+      case 'accueil': return 'title';
       case 'catalogue': return 'catalogue';
       case 'publication': return 'newPublication';
       case 'validation': return 'validationQueue';
@@ -909,7 +931,7 @@ export class AppComponent implements OnInit {
       case 'connexion': return 'login';
       case 'inscription': return 'register';
       case 'legal': return 'legalCenter';
-      default: return 'catalogue';
+      default: return 'title';
     }
   }
 
@@ -924,7 +946,7 @@ export class AppComponent implements OnInit {
   @HostListener('window:popstate', ['$event'])
   onPopState(event: PopStateEvent): void {
     const state = (event.state ?? null) as { page?: Page; publicationId?: number } | null;
-    const page = state?.page ?? 'catalogue';
+    const page = state?.page ?? 'accueil';
     if (page === 'detail' && state?.publicationId) {
       if (this.selectedPublication?.id === state.publicationId) {
         this.page = 'detail';
@@ -1056,6 +1078,15 @@ export class AppComponent implements OnInit {
         || document.author.toLocaleLowerCase().includes(query);
       return matchesStatus && matchesQuery;
     });
+  }
+
+  get catalogueInstitutionCount(): number {
+    return new Set(this.publications.map((publication) => publication.institution).filter(Boolean)).size;
+  }
+
+  openCatalogueSearch(): void {
+    this.navigate('catalogue');
+    this.loadPublications();
   }
 
   validationCount(status: Exclude<typeof this.validationFilter, 'all'>): number {
@@ -1840,7 +1871,7 @@ export class AppComponent implements OnInit {
     this.selectedPublication = null;
     this.deletionRequested = false;
     this.profileSaved = false;
-    this.page = 'catalogue';
+    this.page = 'accueil';
   }
 
   exportPersonalData(): void {

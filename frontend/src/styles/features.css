@@ -84,6 +84,150 @@
   white-space: nowrap;
 }
 
+/* --- Accueil public : recherche, publications reelles et illustration du kit. --- */
+.home-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(22rem, 0.85fr);
+  gap: 2.5rem 3rem;
+  align-items: center;
+  padding: clamp(2rem, 5vw, 4rem) 0 2.5rem;
+  border-bottom: 1px solid var(--line-ui);
+}
+
+.home-hero-copy h1 {
+  max-width: 15ch;
+  margin: 0 0 1rem;
+  font-size: clamp(2.5rem, 4.2vw, 4rem);
+}
+
+.home-hero-copy > p:not(.eyebrow) {
+  max-width: 57ch;
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 1.1rem;
+  line-height: 1.65;
+}
+
+.home-search {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  max-width: 40rem;
+  margin-top: 1.5rem;
+}
+
+.home-search input {
+  min-width: min(100%, 18rem);
+  flex: 1;
+  min-height: 3rem;
+  padding: 0.7rem 0.9rem;
+  border: 1px solid var(--line-input);
+  border-radius: var(--radius-control);
+  background: var(--surface);
+  font: inherit;
+}
+
+.home-hero > img {
+  width: 100%;
+  min-height: 20rem;
+  height: 100%;
+  max-height: 26rem;
+  border-radius: var(--radius-sheet);
+  object-fit: cover;
+}
+
+.home-kpis {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.5rem;
+}
+
+.home-kpis article {
+  padding-top: 0.65rem;
+  border-top: 2px solid var(--ink);
+}
+
+.home-kpis strong,
+.home-kpis span {
+  display: block;
+}
+
+.home-kpis strong {
+  font-family: var(--f-display);
+  font-size: 2rem;
+  font-weight: 500;
+}
+
+.home-kpis span {
+  color: var(--ink-soft);
+  font-size: 0.88rem;
+}
+
+.home-latest {
+  padding: 3rem 0;
+}
+
+.home-latest .section-heading {
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--line-strong);
+}
+
+.home-catalogue-link {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--teal-dark);
+  font: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.home-publications {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 1.5rem;
+}
+
+@media (max-width: 900px) {
+  .home-hero {
+    grid-template-columns: 1fr;
+  }
+
+  .home-hero > img {
+    grid-row: 1;
+    min-height: 16rem;
+    max-height: 22rem;
+  }
+
+  .home-kpis {
+    grid-column: auto;
+  }
+}
+
+@media (max-width: 620px) {
+  .home-hero {
+    padding-top: 1.5rem;
+    gap: 1.5rem;
+  }
+
+  .home-hero-copy h1 {
+    font-size: 2.35rem;
+  }
+
+  .home-search .primary,
+  .home-search input {
+    width: 100%;
+  }
+
+  .home-kpis,
+  .home-publications {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* --- Catalogue public : facettes disponibles et resultats en liste. --- */
 .catalogue-page {
   width: min(100%, var(--maxw-public));
