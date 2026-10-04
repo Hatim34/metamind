@@ -1,4 +1,5 @@
 <app-navbar
+  *ngIf="page !== 'connexion'"
   [page]="page"
   [authenticated]="!!session"
   [administrator]="isAdmin"
@@ -10,12 +11,12 @@
   (signOut)="logout()">
 </app-navbar>
 
-<div class="global-toast" *ngIf="message && page !== 'catalogue' && page !== 'validation'" role="status">
+<div class="global-toast" *ngIf="message && page !== 'catalogue' && page !== 'validation' && page !== 'connexion'" role="status">
   <span>{{ message }}</span>
   <button type="button" class="toast-close" (click)="message = ''" aria-label="Fermer">×</button>
 </div>
 
-<main class="app-shell">
+<main class="app-shell" [class.auth-shell]="page === 'connexion'">
 
   <section class="summary-grid" *ngIf="page === 'catalogue' || page === 'profil'" [attr.aria-label]="t('indicators')">
     <article>
@@ -418,21 +419,76 @@
     </ng-template>
   </section>
 
-  <section *ngIf="page === 'connexion'" class="panel form-panel">
-    <p class="eyebrow">{{ t('login') }}</p>
-    <h2>{{ t('librarianSpace') }}</h2>
-    <form (ngSubmit)="login()">
-      <label>
-        {{ t('email') }}
-        <input name="loginEmail" type="email" [(ngModel)]="loginForm.email" required maxlength="160" />
-      </label>
-      <label>
-        {{ t('password') }}
-        <input name="loginPassword" type="password" [(ngModel)]="loginForm.password" required />
-      </label>
-      <button class="primary" type="submit">{{ t('signIn') }}</button>
-    </form>
-    <button type="button" (click)="openPasswordReset()">{{ t('forgotPassword') }}</button>
+  <section *ngIf="page === 'connexion'" class="login-page" aria-labelledby="login-title">
+    <div class="login-panel">
+      <button type="button" class="login-brand" (click)="navigate('catalogue')" aria-label="Metamind">
+        <span class="login-brand-mark" aria-hidden="true">M</span>
+        <span>Metamind</span>
+      </button>
+
+      <form class="login-form" (ngSubmit)="login()">
+        <div class="login-heading">
+          <p class="eyebrow">{{ t('login') }}</p>
+          <h1 id="login-title">{{ t('login') }}</h1>
+          <p>{{ t('loginIntro') }}</p>
+        </div>
+
+        <label>
+          <span>{{ t('professionalEmail') }}</span>
+          <input name="loginEmail" type="email" [(ngModel)]="loginForm.email" required maxlength="160"
+            autocomplete="email" [placeholder]="t('professionalEmailPlaceholder')" />
+        </label>
+        <label>
+          <span class="login-label-row">
+            <span>{{ t('password') }}</span>
+            <button type="button" class="login-text-button" (click)="openPasswordReset()">{{ t('forgotPassword') }}</button>
+          </span>
+          <input name="loginPassword" type="password" [(ngModel)]="loginForm.password" required autocomplete="current-password" />
+        </label>
+        <p *ngIf="message" class="login-error" role="alert">{{ message }}</p>
+        <button class="login-submit" type="submit">{{ t('signIn') }}</button>
+
+        <p class="login-registration">
+          {{ t('requestAccessPrompt') }}
+          <button type="button" class="login-text-button" (click)="navigate('inscription')">{{ t('requestAccessLink') }}</button>
+        </p>
+        <p class="login-help">{{ t('activationDelay') }}</p>
+      </form>
+
+      <div class="login-meta">
+        <div class="login-language" aria-label="Choisir la langue">
+          <button type="button" [class.active]="language === 'fr'" (click)="setLanguage('fr')">FR</button>
+          <button type="button" [class.active]="language === 'nl'" (click)="setLanguage('nl')">NL</button>
+          <button type="button" [class.active]="language === 'en'" (click)="setLanguage('en')">EN</button>
+        </div>
+        <div class="login-legal-links">
+          <button type="button" (click)="openLegal()">{{ t('privacyTitle') }}</button>
+          <button type="button" (click)="openLegal()">{{ t('legalNoticeTitle') }}</button>
+        </div>
+      </div>
+    </div>
+
+    <aside class="login-showcase" aria-label="Fonctionnement de Metamind">
+      <div class="login-showcase-content">
+        <p class="eyebrow">Metamind</p>
+        <h2>{{ t('workflowTitle') }}</h2>
+        <ol class="login-workflow">
+          <li>
+            <span>01</span>
+            <div><strong>{{ t('workflowImport') }}</strong><p>{{ t('workflowImportText') }}</p></div>
+          </li>
+          <li>
+            <span>02</span>
+            <div><strong>{{ t('workflowReview') }}</strong><p>{{ t('workflowReviewText') }}</p></div>
+          </li>
+          <li>
+            <span>03</span>
+            <div><strong>{{ t('workflowPublish') }}</strong><p>{{ t('workflowPublishText') }}</p></div>
+          </li>
+        </ol>
+        <p class="login-showcase-note">{{ t('workflowNote') }}</p>
+      </div>
+    </aside>
   </section>
 
   <section *ngIf="page === 'password-reset'" class="panel form-panel">
@@ -778,7 +834,7 @@
   </section>
 </main>
 
-<footer class="site-footer">
+<footer *ngIf="page !== 'connexion'" class="site-footer">
   <span>Metamind · {{ t('title') }} · ASSAL Hatim, ICC 2025-2026</span>
   <nav class="footer-links" aria-label="Informations legales">
     <button type="button" (click)="openLegal()">{{ t('privacyTitle') }}</button>
