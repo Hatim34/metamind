@@ -29,6 +29,7 @@ export class NavbarComponent {
   @Input() authenticated = false;
   @Input() administrator = false;
   @Input() userName = '';
+  @Input() institutionName = '';
   @Input({ required: true }) language: NavigationLanguage = 'fr';
   @Input({ required: true }) labels!: NavigationLabels;
 
@@ -42,5 +43,10 @@ export class NavbarComponent {
 
   changeLanguage(language: NavigationLanguage): void {
     this.languageChange.emit(language);
+  }
+
+  get initials(): string {
+    const parts = this.userName.trim().split(/\s+/).filter(Boolean);
+    return parts.slice(0, 2).map((part) => part[0]).join('').toUpperCase() || 'M';
   }
 }

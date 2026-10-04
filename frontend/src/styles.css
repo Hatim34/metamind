@@ -9,26 +9,49 @@
   --ground: #f5f7f8;
   --surface: #ffffff;
   --surface-2: #edf2f3;
+  --surface-3: #eef2f3;
+  --surface-sunk: #f8fafa;
 
   /* Encre */
   --ink: #182a2b;
   --ink-soft: #53666b;
+  --ink-body: #3d4f51;
   --ink-faint: #718287;
 
   /* Filets */
   --line: #dfe6e8;
   --line-strong: #c3d0d3;
+  --line-ui: #e2e8ea;
+  --line-input: #c9d3d5;
 
   /* Accent teal (usage tres parcimonieux) */
   --teal: #12787b;
   --teal-dark: #0b5456;
   --teal-soft: #e1eeed;
+  --teal-row: #f0f7f7;
   --teal-ink: #0b5456;
 
   /* Etats */
   --green: #2e7d46;
   --amber: #9a6b12;
   --red: #b23a3a;
+  --conf-high: #2e7d46;
+  --conf-mid: #c99a3a;
+  --conf-low: #b23a3a;
+  --conf-none: #c9d3d5;
+  --conf-high-text: #1f5a32;
+  --conf-mid-text: #7a5410;
+  --conf-low-text: #9a2e2e;
+
+  /* Couvertures par type, utilisées quand aucune image n'est disponible. */
+  --type-article-bg: #e1f0f0;
+  --type-article-ink: #0b5456;
+  --type-these-bg: #f3ebdd;
+  --type-these-ink: #6b4a0e;
+  --type-rapport-bg: #e6ebed;
+  --type-rapport-ink: #304245;
+  --type-preprint-bg: #e6f0e8;
+  --type-preprint-ink: #1f5a32;
 
   /* Polices */
   --f-display: "Fraunces", Georgia, "Times New Roman", serif;
@@ -37,6 +60,12 @@
 
   --measure: 76ch;
   --maxw: 1240px;
+  --maxw-app: 1440px;
+  --maxw-public: 1280px;
+  --radius-sheet: 4px;
+  --radius-control: 8px;
+  --shadow-sheet: 0 1px 0 #dde4e6;
+  --shadow-sheet-lifted: 0 1px 0 #dde4e6, 0 18px 40px -24px rgba(24, 42, 43, 0.35);
 }
 
 * {

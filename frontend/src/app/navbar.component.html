@@ -3,7 +3,7 @@
     <button type="button" class="nav-brand" (click)="navigate('catalogue')" [attr.aria-label]="labels.title">
       <span class="nav-logo" aria-hidden="true">
         <svg width="32" height="32" viewBox="0 0 42 42" role="img" aria-label="Metamind">
-          <rect x="3" y="3" width="36" height="36" rx="10" fill="#12787B" />
+          <rect x="3" y="3" width="36" height="36" rx="8" fill="#12787B" />
           <circle cx="14" cy="15" r="3" fill="#fff" />
           <circle cx="28" cy="13" r="3" fill="#fff" />
           <circle cx="21" cy="28" r="3" fill="#fff" />
@@ -29,12 +29,10 @@
         <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v18h18" /><path d="M7 14l4-4 3 3 5-6" /></svg>
         <span>{{ labels.administration }}</span>
       </button>
-      <button type="button" [class.active]="page === 'profil'" (click)="navigate('profil')">
+      <button type="button" *ngIf="authenticated" [class.active]="page === 'profil'" (click)="navigate('profil')">
         <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4" /><path d="M4 21c0-4 4-6 8-6s8 2 8 6" /></svg>
         <span>{{ labels.profile }}</span>
       </button>
-      <button type="button" *ngIf="!authenticated" [class.active]="page === 'connexion'" (click)="navigate('connexion')">{{ labels.login }}</button>
-      <button type="button" *ngIf="!authenticated" [class.active]="page === 'inscription'" (click)="navigate('inscription')">{{ labels.register }}</button>
     </div>
     <div class="nav-actions">
       <div class="language-switch" [attr.aria-label]="labels.language">
@@ -42,11 +40,15 @@
         <button type="button" [class.active]="language === 'nl'" (click)="changeLanguage('nl')">NL</button>
         <button type="button" [class.active]="language === 'en'" (click)="changeLanguage('en')">EN</button>
       </div>
+      <button type="button" class="nav-login" *ngIf="!authenticated" [class.active]="page === 'connexion'" (click)="navigate('connexion')">{{ labels.login }}</button>
       <div class="nav-account" *ngIf="authenticated">
-        <span class="nav-user" [title]="userName">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4" /><path d="M4 21c0-4 4-6 8-6s8 2 8 6" /></svg>
-          <span class="nav-user-name">{{ userName }}</span>
-        </span>
+        <button type="button" class="nav-user" (click)="navigate('profil')" [title]="userName">
+          <span class="nav-account-copy">
+            <span class="nav-institution">{{ institutionName || userName }}</span>
+            <span class="nav-user-name">{{ userName }}</span>
+          </span>
+          <span class="nav-avatar" aria-hidden="true">{{ initials }}</span>
+        </button>
         <button type="button" class="nav-signout" (click)="signOut.emit()">{{ labels.signOut }}</button>
       </div>
     </div>

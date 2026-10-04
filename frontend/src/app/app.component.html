@@ -4,6 +4,7 @@
   [authenticated]="!!session"
   [administrator]="isAdmin"
   [userName]="session ? session.firstName + ' ' + session.lastName : ''"
+  [institutionName]="session?.institution || ''"
   [language]="language"
   [labels]="navigationLabels"
   (pageChange)="navigate($event)"
