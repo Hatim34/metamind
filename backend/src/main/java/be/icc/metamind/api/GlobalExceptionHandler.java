@@ -3,6 +3,7 @@ package be.icc.metamind.api;
 import java.time.Instant;
 import java.util.List;
 
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -69,7 +70,22 @@ public class GlobalExceptionHandler {
 				Instant.now(),
 				HttpStatus.BAD_REQUEST.value(),
 				HttpStatus.BAD_REQUEST.getReasonPhrase(),
-				"Le fichier depasse la taille maximale de 128 MB.",
+				"Le fichier depasse la taille maximale de 50 MB.",
+				List.of()
+		));
+	}
+
+	/**
+	 * Filet de securite sur les contraintes d'unicite (DOI deja pris, par exemple) :
+	 * un conflit metier doit se lire comme un conflit, jamais comme une erreur interne.
+	 */
+	@ExceptionHandler(DataIntegrityViolationException.class)
+	public ResponseEntity<ApiErrorResponse> handleDataIntegrity(DataIntegrityViolationException exception) {
+		return ResponseEntity.status(HttpStatus.CONFLICT).body(new ApiErrorResponse(
+				Instant.now(),
+				HttpStatus.CONFLICT.value(),
+				HttpStatus.CONFLICT.getReasonPhrase(),
+				"Cette operation entre en conflit avec une donnee existante.",
 				List.of()
 		));
 	}

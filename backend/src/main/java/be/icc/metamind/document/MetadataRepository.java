@@ -12,6 +12,9 @@ public interface MetadataRepository extends JpaRepository<MetadataEntity, Long> 
 
 	boolean existsByTitreIgnoreCase(String titre);
 
+	/** Un DOI identifie une seule publication : sert a refuser un doublon avant d'ecrire. */
+	boolean existsByDoiIgnoreCaseAndDocument_IdNot(String doi, Long documentId);
+
 	/**
 	 * Charge en une requete les metadonnees d'une institution, avec leurs references.
 	 * Evite une requete par document lors du calcul des statistiques.

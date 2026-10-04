@@ -3,6 +3,7 @@ package be.icc.metamind.extraction;
 import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -28,6 +29,11 @@ public class TextPreparationService {
 	);
 	private static final int DEFAULT_MAX_INPUT_CHARS = 15_000;
 	private static final int MAX_SEGMENT_CHARS = 1_500;
+	/** Zone ou figure le DOI propre a une publication (page de titre, en-tete d'editeur). */
+	private static final int FRONT_MATTER_CHARS = 3_000;
+	private static final Pattern REFERENCES_HEADING = Pattern.compile(
+			"(?im)^\\s*(references?|bibliographie|bibliography|referenties|literatur|works cited)\\s*:?\\s*$"
+	);
 
 	private record TypeCue(String type, List<String> markers) {
 	}
@@ -80,6 +86,7 @@ public class TextPreparationService {
 				segments(excerpt),
 				detectLanguage(normalized),
 				detectDocumentType(excerpt),
+				detectDocumentDoi(normalized),
 				detect(DOI_PATTERN, normalized),
 				detect(ORCID_PATTERN, normalized)
 		);
@@ -146,7 +153,31 @@ public class TextPreparationService {
 		while (matcher.find()) {
 			values.add(trimTrailingPunctuation(matcher.group()));
 		}
-		return Set.copyOf(values);
+		// LinkedHashSet immuable : Set.copyOf perdrait l'ordre d'apparition.
+		return Collections.unmodifiableSet(values);
+	}
+
+	/**
+	 * DOI du document lui-meme, cherche uniquement dans l'en-tete.
+	 * Un article cite souvent des dizaines de DOI en bibliographie : les retenir
+	 * attribuerait au document le DOI d'un travail reference.
+	 */
+	String detectDocumentDoi(String normalizedText) {
+		if (normalizedText == null || normalizedText.isBlank()) {
+			return null;
+		}
+		String frontMatter = normalizedText.length() <= FRONT_MATTER_CHARS
+				? normalizedText
+				: normalizedText.substring(0, FRONT_MATTER_CHARS);
+		String beforeReferences = stripReferenceSection(frontMatter);
+		Matcher matcher = DOI_PATTERN.matcher(beforeReferences);
+		return matcher.find() ? trimTrailingPunctuation(matcher.group()) : null;
+	}
+
+	/** Coupe a la premiere rubrique de references, si elle apparait des l'en-tete. */
+	private String stripReferenceSection(String text) {
+		Matcher matcher = REFERENCES_HEADING.matcher(text);
+		return matcher.find() ? text.substring(0, matcher.start()) : text;
 	}
 
 	private String trimTrailingPunctuation(String value) {

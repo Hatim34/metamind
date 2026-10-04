@@ -135,8 +135,10 @@ public class ExtractionService {
 		MetadataEntity metadataEntity = metadataRepository.findByDocumentId(document.getId())
 				.orElseGet(() -> metadataRepository.save(new MetadataEntity(document, document.getFileName(), null, null, null, be.icc.metamind.document.MetadataStatus.EN_ATTENTE)));
 		// Le DOI annonce par le modele ne vaut que s'il est confirme par le texte ; sinon on garde celui detecte.
-		String detectedDoi = preparedDocument.dois().stream().findFirst().orElse(null);
-		String doi = confirmedDoi(metadata.doi(), preparedDocument, detectedDoi);
+		// Le DOI de l'en-tete, jamais un DOI cite en bibliographie.
+		String doi = availableDoi(
+				confirmedDoi(metadata.doi(), preparedDocument, preparedDocument.documentDoi()),
+				document.getId());
 		LocalDate publicationDate = parsePublicationDate(metadata.publicationDate());
 
 		metadataEntity.markGenerated(metadata.title(), metadata.summary(), metadata.classification());
@@ -188,6 +190,18 @@ public class ExtractionService {
 				|| preparedDocument.normalizedText().toLowerCase(Locale.ROOT)
 						.contains(candidate.toLowerCase(Locale.ROOT));
 		return presentInText ? candidate : detectedDoi;
+	}
+
+	/**
+	 * Un DOI identifie une seule publication. S'il est deja porte par un autre document,
+	 * la valeur n'est pas reprise : l'extraction est une proposition, elle ne doit pas
+	 * faire echouer le traitement sur une violation de contrainte.
+	 */
+	private String availableDoi(String doi, Long documentId) {
+		if (doi == null || doi.isBlank()) {
+			return null;
+		}
+		return metadataRepository.existsByDoiIgnoreCaseAndDocument_IdNot(doi, documentId) ? null : doi;
 	}
 
 	/** Lit la date proposee par le modele ; une date illisible est ignoree plutot que corrigee. */

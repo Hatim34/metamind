@@ -49,6 +49,33 @@ class TextPreparationServiceTests {
 	}
 
 	@Test
+	void keepsTheHeaderDoiAndIgnoresThoseCitedInTheBibliography() {
+		String article = """
+				Journal of Testing, vol. 4
+				DOI: 10.1234/propre.2026
+
+				Resume du travail presente ici.
+
+				References
+				Dupont, A. (2020). Autre travail. https://doi.org/10.9999/cite-par-erreur
+				Martin, B. (2021). Encore un autre. 10.8888/aussi-cite
+				""";
+
+		PreparedDocument prepared = service.prepare(article);
+
+		assertThat(prepared.documentDoi()).isEqualTo("10.1234/propre.2026");
+		// Les DOI cites restent disponibles pour le recoupement, mais ne sont pas celui du document.
+		assertThat(prepared.dois()).contains("10.9999/cite-par-erreur", "10.8888/aussi-cite");
+	}
+
+	@Test
+	void reportsNoDoiWhenTheHeaderDoesNotCarryOne() {
+		String sansDoi = "Titre sans identifiant.\n\nCorps du document.";
+
+		assertThat(service.prepare(sansDoi).documentDoi()).isNull();
+	}
+
+	@Test
 	void boundsTheExcerptWhileKeepingTheStartAndEnd() {
 		String text = "START " + "a".repeat(2_000) + " END";
 

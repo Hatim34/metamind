@@ -98,6 +98,10 @@ public class MetadataService {
 		String summary = cleanOptional(request.summary());
 		String classification = cleanOptional(request.classification());
 		String doi = cleanOptional(request.doi());
+		if (doi != null && metadataRepository.existsByDoiIgnoreCaseAndDocument_IdNot(doi, document.getId())) {
+			throw new ApiException(HttpStatus.CONFLICT,
+					"Le DOI " + doi + " est deja utilise par un autre document.");
+		}
 		LanguageEntity language = resolveLanguage(request.language());
 		DocumentTypeEntity documentType = resolveDocumentType(request.documentType());
 		metadata.validate(title, summary, request.publicationDate(), classification, language, documentType, doi, user);

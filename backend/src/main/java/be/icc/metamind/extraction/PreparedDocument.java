@@ -9,6 +9,12 @@ public record PreparedDocument(
 		List<Segment> segments,
 		String language,
 		String documentType,
+		/**
+		 * DOI propre au document : premier DOI rencontre dans l'en-tete.
+		 * Null si aucun n'y figure. Les DOI cites en bibliographie sont volontairement
+		 * exclus, car ils appartiennent aux travaux references et non a ce document.
+		 */
+		String documentDoi,
 		Set<String> dois,
 		Set<String> orcids
 ) {
