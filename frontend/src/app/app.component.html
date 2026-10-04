@@ -51,153 +51,39 @@
   </section>
 
   <ng-container *ngIf="page === 'catalogue'">
-    <div class="hero">
-      <div class="hero-copy">
+    <section class="catalogue-page" aria-labelledby="catalogue-title">
+      <header class="catalogue-heading">
         <p class="eyebrow">{{ t('catalogue') }}</p>
-        <h1>Le savoir mieux rangé</h1>
-        <p class="lead">{{ t('title') }}</p>
-        <input class="hero-search" type="search" [(ngModel)]="search" (ngModelChange)="loadPublications()" [attr.aria-label]="t('catalogue')" />
-        <form class="search-filters" (ngSubmit)="loadPublications()">
-          <label>
-            {{ t('author') }}
-            <input name="filterAuthor" [(ngModel)]="searchFilters.author" maxlength="160" />
-          </label>
-          <label>
-            {{ t('language') }}
-            <select name="filterLanguage" [(ngModel)]="searchFilters.language">
-              <option value=""></option>
-              <option value="fr">FR</option>
-              <option value="nl">NL</option>
-              <option value="en">EN</option>
-            </select>
-          </label>
-          <label>
-            {{ t('documentType') }}
-            <input name="filterType" [(ngModel)]="searchFilters.documentType" maxlength="100" />
-          </label>
-          <label>
-            {{ t('startDate') }}
-            <input name="filterStartDate" type="date" [(ngModel)]="searchFilters.startDate" />
-          </label>
-          <label>
-            {{ t('endDate') }}
-            <input name="filterEndDate" type="date" [(ngModel)]="searchFilters.endDate" />
-          </label>
-          <div class="filter-actions">
-            <button type="submit" class="primary">{{ t('filters') }}</button>
-            <button type="button" (click)="clearSearchFilters()" [disabled]="!hasSearchFilters()">{{ t('clearFilters') }}</button>
-          </div>
+        <h1 id="catalogue-title">{{ t('availablePublications') }}</h1>
+        <form class="catalogue-search" (ngSubmit)="loadPublications()" role="search">
+          <label class="sr-only" for="catalogue-search-input">{{ t('catalogue') }}</label>
+          <input id="catalogue-search-input" name="catalogueSearch" type="search" [(ngModel)]="search" [attr.aria-label]="t('catalogue')" />
+          <button type="submit" class="primary">{{ t('filters') }}</button>
         </form>
-      </div>
-    </div>
+      </header>
 
-    <section class="panel">
-    <div class="section-heading">
-      <div>
-        <p class="eyebrow">{{ t('catalogue') }}</p>
-        <h2>{{ t('availablePublications') }}</h2>
-      </div>
-    </div>
-
-    <p class="notice" *ngIf="loading">{{ t('loadingCatalogue') }}</p>
-    <p class="notice" *ngIf="message">{{ message }}</p>
-    <p class="notice" *ngIf="extractionResult">
-      {{ t('extractedMetadataPrefix') }} "{{ extractionResult.title }}" : {{ extractionResult.suggestedKeywords.join(', ') }}.
-    </p>
-
-    <div class="empty-state" *ngIf="!loading && publications.length === 0">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="M21 21l-4.3-4.3" /></svg>
-      <p>{{ t('noPublications') }}</p>
-    </div>
-
-    <div class="publication-list" *ngIf="publications.length > 0">
-      <app-publication-card
-        *ngFor="let publication of publications"
-        [class.card-editing]="selectedMetadataPublicationId === publication.id"
-        [publication]="publication"
-        [labels]="publicationCardLabels"
-        [allowExtract]="canExtractPublication(publication)"
-        [allowEdit]="canPublishPublication(publication)"
-        [allowDelete]="canDeletePublication(publication)"
-        [allowRetry]="publication.status === 'EN_ATTENTE'"
-        [showWorkflow]="!!session"
-        (consult)="openPublication($event)"
-        (extract)="extractMetadata($event)"
-        (edit)="startMetadataValidation($event)"
-        (remove)="deletePublication($event)"
-        (retry)="retryDocumentProcessing($event)">
-        <div class="metadata-review" *ngIf="selectedMetadataPublicationId === publication.id">
-          <form class="metadata-form" (ngSubmit)="validateMetadata()">
-            <label>
-              {{ t('titleLabel') }}
-              <input name="metadataTitle{{ publication.id }}" [(ngModel)]="metadataForm.title" required maxlength="500" />
-            </label>
-            <label>
-              {{ t('author') }}
-              <input name="metadataAuthors{{ publication.id }}" [(ngModel)]="metadataForm.authors" required maxlength="500" />
-            </label>
-            <label>
-              {{ t('summary') }}
-              <textarea name="metadataSummary{{ publication.id }}" [(ngModel)]="metadataForm.summary" maxlength="5000"></textarea>
-            </label>
-            <label>
-              {{ t('publicationDate') }}
-              <input name="metadataDate{{ publication.id }}" type="date" [(ngModel)]="metadataForm.publicationDate" />
-            </label>
-            <label>
-              {{ t('classification') }}
-              <input name="metadataClassification{{ publication.id }}" [(ngModel)]="metadataForm.classification" maxlength="255" />
-            </label>
-            <label>
-              {{ t('visibility') }}
-              <select name="metadataVisibility{{ publication.id }}" [(ngModel)]="metadataForm.visibility">
-                <option value="PUBLIC">{{ t('publicVisibility') }}</option>
-                <option value="INSTITUTION">{{ t('institutionOnly') }}</option>
-              </select>
-            </label>
-            <label>
-              {{ t('keywords') }}
-              <input name="metadataKeywords{{ publication.id }}" [(ngModel)]="metadataForm.keywords" required maxlength="500" />
-            </label>
-            <label>
-              {{ t('metadataLanguage') }}
-              <select name="metadataLanguage{{ publication.id }}" [(ngModel)]="metadataForm.language">
-                <option value="">{{ t('languageNotSet') }}</option>
-                <option *ngFor="let language of references.langues" [value]="language.code">{{ language.libelle }}</option>
-              </select>
-            </label>
-            <label>
-              {{ t('metadataDocumentType') }}
-              <select name="metadataDocumentType{{ publication.id }}" [(ngModel)]="metadataForm.documentType">
-                <option value="">{{ t('documentTypeNotSet') }}</option>
-                <option *ngFor="let type of references.types_documents" [value]="type.code">{{ type.libelle }}</option>
-              </select>
-            </label>
-            <label>
-              {{ t('metadataDoi') }}
-              <input name="metadataDoi{{ publication.id }}" [(ngModel)]="metadataForm.doi" maxlength="255"
-                     [title]="t('doiPlaceholderHint')" />
-            </label>
-            <div class="actions">
-              <button class="primary" type="submit" [disabled]="!isMetadataFormValid()">{{ t('validateMetadataAction') }}</button>
-              <button type="button" class="danger" (click)="toggleRejectForm()">{{ t('rejectMetadata') }}</button>
-              <button type="button" (click)="cancelMetadataValidation()">{{ t('cancel') }}</button>
-            </div>
-            <div class="reject-box" *ngIf="showRejectForm">
-              <label>
-                {{ t('rejectReasonLabel') }}
-                <textarea name="rejectReason{{ publication.id }}" [(ngModel)]="metadataForm.rejectReason" maxlength="1000" required></textarea>
-              </label>
-              <button type="button" class="danger" [disabled]="metadataForm.rejectReason.trim().length === 0" (click)="rejectMetadata()">{{ t('rejectMetadata') }}</button>
-            </div>
+      <div class="catalogue-layout">
+        <aside class="catalogue-filters" [attr.aria-label]="t('filters')">
+          <form (ngSubmit)="loadPublications()">
+            <label>{{ t('author') }}<input name="filterAuthor" [(ngModel)]="searchFilters.author" maxlength="160" /></label>
+            <label>{{ t('language') }}<select name="filterLanguage" [(ngModel)]="searchFilters.language"><option value=""></option><option value="fr">FR</option><option value="nl">NL</option><option value="en">EN</option></select></label>
+            <label>{{ t('documentType') }}<select name="filterType" [(ngModel)]="searchFilters.documentType"><option value=""></option><option *ngFor="let type of references.types_documents" [value]="type.code">{{ type.libelle }}</option></select></label>
+            <label>{{ t('startDate') }}<input name="filterStartDate" type="date" [(ngModel)]="searchFilters.startDate" /></label>
+            <label>{{ t('endDate') }}<input name="filterEndDate" type="date" [(ngModel)]="searchFilters.endDate" /></label>
+            <div class="catalogue-filter-actions"><button type="submit" class="primary">{{ t('filters') }}</button><button type="button" (click)="clearSearchFilters()" [disabled]="!hasSearchFilters()">{{ t('clearFilters') }}</button></div>
           </form>
-          <aside class="metadata-source">
-            <h3>{{ t('extractedText') }}</h3>
-            <pre>{{ metadataForm.extractedText || t('noExtractedText') }}</pre>
-          </aside>
-        </div>
-      </app-publication-card>
-    </div>
+        </aside>
+
+        <section class="catalogue-results" [attr.aria-label]="t('availablePublications')">
+          <div class="catalogue-results-heading"><strong>{{ publications.length }} {{ t('publications') }}</strong><span *ngIf="search.trim()">{{ search }}</span></div>
+          <p class="notice" *ngIf="loading">{{ t('loadingCatalogue') }}</p>
+          <p class="notice" *ngIf="message">{{ message }}</p>
+          <div class="empty-state" *ngIf="!loading && publications.length === 0"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="M21 21l-4.3-4.3" /></svg><p>{{ t('noPublications') }}</p></div>
+          <div class="publication-list" *ngIf="publications.length > 0">
+            <app-publication-card *ngFor="let publication of publications" [publication]="publication" [labels]="publicationCardLabels" (consult)="openPublication($event)"></app-publication-card>
+          </div>
+        </section>
+      </div>
     </section>
   </ng-container>
 

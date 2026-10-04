@@ -1,13 +1,14 @@
 <article class="publication-card">
   <div class="doc-main">
-    <div class="doc-cover" aria-hidden="true">
-      <img [src]="coverUrl || '/assets/metamind/couverture-defaut.jpg'" alt="" />
-    </div>
-    <div class="doc-text">
+    <img *ngIf="coverUrl; else typedCover" class="doc-cover-image" [src]="coverUrl" alt="" />
+    <ng-template #typedCover><span class="doc-cover" [ngClass]="coverClass" aria-hidden="true"><span>{{ documentType }}</span><small>{{ publicationYear }}</small></span></ng-template>
+    <button type="button" class="doc-text" (click)="consult.emit(publication)">
+      <span class="doc-meta">{{ documentType }}<ng-container *ngIf="publicationYear"> · {{ publicationYear }}</ng-container><ng-container *ngIf="publication.institution"> · {{ publication.institution }}</ng-container></span>
       <h3>{{ publication.title }}</h3>
-      <p>{{ metaLine }}</p>
-      <p class="doc-summary" *ngIf="publication.summary">{{ publication.summary }}</p>
-    </div>
+      <span class="doc-author" *ngIf="publication.author">{{ publication.author }}</span>
+      <span class="doc-summary" *ngIf="publication.summary">{{ publication.summary }}</span>
+      <span class="doc-details"><span *ngIf="publication.language">{{ publication.language }}</span><span *ngIf="publication.fileUrl">PDF</span></span>
+    </button>
   </div>
 
   <ol class="doc-pipeline" *ngIf="showWorkflow && publication.status !== 'SUPPRIME'" aria-hidden="true">
@@ -17,14 +18,9 @@
     </li>
   </ol>
 
-  <div class="tags">
-    <span class="badge" [class.badge-green]="publication.status === 'PUBLIE'" [class.badge-amber]="publication.status === 'A_VALIDER' || publication.status === 'EXTRACTION'" [class.badge-red]="publication.status === 'SUPPRIME'">{{ publication.status === 'EXTRACTION' ? labels.processing : publication.status }}</span>
-    <span>{{ publication.visibility }}</span>
-    <span *ngFor="let keyword of publication.keywords">{{ keyword }}</span>
-  </div>
+  <div class="tags" *ngIf="publication.keywords.length > 0"><span *ngFor="let keyword of publication.keywords">{{ keyword }}</span></div>
 
-  <div class="publication-actions" *ngIf="!confirmingDelete">
-    <button type="button" (click)="consult.emit(publication)">{{ labels.consult }}</button>
+  <div class="publication-actions" *ngIf="(allowRetry || allowExtract || allowEdit || allowDelete) && !confirmingDelete">
     <button type="button" *ngIf="allowRetry" (click)="retry.emit(publication)">{{ labels.retry }}</button>
     <button type="button" class="primary" *ngIf="allowExtract && !isEnriched" (click)="extract.emit(publication)">{{ labels.extract }}</button>
     <button type="button" class="primary" *ngIf="allowEdit && isEnriched" (click)="edit.emit(publication)">{{ labels.edit }}</button>

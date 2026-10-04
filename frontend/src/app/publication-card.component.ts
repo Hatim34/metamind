@@ -17,6 +17,7 @@ export interface PublicationCardLabels {
   confirmDelete: string;
   confirm: string;
   cancel: string;
+  documentType: string;
 }
 
 interface WorkflowStep {
@@ -85,6 +86,28 @@ export class PublicationCardComponent implements OnChanges, OnDestroy {
       parts.push(String(this.publication.year));
     }
     return parts.join(' · ');
+  }
+
+  get documentType(): string {
+    return this.publication.documentType || this.labels.documentType;
+  }
+
+  get publicationYear(): string {
+    return this.publication.publicationDate || (this.publication.year > 0 ? String(this.publication.year) : '');
+  }
+
+  get coverClass(): string {
+    const type = this.documentType.toLocaleLowerCase();
+    if (type.includes('th')) {
+      return 'type-these';
+    }
+    if (type.includes('rapport')) {
+      return 'type-rapport';
+    }
+    if (type.includes('preprint')) {
+      return 'type-preprint';
+    }
+    return 'type-article';
   }
 
   /** Pipeline visuel : Importe, Extraction IA, A valider, Publie. */

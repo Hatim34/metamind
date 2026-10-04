@@ -985,7 +985,8 @@ export class AppComponent implements OnInit {
       stepPublished: this.t('stepPublished'),
       confirmDelete: this.t('confirmDeleteQuestion'),
       confirm: this.t('confirm'),
-      cancel: this.t('cancel')
+      cancel: this.t('cancel'),
+      documentType: this.t('documentType')
     };
   }
 
