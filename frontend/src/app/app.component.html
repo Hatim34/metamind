@@ -201,46 +201,81 @@
     </section>
   </ng-container>
 
-  <section *ngIf="page === 'validation'" class="panel">
-    <div class="section-heading">
+  <section *ngIf="page === 'validation'" class="validation-page">
+    <div class="validation-page-heading">
       <div>
         <p class="eyebrow">{{ t('validationQueue') }}</p>
-        <h1>{{ t('documentsToProcess') }}</h1>
+        <h1>{{ t('validationQueue') }}</h1>
       </div>
-      <div class="queue-controls">
-        <label class="queue-filter">
-          {{ t('status') }}
-          <select name="validationFilter" [(ngModel)]="validationFilter">
-            <option value="all">{{ t('allStatuses') }}</option>
-            <option value="A_VALIDER">{{ t('pendingValidation') }}</option>
-            <option value="EN_ATTENTE">{{ t('statusPending') }}</option>
-            <option value="EXTRACTION">{{ t('processing') }}</option>
-          </select>
-        </label>
-        <button type="button" (click)="loadValidationQueue()">{{ t('refresh') }}</button>
-      </div>
+      <input class="validation-search" name="validationSearch" [(ngModel)]="validationSearch"
+        [placeholder]="t('filterByTitleOrAuthor')" [attr.aria-label]="t('filterByTitleOrAuthor')" />
     </div>
+
+    <div class="validation-tabs" role="tablist" [attr.aria-label]="t('status')">
+      <button type="button" role="tab" [attr.aria-selected]="validationFilter === 'A_VALIDER'"
+        [class.active]="validationFilter === 'A_VALIDER'" (click)="validationFilter = 'A_VALIDER'">
+        {{ t('pendingValidation') }} <span>{{ validationCount('A_VALIDER') }}</span>
+      </button>
+      <button type="button" role="tab" [attr.aria-selected]="validationFilter === 'EXTRACTION'"
+        [class.active]="validationFilter === 'EXTRACTION'" (click)="validationFilter = 'EXTRACTION'">
+        {{ t('processing') }} <span>{{ validationCount('EXTRACTION') }}</span>
+      </button>
+      <button type="button" role="tab" [attr.aria-selected]="validationFilter === 'EN_ATTENTE'"
+        [class.active]="validationFilter === 'EN_ATTENTE'" (click)="validationFilter = 'EN_ATTENTE'">
+        {{ t('statusPending') }} <span>{{ validationCount('EN_ATTENTE') }}</span>
+      </button>
+      <button type="button" role="tab" [attr.aria-selected]="validationFilter === 'all'"
+        [class.active]="validationFilter === 'all'" (click)="validationFilter = 'all'">
+        {{ t('allStatuses') }} <span>{{ validationQueue.length }}</span>
+      </button>
+      <button type="button" class="validation-refresh" (click)="loadValidationQueue()">{{ t('refresh') }}</button>
+    </div>
+
     <p class="notice" *ngIf="!session">{{ t('loginRequiredPublication') }}</p>
     <p class="notice" *ngIf="session && filteredValidationQueue.length === 0">{{ t('noValidationDocuments') }}</p>
     <p class="notice" *ngIf="message">{{ message }}</p>
-    <div class="publication-list" *ngIf="filteredValidationQueue.length > 0">
-      <app-publication-card
-        *ngFor="let publication of filteredValidationQueue"
-        [class.card-editing]="selectedMetadataPublicationId === publication.id"
-        [publication]="publication"
-        [labels]="publicationCardLabels"
-        [allowExtract]="canExtractPublication(publication)"
-        [allowEdit]="canPublishPublication(publication)"
-        [allowDelete]="canDeletePublication(publication)"
-        [allowRetry]="publication.status === 'EN_ATTENTE'"
-        [showWorkflow]="!!session"
-        (consult)="openPublication($event)"
-        (extract)="extractMetadata($event)"
-        (edit)="startMetadataValidation($event)"
-        (remove)="deletePublication($event)"
-        (retry)="retryDocumentProcessing($event)">
-        <p class="notice" *ngIf="isExtracting(publication.id)">{{ t('processing') }}</p>
-        <div class="metadata-review" *ngIf="selectedMetadataPublicationId === publication.id">
+
+    <div class="validation-table-wrap" *ngIf="filteredValidationQueue.length > 0">
+      <div class="validation-table">
+        <div class="validation-table-header">
+          <span>{{ t('documentColumn') }}</span>
+          <span>{{ t('institutionColumn') }}</span>
+          <span>{{ t('confidenceByField') }}</span>
+          <span></span>
+        </div>
+        <article class="validation-row" *ngFor="let publication of filteredValidationQueue">
+          <div class="validation-document">
+            <span class="validation-cover" [class]="documentTypeClass(publication)" aria-hidden="true">{{ documentTypeShort(publication) }}</span>
+            <div>
+              <h2>{{ publication.title }}</h2>
+              <p>{{ publication.documentType || t('documentType') }} · {{ publication.author || '-' }}</p>
+            </div>
+          </div>
+          <p class="validation-institution">{{ publication.institution || '-' }}</p>
+          <!-- Scores fiables et preuves : fournis par le chantier backend 2. -->
+          <p class="validation-confidence">{{ t('confidenceNotCalculated') }}</p>
+          <div class="validation-actions">
+            <button type="button" class="primary" *ngIf="canPublishPublication(publication)" (click)="startMetadataValidation(publication)">{{ t('validateMetadataAction') }}</button>
+            <button type="button" class="primary" *ngIf="canExtractPublication(publication)" (click)="extractMetadata(publication)">{{ t('extract') }}</button>
+            <span class="validation-processing" *ngIf="isExtracting(publication.id)">{{ t('processing') }}</span>
+            <details class="validation-more-actions">
+              <summary [attr.aria-label]="t('moreActions')">•••</summary>
+              <div>
+                <button type="button" *ngIf="publication.status === 'EN_ATTENTE'" (click)="retryDocumentProcessing(publication)">{{ t('retryProcessing') }}</button>
+                <button type="button" *ngIf="canDeletePublication(publication)" class="danger" (click)="deletePublication(publication)">{{ t('deletePublication') }}</button>
+              </div>
+            </details>
+          </div>
+        </article>
+      </div>
+    </div>
+
+    <ng-container *ngFor="let publication of filteredValidationQueue">
+      <section class="validation-editor" *ngIf="selectedMetadataPublicationId === publication.id">
+        <div class="section-heading">
+          <div><p class="eyebrow">{{ t('metadataLoaded') }}</p><h2>{{ publication.title }}</h2></div>
+        </div>
+        <div class="metadata-review">
           <form class="metadata-form" (ngSubmit)="validateMetadata()">
             <label>{{ t('titleLabel') }}<input name="queueTitle{{ publication.id }}" [(ngModel)]="metadataForm.title" required maxlength="500" /></label>
             <label>{{ t('author') }}<input name="queueAuthors{{ publication.id }}" [(ngModel)]="metadataForm.authors" required maxlength="500" /></label>
@@ -260,8 +295,8 @@
           </form>
           <aside class="metadata-source"><h3>{{ t('extractedText') }}</h3><pre>{{ metadataForm.extractedText || t('noExtractedText') }}</pre></aside>
         </div>
-      </app-publication-card>
-    </div>
+      </section>
+    </ng-container>
 
     <section class="quality-panel" *ngIf="session">
       <div class="section-heading">

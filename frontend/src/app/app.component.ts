@@ -224,6 +224,12 @@ const translations = {
     sessionExpired: 'Session expirée. Reconnectez-vous.',
     documentsToProcess: 'Documents à traiter',
     noValidationDocuments: 'Aucun document à traiter pour le moment.',
+    filterByTitleOrAuthor: 'Filtrer par titre ou auteur',
+    documentColumn: 'Document',
+    institutionColumn: 'Institution',
+    confidenceByField: 'Confiance par champ',
+    confidenceNotCalculated: 'Confiance non calculée',
+    moreActions: 'Plus d’actions',
     refresh: 'Actualiser',
     allStatuses: 'Tous les statuts',
     statusPending: 'En attente',
@@ -441,6 +447,12 @@ const translations = {
     sessionExpired: 'Sessie verlopen. Meld u opnieuw aan.',
     documentsToProcess: 'Te verwerken documenten',
     noValidationDocuments: 'Voorlopig geen documenten om te verwerken.',
+    filterByTitleOrAuthor: 'Filter op titel of auteur',
+    documentColumn: 'Document',
+    institutionColumn: 'Instelling',
+    confidenceByField: 'Betrouwbaarheid per veld',
+    confidenceNotCalculated: 'Betrouwbaarheid niet berekend',
+    moreActions: 'Meer acties',
     refresh: 'Vernieuwen',
     allStatuses: 'Alle statussen',
     statusPending: 'In afwachting',
@@ -658,6 +670,12 @@ const translations = {
     sessionExpired: 'Session expired. Please sign in again.',
     documentsToProcess: 'Documents to process',
     noValidationDocuments: 'No documents to process right now.',
+    filterByTitleOrAuthor: 'Filter by title or author',
+    documentColumn: 'Document',
+    institutionColumn: 'Institution',
+    confidenceByField: 'Confidence by field',
+    confidenceNotCalculated: 'Confidence not calculated',
+    moreActions: 'More actions',
     refresh: 'Refresh',
     allStatuses: 'All statuses',
     statusPending: 'Pending',
@@ -760,6 +778,7 @@ export class AppComponent implements OnInit {
   publications: Publication[] = [];
   validationQueue: Publication[] = [];
   validationFilter: 'all' | 'A_VALIDER' | 'EN_ATTENTE' | 'EXTRACTION' = 'all';
+  validationSearch = '';
   selectedPublication: Publication | null = null;
   institutions: Institution[] = [];
   adminUsers: UserSession[] = [];
@@ -1020,10 +1039,46 @@ export class AppComponent implements OnInit {
   }
 
   get filteredValidationQueue(): Publication[] {
-    if (this.validationFilter === 'all') {
-      return this.validationQueue;
+    const query = this.validationSearch.trim().toLocaleLowerCase();
+    return this.validationQueue.filter((document) => {
+      const matchesStatus = this.validationFilter === 'all' || document.status === this.validationFilter;
+      const matchesQuery = !query
+        || document.title.toLocaleLowerCase().includes(query)
+        || document.author.toLocaleLowerCase().includes(query);
+      return matchesStatus && matchesQuery;
+    });
+  }
+
+  validationCount(status: Exclude<typeof this.validationFilter, 'all'>): number {
+    return this.validationQueue.filter((document) => document.status === status).length;
+  }
+
+  documentTypeShort(publication: Publication): string {
+    const type = (publication.documentType || '').toLocaleLowerCase();
+    if (type.includes('th')) {
+      return 'Th.';
     }
-    return this.validationQueue.filter((document) => document.status === this.validationFilter);
+    if (type.includes('rapport')) {
+      return 'Rap.';
+    }
+    if (type.includes('preprint')) {
+      return 'Pre.';
+    }
+    return 'Art.';
+  }
+
+  documentTypeClass(publication: Publication): string {
+    const type = (publication.documentType || '').toLocaleLowerCase();
+    if (type.includes('th')) {
+      return 'type-these';
+    }
+    if (type.includes('rapport')) {
+      return 'type-rapport';
+    }
+    if (type.includes('preprint')) {
+      return 'type-preprint';
+    }
+    return 'type-article';
   }
 
   clearSearchFilters(): void {
