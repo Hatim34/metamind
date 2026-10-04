@@ -74,6 +74,15 @@
   gap: 1rem;
 }
 
+.auth-form {
+  display: grid;
+  gap: 1rem;
+}
+
+.login-form.auth-form {
+  margin: auto;
+}
+
 .login-heading {
   margin-bottom: 1.1rem;
 }

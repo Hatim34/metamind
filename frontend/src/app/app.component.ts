@@ -1084,6 +1084,10 @@ export class AppComponent implements OnInit {
     return new Set(this.publications.map((publication) => publication.institution).filter(Boolean)).size;
   }
 
+  get isAuthenticationPage(): boolean {
+    return this.page === 'connexion' || this.page === 'inscription' || this.page === 'password-reset';
+  }
+
   openCatalogueSearch(): void {
     this.navigate('catalogue');
     this.loadPublications();

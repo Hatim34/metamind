@@ -1,5 +1,5 @@
 <app-navbar
-  *ngIf="page !== 'connexion'"
+  *ngIf="!isAuthenticationPage"
   [page]="page"
   [authenticated]="!!session"
   [administrator]="isAdmin"
@@ -17,7 +17,7 @@
   <button type="button" class="toast-close" (click)="message = ''" aria-label="Fermer">×</button>
 </div>
 
-<main class="app-shell" [class.auth-shell]="page === 'connexion'">
+<main class="app-shell" [class.auth-shell]="isAuthenticationPage">
 
   <section class="summary-grid" *ngIf="page === 'profil'" [attr.aria-label]="t('indicators')">
     <article>
@@ -423,7 +423,7 @@
 
   <section *ngIf="page === 'connexion'" class="login-page" aria-labelledby="login-title">
     <div class="login-panel">
-      <button type="button" class="login-brand" (click)="navigate('catalogue')" aria-label="Metamind">
+      <button type="button" class="login-brand" (click)="navigate('accueil')" aria-label="Metamind">
         <span class="login-brand-mark" aria-hidden="true">M</span>
         <span>Metamind</span>
       </button>
@@ -470,80 +470,44 @@
       </div>
     </div>
 
-    <aside class="login-showcase" aria-label="Fonctionnement de Metamind">
-      <div class="login-showcase-content">
-        <p class="eyebrow">Metamind</p>
-        <h2>{{ t('workflowTitle') }}</h2>
-        <ol class="login-workflow">
-          <li>
-            <span>01</span>
-            <div><strong>{{ t('workflowImport') }}</strong><p>{{ t('workflowImportText') }}</p></div>
-          </li>
-          <li>
-            <span>02</span>
-            <div><strong>{{ t('workflowReview') }}</strong><p>{{ t('workflowReviewText') }}</p></div>
-          </li>
-          <li>
-            <span>03</span>
-            <div><strong>{{ t('workflowPublish') }}</strong><p>{{ t('workflowPublishText') }}</p></div>
-          </li>
-        </ol>
-        <p class="login-showcase-note">{{ t('workflowNote') }}</p>
+    <ng-container *ngTemplateOutlet="authShowcase"></ng-container>
+  </section>
+
+  <section *ngIf="page === 'password-reset'" class="login-page" aria-labelledby="reset-title">
+    <div class="login-panel">
+      <button type="button" class="login-brand" (click)="navigate('accueil')" aria-label="Metamind"><span class="login-brand-mark" aria-hidden="true">M</span><span>Metamind</span></button>
+      <div class="login-form">
+        <div class="login-heading"><p class="eyebrow">{{ t('resetPassword') }}</p><h1 id="reset-title">{{ t('resetPassword') }}</h1></div>
+        <form class="auth-form" (ngSubmit)="requestPasswordReset()"><label>{{ t('resetEmail') }}<input name="resetEmail" type="email" [(ngModel)]="passwordResetForm.email" required maxlength="160" autocomplete="email" /></label><button class="login-submit" type="submit">{{ t('sendResetLink') }}</button></form>
+        <p class="notice" *ngIf="passwordResetRequested">{{ t('resetRequestSent') }}</p>
+        <form class="auth-form" *ngIf="passwordResetRequested" (ngSubmit)="confirmPasswordReset()"><label>{{ t('resetToken') }}<input name="resetToken" [(ngModel)]="passwordResetForm.token" required /></label><label>{{ t('newPassword') }}<input name="resetPassword" type="password" [(ngModel)]="passwordResetForm.password" required minlength="8" autocomplete="new-password" /></label><button class="login-submit" type="submit" [disabled]="passwordResetForm.token.trim().length === 0 || passwordResetForm.password.length < 8">{{ t('confirmPasswordReset') }}</button></form>
+        <p class="login-registration"><button type="button" class="login-text-button" (click)="navigate('connexion')">{{ t('login') }}</button></p>
       </div>
-    </aside>
+    </div>
+    <ng-container *ngTemplateOutlet="authShowcase"></ng-container>
   </section>
 
-  <section *ngIf="page === 'password-reset'" class="panel form-panel">
-    <p class="eyebrow">{{ t('resetPassword') }}</p>
-    <h2>{{ t('resetPassword') }}</h2>
-    <form (ngSubmit)="requestPasswordReset()">
-      <label>
-        {{ t('resetEmail') }}
-        <input name="resetEmail" type="email" [(ngModel)]="passwordResetForm.email" required maxlength="160" />
-      </label>
-      <button class="primary" type="submit">{{ t('sendResetLink') }}</button>
-    </form>
-    <p class="notice" *ngIf="passwordResetRequested">{{ t('resetRequestSent') }}</p>
-    <form (ngSubmit)="confirmPasswordReset()">
-      <label>
-        {{ t('resetToken') }}
-        <input name="resetToken" [(ngModel)]="passwordResetForm.token" required />
-      </label>
-      <label>
-        {{ t('newPassword') }}
-        <input name="resetPassword" type="password" [(ngModel)]="passwordResetForm.password" required minlength="8" />
-      </label>
-      <button class="primary" type="submit" [disabled]="passwordResetForm.token.trim().length === 0 || passwordResetForm.password.length < 8">{{ t('confirmPasswordReset') }}</button>
-    </form>
+  <section *ngIf="page === 'inscription'" class="login-page" aria-labelledby="register-title">
+    <div class="login-panel">
+      <button type="button" class="login-brand" (click)="navigate('accueil')" aria-label="Metamind"><span class="login-brand-mark" aria-hidden="true">M</span><span>Metamind</span></button>
+      <form class="login-form auth-form" (ngSubmit)="register()">
+        <div class="login-heading"><p class="eyebrow">{{ t('register') }}</p><h1 id="register-title">{{ t('createLibrarianAccount') }}</h1></div>
+        <label>{{ t('firstName') }}<input name="firstName" [(ngModel)]="registerForm.firstName" required maxlength="80" autocomplete="given-name" /></label>
+        <label>{{ t('lastName') }}<input name="lastName" [(ngModel)]="registerForm.lastName" required maxlength="80" autocomplete="family-name" /></label>
+        <label>{{ t('professionalEmail') }}<input name="registerEmail" type="email" [(ngModel)]="registerForm.email" required maxlength="160" autocomplete="email" /></label>
+        <label>{{ t('institution') }}<input name="institution" [(ngModel)]="registerForm.institution" required maxlength="160" autocomplete="organization" /></label>
+        <label>{{ t('password') }}<input name="registerPassword" type="password" [(ngModel)]="registerForm.password" required minlength="8" autocomplete="new-password" /></label>
+        <p *ngIf="message" class="login-error" role="alert">{{ message }}</p>
+        <button class="login-submit" type="submit" [disabled]="!isRegisterFormValid()">{{ t('createAccount') }}</button>
+        <p class="login-registration"><button type="button" class="login-text-button" (click)="navigate('connexion')">{{ t('login') }}</button></p>
+      </form>
+    </div>
+    <ng-container *ngTemplateOutlet="authShowcase"></ng-container>
   </section>
 
-  <section *ngIf="page === 'inscription'" class="panel form-panel">
-    <p class="eyebrow">{{ t('register') }}</p>
-    <h2>{{ t('createLibrarianAccount') }}</h2>
-    <form (ngSubmit)="register()">
-      <label>
-        {{ t('firstName') }}
-        <input name="firstName" [(ngModel)]="registerForm.firstName" required maxlength="80" />
-      </label>
-      <label>
-        {{ t('lastName') }}
-        <input name="lastName" [(ngModel)]="registerForm.lastName" required maxlength="80" />
-      </label>
-      <label>
-        {{ t('email') }}
-        <input name="registerEmail" type="email" [(ngModel)]="registerForm.email" required maxlength="160" />
-      </label>
-      <label>
-        {{ t('institution') }}
-        <input name="institution" [(ngModel)]="registerForm.institution" required maxlength="160" />
-      </label>
-      <label>
-        {{ t('password') }}
-        <input name="registerPassword" type="password" [(ngModel)]="registerForm.password" required minlength="8" />
-      </label>
-      <button class="primary" type="submit" [disabled]="!isRegisterFormValid()">{{ t('createAccount') }}</button>
-    </form>
-  </section>
+  <ng-template #authShowcase>
+    <aside class="login-showcase" aria-label="Fonctionnement de Metamind"><div class="login-showcase-content"><p class="eyebrow">Metamind</p><h2>{{ t('workflowTitle') }}</h2><ol class="login-workflow"><li><span>01</span><div><strong>{{ t('workflowImport') }}</strong><p>{{ t('workflowImportText') }}</p></div></li><li><span>02</span><div><strong>{{ t('workflowReview') }}</strong><p>{{ t('workflowReviewText') }}</p></div></li><li><span>03</span><div><strong>{{ t('workflowPublish') }}</strong><p>{{ t('workflowPublishText') }}</p></div></li></ol><p class="login-showcase-note">{{ t('workflowNote') }}</p></div></aside>
+  </ng-template>
 
   <section *ngIf="page === 'profil'" class="panel">
     <p class="eyebrow">{{ t('profile') }}</p>
@@ -836,7 +800,7 @@
   </section>
 </main>
 
-<footer *ngIf="page !== 'connexion'" class="site-footer">
+<footer *ngIf="!isAuthenticationPage" class="site-footer">
   <span>Metamind · {{ t('title') }} · ASSAL Hatim, ICC 2025-2026</span>
   <nav class="footer-links" aria-label="Informations legales">
     <button type="button" (click)="openLegal()">{{ t('privacyTitle') }}</button>
