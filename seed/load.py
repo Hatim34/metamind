@@ -235,6 +235,24 @@ def validation_body(gt, visibility):
     }
 
 
+def publier_metadonnees(api, token, doc_id, gt, visibility):
+    """
+    Valide les metadonnees. Le corpus contient le meme travail sous deux institutions,
+    or l'API refuse un DOI deja pris (409) : on republie alors sans le DOI, le document
+    gardant tout le reste de sa notice.
+    """
+    corps = validation_body(gt, visibility)
+    try:
+        api.call("PUT", f"/documents/{doc_id}/metadata", token, json=corps)
+        return
+    except RuntimeError as erreur:
+        if "409" not in str(erreur) or not corps.get("doi"):
+            raise
+    print(f"      DOI deja utilise, publication sans DOI : {corps['doi']}")
+    corps["doi"] = None
+    api.call("PUT", f"/documents/{doc_id}/metadata", token, json=corps)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--api", default="http://localhost:8080/api/v1")
@@ -316,7 +334,7 @@ def main():
                     "classification_exacte": int(norm(llm.get("classification")) == norm(gt.get("classification"))),
                 })
                 if target == "PUBLIE":
-                    api.call("PUT", f"/documents/{doc_id}/metadata", token, json=validation_body(gt, visibility))
+                    publier_metadonnees(api, token, doc_id, gt, visibility)
                 elif target == "REJETE":
                     api.call("POST", f"/documents/{doc_id}/metadata/rejet", token,
                              json={"motif": rng.choice(MOTIFS_REJET)})
