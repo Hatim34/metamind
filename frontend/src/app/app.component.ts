@@ -1002,7 +1002,9 @@ export class AppComponent implements OnInit {
       status: this.t('status'),
       visibility: this.t('visibility'),
       downloadFile: this.t('downloadFile'),
-      noFile: this.t('noFile')
+      noFile: this.t('noFile'),
+      publicVisibility: this.t('publicVisibility'),
+      institutionOnly: this.t('institutionOnly')
     };
   }
 

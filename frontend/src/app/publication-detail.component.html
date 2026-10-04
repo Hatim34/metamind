@@ -1,35 +1,29 @@
 <section class="panel publication-detail">
-  <div class="detail-toolbar">
-    <button type="button" (click)="back.emit()">{{ labels.backToCatalogue }}</button>
-  </div>
+  <div class="detail-toolbar"><button type="button" (click)="back.emit()">{{ labels.backToCatalogue }}</button></div>
 
   <div class="detail-layout">
-    <div class="detail-cover" aria-hidden="true">
-      <img [src]="coverUrl || '/assets/metamind/couverture-defaut.jpg'" alt="" />
-    </div>
+    <img *ngIf="coverUrl; else typedCover" class="detail-cover-image" [src]="coverUrl" alt="" />
+    <ng-template #typedCover><span class="detail-cover" [ngClass]="coverClass" aria-hidden="true"><span>{{ documentType }}</span><small>{{ publicationYear }}</small></span></ng-template>
     <div class="detail-content">
       <p class="eyebrow">{{ labels.publicationDetails }}</p>
-      <h2>{{ publication.title }}</h2>
-      <p class="detail-meta">{{ publication.author ? publication.author + ' · ' : '' }}{{ publication.institution }}</p>
+      <h1>{{ publication.title }}</h1>
+      <p class="detail-authors">{{ publication.author || '-' }}</p>
+      <p class="detail-meta">{{ publication.institution }}<ng-container *ngIf="publicationYear"> · {{ publicationYear }}</ng-container></p>
       <p class="detail-summary">{{ publication.summary || labels.noSummary }}</p>
+      <div class="actions detail-actions"><button *ngIf="publication.fileUrl" type="button" class="primary" (click)="download.emit(publication)">{{ labels.downloadFile }}</button><p class="notice" *ngIf="!publication.fileUrl">{{ labels.noFile }}</p></div>
     </div>
   </div>
 
   <dl class="detail-grid">
-    <div><dt>{{ labels.publicationDate }}</dt><dd>{{ publication.publicationDate || (publication.year > 0 ? publication.year : '-') }}</dd></div>
+    <div><dt>{{ labels.publicationDate }}</dt><dd>{{ publicationYear || '-' }}</dd></div>
     <div><dt>{{ labels.language }}</dt><dd>{{ publication.language || '-' }}</dd></div>
-    <div><dt>{{ labels.documentType }}</dt><dd>{{ publication.documentType || '-' }}</dd></div>
+    <div><dt>{{ labels.documentType }}</dt><dd>{{ documentType }}</dd></div>
     <div><dt>{{ labels.classification }}</dt><dd>{{ publication.classification || '-' }}</dd></div>
-    <div><dt>{{ labels.status }}</dt><dd>{{ publication.status }}</dd></div>
-    <div><dt>{{ labels.visibility }}</dt><dd>{{ publication.visibility }}</dd></div>
+    <div><dt>{{ labels.visibility }}</dt><dd>{{ visibilityLabel }}</dd></div>
   </dl>
 
   <div class="detail-keywords" *ngIf="publication.keywords.length > 0">
     <span *ngFor="let keyword of publication.keywords">{{ keyword }}</span>
   </div>
 
-  <div class="actions detail-actions">
-    <button *ngIf="publication.fileUrl" type="button" class="primary" (click)="download.emit(publication)">{{ labels.downloadFile }}</button>
-    <p class="notice" *ngIf="!publication.fileUrl">{{ labels.noFile }}</p>
-  </div>
 </section>

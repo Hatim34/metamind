@@ -15,6 +15,8 @@ export interface PublicationDetailLabels {
   visibility: string;
   downloadFile: string;
   noFile: string;
+  publicVisibility: string;
+  institutionOnly: string;
 }
 
 @Component({
@@ -44,6 +46,32 @@ export class PublicationDetailComponent implements OnChanges, OnDestroy {
 
   ngOnDestroy(): void {
     this.revoke();
+  }
+
+  get documentType(): string {
+    return this.publication.documentType || this.labels.documentType;
+  }
+
+  get publicationYear(): string {
+    return this.publication.publicationDate || (this.publication.year > 0 ? String(this.publication.year) : '');
+  }
+
+  get coverClass(): string {
+    const type = this.documentType.toLocaleLowerCase();
+    if (type.includes('th')) {
+      return 'type-these';
+    }
+    if (type.includes('rapport')) {
+      return 'type-rapport';
+    }
+    if (type.includes('preprint')) {
+      return 'type-preprint';
+    }
+    return 'type-article';
+  }
+
+  get visibilityLabel(): string {
+    return this.publication.visibility === 'PUBLIC' ? this.labels.publicVisibility : this.labels.institutionOnly;
   }
 
   private loadCover(): void {
