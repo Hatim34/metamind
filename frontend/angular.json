@@ -55,12 +55,7 @@
               }
             ],
             "styles": [
-              "src/styles.css",
-              "src/styles/layout.css",
-              "src/styles/controls.css",
-              "src/styles/data.css",
-              "src/styles/features.css",
-              "src/styles/auth-responsive.css"
+              "src/styles.css"
             ],
             "scripts": []
           },
@@ -85,7 +80,7 @@
                   "minify": true,
                   "inlineCritical": false
                 },
-                "fonts": true
+                "fonts": false
               }
             },
             "development": {
@@ -126,12 +121,7 @@
               }
             ],
             "styles": [
-              "src/styles.css",
-              "src/styles/layout.css",
-              "src/styles/controls.css",
-              "src/styles/data.css",
-              "src/styles/features.css",
-              "src/styles/auth-responsive.css"
+              "src/styles.css"
             ],
             "scripts": []
           }
