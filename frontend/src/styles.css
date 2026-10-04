@@ -105,7 +105,7 @@ code { font-family: var(--f-mono); font-size: 12px; color: var(--ink-soft); }
 @media (max-width: 640px) { .m-display { font-size: 34px; } .m-title { font-size: 26px; } }
 
 /* ---------- en-tête ---------- */
-.m-header { background: var(--surface); border-bottom: 1px solid var(--line-ui); }
+.m-header { position: sticky; top: 0; z-index: 30; background: var(--surface); border-bottom: 1px solid var(--line-ui); }
 .m-header__in { max-width: 1440px; margin: 0 auto; padding: 12px 32px; display: flex; flex-wrap: wrap; align-items: center; gap: 12px 32px; }
 .m-header--admin { background: var(--ink); color: #fff; border-bottom: none; }
 .m-header--admin .m-logo, .m-header--admin .m-langs button { color: #fff; }

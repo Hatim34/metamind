@@ -12,7 +12,7 @@ import { TypeCoverComponent } from '../ui/type-cover.component';
     <section class="m-hero">
       <div class="m-wrap m-wrap--public m-hero__in">
         <div class="m-hero__copy">
-          <h1 class="m-display">{{ 'Les publications des universités, décrites et vérifiées.' | t }}</h1>
+          <h1 class="m-display">{{ 'Le savoir mieux rangé' | t }}</h1>
           <p class="m-lead">{{ 'Articles, thèses et rapports en libre accès. Chaque notice est proposée par une IA puis relue par un bibliothécaire de l\\'institution.' | t }}</p>
           <form class="m-search" role="search" (ngSubmit)="search()">
             <label class="m-sr" for="q">{{ 'Rechercher dans le catalogue' | t }}</label>
