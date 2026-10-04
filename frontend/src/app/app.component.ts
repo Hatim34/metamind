@@ -114,6 +114,13 @@ const translations = {
     paymentWithdrawalWaiver: 'Je demande l execution immediate du service numerique et renonce au droit de retractation.',
     checkoutStarted: 'Paiement confirme, le solde est mis a jour.',
     importFile: 'Importer un document',
+    importHeading: 'Importer des documents',
+    importInstructions: 'PDF, DOCX ou TXT, jusqu\'à 50 Mo. L\'import ne consomme pas de crédit.',
+    dropFile: 'Choisissez un fichier à importer',
+    browseFiles: 'Parcourir votre ordinateur',
+    selectedFileReady: 'Prêt à être importé',
+    manualPublication: 'Créer une notice sans fichier',
+    manualPublicationIntro: 'Ajoutez une notice bibliographique lorsque le fichier n’est pas disponible.',
     selectedFile: 'Fichier sélectionné',
     coverImage: 'Image de couverture',
     sendFile: 'Importer le fichier',
@@ -346,6 +353,13 @@ const translations = {
     paymentWithdrawalWaiver: 'Ik vraag de onmiddellijke uitvoering van de digitale dienst en doe afstand van het herroepingsrecht.',
     checkoutStarted: 'Betaling bevestigd, het saldo is bijgewerkt.',
     importFile: 'Document importeren',
+    importHeading: 'Documenten importeren',
+    importInstructions: 'PDF, DOCX of TXT, tot 50 MB. De import verbruikt geen credit.',
+    dropFile: 'Kies een bestand om te importeren',
+    browseFiles: 'Doorzoek uw computer',
+    selectedFileReady: 'Klaar om te importeren',
+    manualPublication: 'Een fiche zonder bestand maken',
+    manualPublicationIntro: 'Voeg een bibliografische fiche toe wanneer het bestand niet beschikbaar is.',
     selectedFile: 'Geselecteerd bestand',
     coverImage: 'Omslagafbeelding',
     sendFile: 'Bestand importeren',
@@ -578,6 +592,13 @@ const translations = {
     paymentWithdrawalWaiver: 'I request immediate execution of the digital service and waive the right of withdrawal.',
     checkoutStarted: 'Payment confirmed, the balance is updated.',
     importFile: 'Import a document',
+    importHeading: 'Import documents',
+    importInstructions: 'PDF, DOCX or TXT, up to 50 MB. Importing does not consume a credit.',
+    dropFile: 'Choose a file to import',
+    browseFiles: 'Browse your computer',
+    selectedFileReady: 'Ready to import',
+    manualPublication: 'Create a record without a file',
+    manualPublicationIntro: 'Add a bibliographic record when the file is not available.',
     selectedFile: 'Selected file',
     coverImage: 'Cover image',
     sendFile: 'Import file',
@@ -1323,6 +1344,13 @@ export class AppComponent implements OnInit {
       }
     }
     this.importForm.file = file;
+  }
+
+  formatFileSize(size: number): string {
+    if (size < 1024 * 1024) {
+      return `${Math.max(1, Math.round(size / 1024))} Ko`;
+    }
+    return `${(size / (1024 * 1024)).toFixed(1).replace('.', ',')} Mo`;
   }
 
   onPublicationImageSelected(event: Event): void {

@@ -357,67 +357,70 @@
     (download)="downloadPublicationFile($event)">
   </app-publication-detail>
 
-  <section *ngIf="page === 'publication'" class="panel form-panel">
-    <p class="eyebrow">{{ t('newPublication') }}</p>
-    <h2>{{ t('addPublication') }}</h2>
+  <section *ngIf="page === 'publication'" class="import-page">
+    <ng-container *ngIf="session; else publicationLoginRequired">
+      <header class="import-heading">
+        <p class="eyebrow">{{ t('newPublication') }}</p>
+        <h1>{{ t('importHeading') }}</h1>
+        <p>{{ t('importInstructions') }}</p>
+      </header>
 
-    <form *ngIf="session; else publicationLoginRequired" (ngSubmit)="createPublication()">
-      <label>
-        {{ t('titleLabel') }}
-        <input name="publicationTitle" [(ngModel)]="publicationForm.title" required maxlength="220" />
-      </label>
-      <label>
-        {{ t('author') }}
-        <input name="publicationAuthor" [(ngModel)]="publicationForm.author" required maxlength="160" />
-      </label>
-      <label>
-        {{ t('year') }}
-        <input name="publicationYear" type="number" [(ngModel)]="publicationForm.year" required min="1900" max="2100" />
-      </label>
-      <label>
-        {{ t('visibility') }}
-        <select name="publicationVisibility" [(ngModel)]="publicationForm.visibility">
-          <option value="PUBLIC">{{ t('publicVisibility') }}</option>
-          <option value="INSTITUTION">{{ t('institutionOnly') }}</option>
-        </select>
-      </label>
-      <label>
-        {{ t('keywords') }}
-        <input name="publicationKeywords" [(ngModel)]="publicationForm.keywords" maxlength="500" />
-      </label>
-      <label>
-        {{ t('coverImage') }}
-        <input name="publicationImage" type="file" accept="image/png,image/jpeg,image/webp" (change)="onPublicationImageSelected($event)" />
-      </label>
-      <button class="primary" type="submit" [disabled]="!isPublicationFormValid() || publicationSubmitting">{{ publicationSubmitting ? t('sending') : t('addToCatalogue') }}</button>
-      <p class="notice" *ngIf="publicationFeedback" [class.notice-error]="publicationFeedback.type === 'error'" [class.notice-success]="publicationFeedback.type === 'success'">{{ publicationFeedback.text }}</p>
-    </form>
+      <form class="import-workbench" (ngSubmit)="importDocument()">
+        <label class="import-dropzone" [class.has-file]="importForm.file">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V4M7.5 8.5 12 4l4.5 4.5"/><path d="M4 15v4a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-4"/></svg>
+          <strong>{{ t('dropFile') }}</strong>
+          <span>{{ t('browseFiles') }}</span>
+          <input name="documentFile" type="file" accept=".pdf,.docx,.txt" (change)="onFileSelected($event)" />
+        </label>
 
-    <form *ngIf="session" class="import-form" (ngSubmit)="importDocument()">
-      <h3>{{ t('importFile') }}</h3>
-      <label>
-        {{ t('selectedFile') }}
-        <input name="documentFile" type="file" accept=".pdf,.docx,.txt" (change)="onFileSelected($event)" />
-      </label>
-      <label>
-        {{ t('coverImage') }}
-        <input name="documentImage" type="file" accept="image/png,image/jpeg,image/webp" (change)="onImportImageSelected($event)" />
-      </label>
-      <label>
-        {{ t('visibility') }}
-        <select name="importVisibility" [(ngModel)]="importForm.visibility">
-          <option value="PUBLIC">{{ t('publicVisibility') }}</option>
-          <option value="INSTITUTION">{{ t('institutionOnly') }}</option>
-        </select>
-      </label>
-      <p class="notice" *ngIf="importForm.file">{{ importForm.file.name }}</p>
-      <p class="notice" *ngIf="importing">{{ t('importing') }}</p>
-      <p class="notice notice-error" *ngIf="importFeedback?.type === 'error'">{{ importFeedback?.text }}</p>
-      <button class="primary" type="submit" [disabled]="!importForm.file || importing">{{ importing ? t('importing') : t('sendFile') }}</button>
-    </form>
+        <div class="selected-import-file" *ngIf="importForm.file">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V7z"/><path d="M14 3v4h4"/></svg>
+          <span>
+            <strong>{{ importForm.file.name }}</strong>
+            <small>{{ formatFileSize(importForm.file.size) }} · {{ t('selectedFileReady') }}</small>
+          </span>
+          <span class="selected-import-state" *ngIf="importing">{{ t('importing') }}</span>
+        </div>
+
+        <div class="import-options">
+          <label>
+            {{ t('coverImage') }}
+            <input name="documentImage" type="file" accept="image/png,image/jpeg,image/webp" (change)="onImportImageSelected($event)" />
+          </label>
+          <label>
+            {{ t('visibility') }}
+            <select name="importVisibility" [(ngModel)]="importForm.visibility">
+              <option value="PUBLIC">{{ t('publicVisibility') }}</option>
+              <option value="INSTITUTION">{{ t('institutionOnly') }}</option>
+            </select>
+          </label>
+          <button class="primary" type="submit" [disabled]="!importForm.file || importing">{{ importing ? t('importing') : t('sendFile') }}</button>
+        </div>
+        <p class="notice notice-error" *ngIf="importFeedback?.type === 'error'">{{ importFeedback?.text }}</p>
+      </form>
+
+      <section class="manual-publication">
+        <div class="manual-publication-heading">
+          <div>
+            <h2>{{ t('manualPublication') }}</h2>
+            <p>{{ t('manualPublicationIntro') }}</p>
+          </div>
+        </div>
+        <form class="manual-publication-form" (ngSubmit)="createPublication()">
+          <label>{{ t('titleLabel') }}<input name="publicationTitle" [(ngModel)]="publicationForm.title" required maxlength="220" /></label>
+          <label>{{ t('author') }}<input name="publicationAuthor" [(ngModel)]="publicationForm.author" required maxlength="160" /></label>
+          <label>{{ t('year') }}<input name="publicationYear" type="number" [(ngModel)]="publicationForm.year" required min="1900" max="2100" /></label>
+          <label>{{ t('visibility') }}<select name="publicationVisibility" [(ngModel)]="publicationForm.visibility"><option value="PUBLIC">{{ t('publicVisibility') }}</option><option value="INSTITUTION">{{ t('institutionOnly') }}</option></select></label>
+          <label class="manual-publication-wide">{{ t('keywords') }}<input name="publicationKeywords" [(ngModel)]="publicationForm.keywords" maxlength="500" /></label>
+          <label>{{ t('coverImage') }}<input name="publicationImage" type="file" accept="image/png,image/jpeg,image/webp" (change)="onPublicationImageSelected($event)" /></label>
+          <div class="manual-publication-actions"><button class="secondary" type="submit" [disabled]="!isPublicationFormValid() || publicationSubmitting">{{ publicationSubmitting ? t('sending') : t('addToCatalogue') }}</button></div>
+          <p class="notice manual-publication-wide" *ngIf="publicationFeedback" [class.notice-error]="publicationFeedback.type === 'error'" [class.notice-success]="publicationFeedback.type === 'success'">{{ publicationFeedback.text }}</p>
+        </form>
+      </section>
+    </ng-container>
 
     <ng-template #publicationLoginRequired>
-      <p class="notice">{{ t('loginRequiredPublication') }}</p>
+      <section class="access-required"><p>{{ t('loginRequiredPublication') }}</p><button type="button" class="primary" (click)="navigate('connexion')">{{ t('login') }}</button></section>
     </ng-template>
   </section>
 

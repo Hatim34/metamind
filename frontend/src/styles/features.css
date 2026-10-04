@@ -1364,3 +1364,243 @@
   vertical-align: middle;
   background-image: linear-gradient(to right, var(--teal) var(--quality-rate, 0%), transparent var(--quality-rate, 0%));
 }
+
+/* --- Import : un parcours concentre sur le fichier et ses options reelles. --- */
+.import-page {
+  width: min(100%, 1040px);
+  margin: 0 auto;
+  padding: 2rem 0 3.5rem;
+}
+
+.import-heading {
+  margin-bottom: 1.5rem;
+}
+
+.import-heading h1 {
+  margin-bottom: 0.45rem;
+  font-size: clamp(2rem, 3.7vw, 2.75rem);
+}
+
+.import-heading > p:last-child {
+  margin: 0;
+  color: var(--ink-soft);
+}
+
+.import-workbench,
+.manual-publication {
+  background: var(--surface);
+  box-shadow: var(--shadow-sheet);
+}
+
+.import-workbench {
+  padding: 1.25rem;
+}
+
+.import-dropzone {
+  min-height: 14rem;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 0.45rem;
+  padding: 2rem;
+  border: 2px dashed var(--line-strong);
+  border-radius: var(--radius-sheet);
+  background: var(--surface-sunk);
+  color: var(--ink);
+  text-align: center;
+  cursor: pointer;
+}
+
+.import-dropzone:hover,
+.import-dropzone.has-file {
+  border-color: var(--teal);
+  background: var(--teal-row);
+}
+
+.import-dropzone svg {
+  width: 2.35rem;
+  height: 2.35rem;
+  color: var(--teal);
+}
+
+.import-dropzone strong {
+  font-size: 1.1rem;
+}
+
+.import-dropzone span {
+  color: var(--teal-dark);
+  font-size: 0.9rem;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.import-dropzone input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.selected-import-file {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  padding: 1rem 0.2rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.selected-import-file > svg {
+  width: 1.5rem;
+  height: 1.5rem;
+  flex: none;
+  color: var(--ink-soft);
+}
+
+.selected-import-file > span:nth-child(2) {
+  min-width: 0;
+  display: grid;
+  gap: 0.15rem;
+}
+
+.selected-import-file strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.selected-import-file small {
+  color: var(--ink-soft);
+}
+
+.selected-import-state {
+  margin-left: auto;
+  color: var(--teal-dark);
+  font-size: 0.83rem;
+  font-weight: 600;
+  text-align: right;
+}
+
+.import-options {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(11rem, 0.55fr) auto;
+  gap: 1rem;
+  align-items: end;
+  padding-top: 1.15rem;
+}
+
+.import-options label,
+.manual-publication-form label {
+  display: grid;
+  gap: 0.4rem;
+  font-size: 0.86rem;
+  font-weight: 600;
+}
+
+.import-options input,
+.import-options select,
+.manual-publication-form input,
+.manual-publication-form select {
+  width: 100%;
+  min-height: 2.6rem;
+  border: 1px solid var(--line-input);
+  border-radius: var(--radius-control);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+}
+
+.import-options input,
+.manual-publication-form input {
+  padding: 0.45rem 0.6rem;
+}
+
+.import-options select,
+.manual-publication-form select {
+  padding: 0.45rem 0.6rem;
+}
+
+.import-options .primary {
+  min-height: 2.6rem;
+  white-space: nowrap;
+}
+
+.manual-publication {
+  margin-top: 2rem;
+  padding: 1.35rem;
+}
+
+.manual-publication-heading {
+  padding-bottom: 1rem;
+  border-bottom: 2px solid var(--ink);
+}
+
+.manual-publication-heading h2,
+.manual-publication-heading p {
+  margin: 0;
+}
+
+.manual-publication-heading p {
+  margin-top: 0.35rem;
+  color: var(--ink-soft);
+}
+
+.manual-publication-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  padding-top: 1.2rem;
+}
+
+.manual-publication-wide,
+.manual-publication-actions {
+  grid-column: 1 / -1;
+}
+
+.manual-publication-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.access-required {
+  display: grid;
+  justify-items: start;
+  gap: 1rem;
+  padding: 2rem;
+  background: var(--surface);
+  box-shadow: var(--shadow-sheet);
+}
+
+.access-required p {
+  margin: 0;
+}
+
+@media (max-width: 700px) {
+  .import-page {
+    padding-top: 1.25rem;
+  }
+
+  .import-workbench,
+  .manual-publication {
+    padding: 1rem;
+  }
+
+  .import-options,
+  .manual-publication-form {
+    grid-template-columns: 1fr;
+  }
+
+  .import-options .primary,
+  .manual-publication-actions .secondary {
+    width: 100%;
+  }
+
+  .selected-import-file {
+    align-items: flex-start;
+  }
+
+  .selected-import-state {
+    display: none;
+  }
+}
