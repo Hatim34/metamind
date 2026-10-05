@@ -9,6 +9,7 @@ import be.icc.metamind.document.AuthorRepository;
 import be.icc.metamind.document.DocumentAuthorEntity;
 import be.icc.metamind.document.DocumentAuthorRepository;
 import be.icc.metamind.document.DocumentEntity;
+import be.icc.metamind.document.DocumentCoverService;
 import be.icc.metamind.document.DocumentUploadService;
 import be.icc.metamind.document.DocumentKeywordEntity;
 import be.icc.metamind.document.DocumentKeywordRepository;
@@ -52,6 +53,7 @@ public class DataInitializer implements ApplicationRunner {
 	private final DocumentAuthorRepository documentAuthorRepository;
 	private final DocumentKeywordRepository documentKeywordRepository;
 	private final DocumentUploadService documentUploadService;
+	private final DocumentCoverService documentCoverService;
 	private final PasswordService passwordService;
 	private final boolean enabled;
 	private final boolean resetSeed;
@@ -71,6 +73,7 @@ public class DataInitializer implements ApplicationRunner {
 			DocumentAuthorRepository documentAuthorRepository,
 			DocumentKeywordRepository documentKeywordRepository,
 			DocumentUploadService documentUploadService,
+			DocumentCoverService documentCoverService,
 			PasswordService passwordService,
 			JdbcTemplate jdbcTemplate,
 			CreditMovementRepository creditMovementRepository,
@@ -89,6 +92,7 @@ public class DataInitializer implements ApplicationRunner {
 		this.documentAuthorRepository = documentAuthorRepository;
 		this.documentKeywordRepository = documentKeywordRepository;
 		this.documentUploadService = documentUploadService;
+		this.documentCoverService = documentCoverService;
 		this.passwordService = passwordService;
 		this.jdbcTemplate = jdbcTemplate;
 		this.creditMovementRepository = creditMovementRepository;
@@ -234,6 +238,7 @@ public class DataInitializer implements ApplicationRunner {
 		));
 		document.updateCoverImagePath(coverPath);
 		documentRepository.save(document);
+		documentCoverService.persistFromPath(document.getId(), coverPath);
 		MetadataStatus metadataStatus = status == DocumentStatus.PUBLIE ? MetadataStatus.VALIDE : MetadataStatus.EN_ATTENTE;
 		metadataRepository.save(new MetadataEntity(document, title, summary, LocalDate.of(year, 1, 1), discipline, metadataStatus));
 		AuthorEntity author = authorRepository.findByFullNameIgnoreCase(authorName)

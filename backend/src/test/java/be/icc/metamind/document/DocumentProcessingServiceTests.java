@@ -38,12 +38,17 @@ class DocumentProcessingServiceTests {
 		when(documentUploadService.extractText(any(Path.class))).thenReturn("Texte extrait");
 		when(documentUploadService.storePdfThumbnail(any(Path.class))).thenReturn("/tmp/cover.jpg");
 
-		new DocumentProcessingService(documentRepository, documentUploadService, null).process(7L, "/tmp/article.pdf");
+		DocumentCoverService documentCoverService = org.mockito.Mockito.mock(DocumentCoverService.class);
+
+		new DocumentProcessingService(documentRepository, documentUploadService, documentCoverService, null)
+				.process(7L, "/tmp/article.pdf");
 
 		assertEquals(DocumentStatus.A_VALIDER, document.getStatus());
 		assertEquals("Texte extrait", document.getExtractedText());
 		assertEquals("/tmp/cover.jpg", document.getCoverImagePath());
 		verify(documentRepository).findById(7L);
 		verify(documentRepository).save(document);
+		// La couverture doit etre recopiee en base : le disque n'est pas persistant en production.
+		verify(documentCoverService).persistFromPath(document.getId(), "/tmp/cover.jpg");
 	}
 }

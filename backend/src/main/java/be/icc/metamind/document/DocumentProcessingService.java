@@ -15,11 +15,13 @@ import org.springframework.transaction.event.TransactionalEventListener;
 public class DocumentProcessingService {
 	private final DocumentRepository documentRepository;
 	private final DocumentUploadService documentUploadService;
+	private final DocumentCoverService documentCoverService;
 	private final DocumentProcessingService self;
 
-	public DocumentProcessingService(DocumentRepository documentRepository, DocumentUploadService documentUploadService, @Lazy DocumentProcessingService self) {
+	public DocumentProcessingService(DocumentRepository documentRepository, DocumentUploadService documentUploadService, DocumentCoverService documentCoverService, @Lazy DocumentProcessingService self) {
 		this.documentRepository = documentRepository;
 		this.documentUploadService = documentUploadService;
+		this.documentCoverService = documentCoverService;
 		this.self = self;
 	}
 
@@ -48,6 +50,7 @@ public class DocumentProcessingService {
 				coverPath = documentUploadService.storePdfThumbnail(Path.of(filePath));
 			}
 			document.completeImportProcessing(extractedText, coverPath);
+			documentCoverService.persistFromPath(document.getId(), coverPath);
 		}
 		catch (ApiException exception) {
 			document.markExtractionFailed();

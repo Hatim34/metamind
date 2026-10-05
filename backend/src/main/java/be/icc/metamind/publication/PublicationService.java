@@ -18,6 +18,7 @@ import be.icc.metamind.document.DocumentKeywordRepository;
 import be.icc.metamind.document.DocumentRepository;
 import be.icc.metamind.document.DocumentStatus;
 import be.icc.metamind.document.DocumentUploadService;
+import be.icc.metamind.document.DocumentCoverService;
 import be.icc.metamind.document.DocumentUploadService.ImportedDocument;
 import be.icc.metamind.document.DocumentUploadService.StoredFile;
 import be.icc.metamind.document.DocumentUploadService.StoredImage;
@@ -46,6 +47,7 @@ public class PublicationService {
 	private final DocumentAuthorRepository documentAuthorRepository;
 	private final DocumentKeywordRepository documentKeywordRepository;
 	private final DocumentUploadService documentUploadService;
+	private final DocumentCoverService documentCoverService;
 	private final ApplicationEventPublisher eventPublisher;
 
 	public PublicationService(
@@ -56,6 +58,7 @@ public class PublicationService {
 			DocumentAuthorRepository documentAuthorRepository,
 			DocumentKeywordRepository documentKeywordRepository,
 			DocumentUploadService documentUploadService,
+			DocumentCoverService documentCoverService,
 			ApplicationEventPublisher eventPublisher
 	) {
 		this.documentRepository = documentRepository;
@@ -65,6 +68,7 @@ public class PublicationService {
 		this.documentAuthorRepository = documentAuthorRepository;
 		this.documentKeywordRepository = documentKeywordRepository;
 		this.documentUploadService = documentUploadService;
+		this.documentCoverService = documentCoverService;
 		this.eventPublisher = eventPublisher;
 	}
 
@@ -224,7 +228,9 @@ public class PublicationService {
 				currentUser.getInstitution(),
 				currentUser
 		));
-		document.updateCoverImagePath(documentUploadService.storeCoverImage(image));
+		String manualCoverPath = documentUploadService.storeCoverImage(image);
+		document.updateCoverImagePath(manualCoverPath);
+		documentCoverService.persistFromPath(document.getId(), manualCoverPath);
 		metadataRepository.save(new MetadataEntity(
 				document,
 				request.title().trim(),
@@ -263,6 +269,7 @@ public class PublicationService {
 			coverPath = documentUploadService.storePdfThumbnail(file);
 		}
 		document.updateCoverImagePath(coverPath);
+		documentCoverService.persistFromPath(document.getId(), coverPath);
 		metadataRepository.save(new MetadataEntity(
 				document,
 				titleFromFileName(imported.fileName()),
@@ -282,7 +289,9 @@ public class PublicationService {
 		if (!isVisibleFor(document, currentUser)) {
 			throw new ApiException(HttpStatus.FORBIDDEN, "Cette image n'est pas accessible avec ce compte.");
 		}
-		return documentUploadService.loadCoverImage(document.getCoverImagePath());
+		// La base est le stockage durable ; le disque n'est qu'un repli pour les donnees anciennes.
+		return documentCoverService.load(document.getId())
+				.orElseGet(() -> documentUploadService.loadCoverImage(document.getCoverImagePath()));
 	}
 
 	@Transactional(readOnly = true)

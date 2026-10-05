@@ -15,6 +15,7 @@ import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
@@ -111,6 +112,28 @@ public class DocumentUploadService {
 		}
 		catch (IOException exception) {
 			throw new ApiException(HttpStatus.NOT_FOUND, "Aucune image de couverture n'est disponible.");
+		}
+	}
+
+	/**
+	 * Lit une couverture sur le disque sans lever d'erreur si elle a disparu.
+	 * Sert a recopier la vignette fraichement generee vers la base, qui est le
+	 * seul stockage durable en production.
+	 */
+	public Optional<StoredImage> readCoverIfPresent(String storedPath) {
+		if (storedPath == null || storedPath.isBlank()) {
+			return Optional.empty();
+		}
+		try {
+			Path path = Path.of(storedPath).toAbsolutePath().normalize();
+			if (!Files.isRegularFile(path)) {
+				return Optional.empty();
+			}
+			String mediaType = Files.probeContentType(path);
+			return Optional.of(new StoredImage(Files.readAllBytes(path), mediaTypeFromPath(path, mediaType)));
+		}
+		catch (IOException exception) {
+			return Optional.empty();
 		}
 	}
 
