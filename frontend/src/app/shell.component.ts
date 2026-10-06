@@ -32,7 +32,7 @@ type Layout = 'public' | 'espace' | 'admin' | 'bare';
               <a routerLink="/legal">{{ 'À propos des données' | t }}</a>
             </nav>
           }
-          @if (layout() === 'espace') {
+          @if (layout() === 'espace' || layout() === 'admin') {
             <nav class="m-nav" [attr.aria-label]="'Espace' | t">
               <a routerLink="/espace" routerLinkActive="is-active" [routerLinkActiveOptions]="{ exact: true }">{{ 'Tableau de bord' | t }}</a>
               <a routerLink="/espace/import" routerLinkActive="is-active">{{ 'Importer' | t }}</a>
@@ -42,7 +42,6 @@ type Layout = 'public' | 'espace' | 'admin' | 'bare';
               @if (session.isAdmin()) { <a routerLink="/admin">{{ 'Administration' | t }}</a> }
             </nav>
           }
-          @if (layout() === 'admin') { <span class="m-nav"></span> }
 
           <div class="m-header__end">
             <span class="m-langs" role="group" [attr.aria-label]="'Langue' | t">
@@ -51,7 +50,7 @@ type Layout = 'public' | 'espace' | 'admin' | 'bare';
               }
             </span>
             @if (session.user(); as user) {
-              @if (layout() === 'espace' && credits() !== null) {
+              @if ((layout() === 'espace' || layout() === 'admin') && credits() !== null) {
                 <a class="m-header__credits" routerLink="/espace/credits">{{ 'Crédits' | t }} <strong>{{ credits() }}</strong></a>
               }
               <details class="m-menu">

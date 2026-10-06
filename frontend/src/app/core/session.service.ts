@@ -34,9 +34,13 @@ export class SessionService {
     this.persist({ user });
   }
 
-  /** Page d'arrivée après connexion selon le rôle. */
+  /**
+   * Tous les utilisateurs arrivent sur leur tableau de bord. Un administrateur
+   * y conserve le lien Administration dans la barre, au lieu d'atterrir dans
+   * une zone sans navigation de travail.
+   */
   homeUrl(): string {
-    return this.isAdmin() ? '/admin' : '/espace';
+    return '/espace';
   }
 
   private store(response: AuthResponse): void {
