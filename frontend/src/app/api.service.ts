@@ -232,7 +232,7 @@ export interface UpdatePublicationStatusRequest {
 }
 
 export interface AdminUserUpdateRequest {
-  role?: 'LIBRARIAN' | 'ADMIN';
+  role?: 'LIBRARIAN' | 'GESTIONNAIRE_FINANCIER' | 'ADMIN';
   statut?: 'EN_ATTENTE' | 'ACTIF' | 'DESACTIVE';
 }
 

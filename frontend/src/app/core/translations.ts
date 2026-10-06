@@ -308,6 +308,7 @@ export const NL: Record<string, string> = {
   'vide': 'leeg',
   'à corriger': 'te corrigeren',
   'Salle de lecture de la bibliothèque universitaire de la KU Leuven': 'Leeszaal van de universiteitsbibliotheek van de KU Leuven',
+  'Gestionnaire financier': 'Financieel beheerder',
 };
 
 export const EN: Record<string, string> = {
@@ -619,4 +620,5 @@ export const EN: Record<string, string> = {
   'vide': 'empty',
   'à corriger': 'to correct',
   'Salle de lecture de la bibliothèque universitaire de la KU Leuven': 'Reading room of the KU Leuven university library',
+  'Gestionnaire financier': 'Finance manager',
 };

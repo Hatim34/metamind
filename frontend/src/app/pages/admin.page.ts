@@ -92,6 +92,7 @@ type Tab = 'comptes' | 'utilisateurs' | 'institutions' | 'configuration' | 'jour
                 <td>
                   <select class="m-input m-input--sm" [ngModel]="u.role" (ngModelChange)="changeRole(u, $event)" [name]="'role' + u.id" [attr.aria-label]="'Rôle' | t">
                     <option value="LIBRARIAN">{{ 'Bibliothécaire' | t }}</option>
+                    <option value="GESTIONNAIRE_FINANCIER">{{ 'Gestionnaire financier' | t }}</option>
                     <option value="ADMIN">{{ 'Administrateur' | t }}</option>
                   </select>
                 </td>
@@ -155,7 +156,7 @@ export class AdminPage {
     });
   }
 
-  changeRole(user: UserSession, role: 'LIBRARIAN' | 'ADMIN'): void {
+  changeRole(user: UserSession, role: 'LIBRARIAN' | 'GESTIONNAIRE_FINANCIER' | 'ADMIN'): void {
     this.api.updateAdminUser(user.id, { role }).subscribe({
       next: () => { this.toasts.show(this.i18n.t('Rôle modifié.')); this.loadUsers(); },
       error: () => this.toasts.show(this.i18n.t('La modification a échoué.'), 'error')
