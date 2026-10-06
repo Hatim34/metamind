@@ -76,6 +76,48 @@ class TextPreparationServiceTests {
 	}
 
 	@Test
+	void doesNotMistakeFrenchForDutch() {
+		// "de" et "en" sont tres frequents en francais : les compter comme neerlandais
+		// faisait passer la majorite des textes francais pour du neerlandais.
+		String francais = """
+				Le microbiote intestinal et les maladies inflammatoires chroniques sont
+				etudies dans cette recherche. Les resultats montrent que ces troubles
+				sont plus frequents chez les patients qui presentent une inflammation
+				persistante, et nous proposons pour cela une nouvelle approche.
+				""";
+
+		assertThat(service.prepare(francais).language()).isEqualTo("fr");
+	}
+
+	@Test
+	void recognisesDutchAndEnglish() {
+		String neerlandais = """
+				Het darmmicrobioom en de chronische inflammatoire ziekten worden in deze
+				studie onderzocht. De resultaten laten zien dat deze aandoeningen niet
+				zeldzaam zijn bij patienten, maar ook vaker worden vastgesteld bij
+				jongeren, en worden naar verwachting verder onderzocht.
+				""";
+		String anglais = """
+				The gut microbiome and the chronic inflammatory diseases are studied in
+				this research. The results show that these disorders have been observed
+				more often in patients with persistent inflammation, and their treatment
+				which was proposed from earlier work is discussed.
+				""";
+
+		assertThat(service.prepare(neerlandais).language()).isEqualTo("nl");
+		assertThat(service.prepare(anglais).language()).isEqualTo("en");
+	}
+
+	@Test
+	void reportsNoLanguageRatherThanGuessing() {
+		// Trop court pour conclure, et aucun marqueur : mieux vaut un champ vide
+		// qu'une langue fausse que le bibliothecaire devra corriger.
+		assertThat(service.fallbackLanguage("Microbiote intestinal")).isNull();
+		assertThat(service.fallbackLanguage("")).isNull();
+		assertThat(service.fallbackLanguage(null)).isNull();
+	}
+
+	@Test
 	void boundsTheExcerptWhileKeepingTheStartAndEnd() {
 		String text = "START " + "a".repeat(2_000) + " END";
 

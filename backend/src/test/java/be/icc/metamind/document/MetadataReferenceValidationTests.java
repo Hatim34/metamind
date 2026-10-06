@@ -100,8 +100,8 @@ class MetadataReferenceValidationTests {
 		metadataService.validateMetadata(
 				fixture.documentId(), request("fr", "these", null), fixture.user());
 
-		// La langue detectee localement est "fr" : le bibliothecaire l'a confirmee.
-		assertThat(decisionOf(fixture, "langue")).isEqualTo(SuggestionDecision.ACCEPTE);
+		// Aucune langue detectee sur ce document court : la renseigner est une correction.
+		assertThat(decisionOf(fixture, "langue")).isEqualTo(SuggestionDecision.MODIFIE);
 		// Aucun type n'avait ete detecte sur ce document : en choisir un est une correction.
 		assertThat(decisionOf(fixture, "type_document")).isEqualTo(SuggestionDecision.MODIFIE);
 	}

@@ -120,7 +120,9 @@ class ExtractionServiceTests {
 		assertThat(metadata.getTitre()).isEqualTo("analyse automatique des metadonnees pour les depots institutionnels");
 		assertThat(metadata.getResume()).contains("Analyse automatique des metadonnees");
 		assertThat(metadata.getClassification()).isEqualTo("Sciences de l'information");
-		assertThat(metadata.getLanguage().getCode()).isEqualTo("fr");
+		// Document de test trop court pour conclure : la langue reste vide plutot
+		// que d'etre devinee. Un vrai PDF fournit assez de texte pour la detecter.
+		assertThat(metadata.getLanguage()).isNull();
 		// Aucun indice de type dans ce document : le type reste vide au lieu d'etre invente.
 		assertThat(metadata.getDocumentType()).isNull();
 		EnrichmentEntity enrichment = enrichmentRepository.findAll().stream()

@@ -4,6 +4,7 @@ import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -218,18 +219,48 @@ public class TextPreparationService {
 		return fallbackLanguage(text);
 	}
 
-	private String fallbackLanguage(String text) {
-		Map<String, Set<String>> stopWords = Map.of(
-				"fr", Set.of("le", "la", "les", "des", "pour", "avec", "dans", "une"),
-				"nl", Set.of("de", "het", "een", "van", "voor", "met", "in", "en"),
-				"en", Set.of("the", "and", "for", "with", "from", "this", "that", "of")
+	/**
+	 * Repli quand Tika n'a pas de modele de langue.
+	 *
+	 * Les marqueurs sont choisis pour ne pas etre partages entre les trois langues :
+	 * "de" et "en" par exemple sont des mots tres frequents en francais autant qu'en
+	 * neerlandais, et les retenir faisait passer la majorite des textes francais pour
+	 * du neerlandais. Les occurrences sont comptees, car la simple presence d'un mot
+	 * ne dit rien de la langue dominante.
+	 *
+	 * Retourne null quand aucune langue ne se degage : mieux vaut un champ vide que
+	 * l'attribution d'une langue fausse, que le bibliothecaire devra corriger.
+	 */
+	String fallbackLanguage(String text) {
+		if (text == null || text.isBlank()) {
+			return null;
+		}
+		Map<String, Set<String>> markers = Map.of(
+				"fr", Set.of("les", "des", "est", "une", "dans", "pour", "cette", "sont", "aux", "nous", "qui", "plus"),
+				"nl", Set.of("het", "een", "van", "zijn", "wordt", "deze", "niet", "ook", "maar", "worden", "bij", "naar"),
+				"en", Set.of("the", "and", "this", "that", "with", "from", "are", "was", "which", "have", "been", "their")
 		);
-		Set<String> words = Arrays.stream(text.toLowerCase(Locale.ROOT).split("[^\\p{L}]+"))
+		List<String> words = Arrays.stream(text.toLowerCase(Locale.ROOT).split("[^\\p{L}]+"))
 				.filter(word -> !word.isBlank())
-				.collect(Collectors.toSet());
-		return stopWords.entrySet().stream()
-				.max(Comparator.comparingInt(entry -> (int) entry.getValue().stream().filter(words::contains).count()))
+				.toList();
+		if (words.size() < 20) {
+			return null;
+		}
+		Map<String, Long> scores = new HashMap<>();
+		markers.forEach((code, set) -> scores.put(code, words.stream().filter(set::contains).count()));
+		long best = scores.values().stream().mapToLong(Long::longValue).max().orElse(0);
+		if (best == 0) {
+			return null;
+		}
+		// Un ecart net est exige : sinon deux langues sont a egalite et le choix serait arbitraire.
+		long second = scores.values().stream().mapToLong(Long::longValue).sorted().skip(scores.size() - 2L).findFirst().orElse(0);
+		if (best == second) {
+			return null;
+		}
+		return scores.entrySet().stream()
+				.filter(entry -> entry.getValue() == best)
 				.map(Map.Entry::getKey)
-				.orElse("en");
+				.findFirst()
+				.orElse(null);
 	}
 }
