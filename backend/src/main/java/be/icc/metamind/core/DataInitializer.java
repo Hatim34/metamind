@@ -35,6 +35,9 @@ import be.icc.metamind.user.PasswordService;
 import be.icc.metamind.user.UserRepository;
 import be.icc.metamind.user.UserRole;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -44,6 +47,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Component
 public class DataInitializer implements ApplicationRunner {
+	private static final Logger log = LoggerFactory.getLogger(DataInitializer.class);
 	private final InstitutionRepository institutionRepository;
 	private final UserRepository userRepository;
 	private final DocumentRepository documentRepository;
@@ -122,7 +126,13 @@ public class DataInitializer implements ApplicationRunner {
 		UserEntity jan = createUserIfMissing("Jan", "Peeters", "jan@institution-b.example", password, UserRole.LIBRARIAN, institutionB);
 		createUserIfMissing("Nadia", "Benali", "admin@metamind.example", password, UserRole.ADMIN, platform);
 		if (resetSeed) {
-			jdbcTemplate.execute("TRUNCATE TABLE documents CASCADE");
+			// Volontairement sans effet destructeur.
+			// Cette option executait "TRUNCATE TABLE documents CASCADE" a chaque demarrage.
+			// Posee par une variable d'environnement, elle effacait tout le corpus a chaque
+			// deploiement, y compris des documents importes par de vrais utilisateurs.
+			// Pour repartir d'une base propre en developpement : supprimer le volume Docker.
+			log.warn("metamind.seed-reset est ignore : cette option effacait tous les documents. "
+					+ "Supprimez le volume de la base pour repartir a zero.");
 		}
 		createDocumentsIfMissing(institutionA, institutionB, sarah, jan);
 	}
