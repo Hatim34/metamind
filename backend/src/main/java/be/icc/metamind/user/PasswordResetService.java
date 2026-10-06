@@ -31,6 +31,7 @@ public class PasswordResetService {
 	private final PasswordService passwordService;
 	private final ObjectProvider<JavaMailSender> mailSenderProvider;
 	private final String publicUrl;
+	private final String mailFrom;
 	private final long expirationMinutes;
 	private final SecureRandom secureRandom = new SecureRandom();
 
@@ -39,12 +40,14 @@ public class PasswordResetService {
 			PasswordService passwordService,
 			ObjectProvider<JavaMailSender> mailSenderProvider,
 			@Value("${metamind.public-url:https://metamind-app.duckdns.org}") String publicUrl,
+			@Value("${metamind.mail.from:}") String mailFrom,
 			@Value("${metamind.password-reset.expiration-minutes:30}") long expirationMinutes) {
 		this.userRepository = userRepository;
 		this.tokenRepository = tokenRepository;
 		this.passwordService = passwordService;
 		this.mailSenderProvider = mailSenderProvider;
 		this.publicUrl = publicUrl;
+		this.mailFrom = mailFrom == null ? "" : mailFrom.trim();
 		this.expirationMinutes = expirationMinutes;
 	}
 
@@ -81,6 +84,9 @@ public class PasswordResetService {
 		try {
 			SimpleMailMessage message = new SimpleMailMessage();
 			message.setTo(email);
+			if (!mailFrom.isBlank()) {
+				message.setFrom(mailFrom);
+			}
 			message.setSubject("Reinitialisation du mot de passe Metamind");
 			message.setText("Utilisez ce lien avant son expiration : " + resetUrl);
 			mailSender.send(message);

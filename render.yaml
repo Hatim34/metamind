@@ -55,3 +55,17 @@ services:
         sync: false
       - key: STRIPE_WEBHOOK_SECRET
         sync: false
+      - key: METAMIND_SMTP_HOST
+        sync: false
+      - key: METAMIND_SMTP_PORT
+        value: "587"
+      - key: METAMIND_SMTP_USERNAME
+        sync: false
+      - key: METAMIND_SMTP_PASSWORD
+        sync: false
+      - key: METAMIND_SMTP_AUTH
+        value: "true"
+      - key: METAMIND_SMTP_STARTTLS
+        value: "true"
+      - key: METAMIND_MAIL_FROM
+        sync: false
