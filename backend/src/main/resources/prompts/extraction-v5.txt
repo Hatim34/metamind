@@ -32,7 +32,9 @@ Regles par champ :
   Ne reprends jamais les auteurs cites dans la bibliographie.
 - "summary" : le resume ecrit par les auteurs (section Abstract, Resume, Samenvatting, Summary),
   recopie mot pour mot, sans le titre de la section.
-  Si le document contient un resume dans plusieurs langues, prends celui de la langue principale du document.
+  Si le document contient un resume dans plusieurs langues, prends celui ecrit dans la langue du corps
+  du texte (introduction, chapitres), meme si son titre de section est abime par l'extraction du PDF
+  (par exemple "AMENVATTING" pour "SAMENVATTING").
   Si le document n'a pas de resume, mets null : n'en redige jamais un toi-meme.
 - "keywords" : les mots-cles donnes par les auteurs (Keywords, Mots-cles, Trefwoorden) s'ils existent.
   Sinon, 4 a 8 termes repris tels quels du document.

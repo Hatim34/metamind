@@ -1,8 +1,10 @@
 package be.icc.metamind.extraction;
 
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
@@ -158,9 +160,32 @@ public class GeminiMetadataExtractionProvider implements MetadataExtractionProvi
 		String joined = StreamSupport.stream(list.spliterator(), false)
 				.map(JsonNode::asText)
 				.map(name -> name.replace(',', ' ').replaceAll("\\s+", " ").trim())
+				.map(this::withoutCapitalizedWords)
 				.filter(name -> !name.isBlank())
 				.collect(Collectors.joining(", "));
 		return joined.isEmpty() ? null : joined;
+	}
+
+	/**
+	 * Beaucoup de pages de titre ecrivent le nom de famille en capitales ("Vincent BRUNIN") :
+	 * le catalogue l'affiche en casse normale. Les initiales ("J.") restent intactes.
+	 */
+	private String withoutCapitalizedWords(String name) {
+		return Arrays.stream(name.split(" "))
+				.map(word -> word.chars().filter(Character::isLetter).count() > 1 && word.equals(word.toUpperCase(Locale.ROOT))
+						? capitalizeParts(word.toLowerCase(Locale.ROOT))
+						: word)
+				.collect(Collectors.joining(" "));
+	}
+
+	private String capitalizeParts(String word) {
+		StringBuilder result = new StringBuilder(word.length());
+		boolean startOfPart = true;
+		for (char character : word.toCharArray()) {
+			result.append(startOfPart ? Character.toUpperCase(character) : character);
+			startOfPart = character == '-' || character == '\'' || character == '\u2019';
+		}
+		return result.toString();
 	}
 
 	private List<String> keywords(JsonNode node) {

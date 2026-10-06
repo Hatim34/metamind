@@ -79,7 +79,7 @@ class GeminiMetadataExtractionProviderTests {
 				      "content": {
 				        "parts": [
 				          {
-				            "text": "{\\"title\\":\\"Titre\\",\\"authors\\":[\\"Mina Laurent\\",\\"Peeters, Jan\\"],\\"summary\\":null,\\"keywords\\":[]}"
+				            "text": "{\\"title\\":\\"Titre\\",\\"authors\\":[\\"Mina LAURENT\\",\\"Peeters, Jan\\",\\"Dorota WALCZAK-DELANOIS\\",\\"J. M. Smith\\"],\\"summary\\":null,\\"keywords\\":[]}"
 				          }
 				        ]
 				      }
@@ -92,8 +92,9 @@ class GeminiMetadataExtractionProviderTests {
 
 		MetadataExtractionData metadata = provider.extract(publication());
 
-		// Une virgule interne casserait le decoupage des auteurs a la validation.
-		assertThat(metadata.author()).isEqualTo("Mina Laurent, Peeters Jan");
+		// Une virgule interne casserait le decoupage des auteurs a la validation ;
+		// un nom de famille en capitales est remis en casse normale, les initiales restent.
+		assertThat(metadata.author()).isEqualTo("Mina Laurent, Peeters Jan, Dorota Walczak-Delanois, J. M. Smith");
 		// Sans resume dans le document, le modele n'en redige pas : le champ reste vide.
 		assertThat(metadata.summary()).isNull();
 		server.verify();

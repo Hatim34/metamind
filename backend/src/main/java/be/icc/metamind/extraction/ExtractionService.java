@@ -312,7 +312,7 @@ public class ExtractionService {
 			PreparedDocument preparedDocument,
 			MetadataExtractionData metadata
 	) {
-		String evidence = evidenceFor(value, preparedDocument.normalizedText());
+		String evidence = EvidenceMatcher.find(field, value, preparedDocument.normalizedText());
 		Double modelConfidence = metadata == null ? null : metadata.modelConfidenceOf(field);
 		ConfidenceScore score = confidenceScorer.score(field, value, evidence, modelConfidence, preparedDocument);
 		suggestionRepository.save(new MetadataSuggestionEntity(
@@ -328,24 +328,14 @@ public class ExtractionService {
 		));
 	}
 
-	private String evidenceFor(String value, String text) {
-		if (value == null || value.isBlank()) {
-			return null;
-		}
-		int start = text.toLowerCase(java.util.Locale.ROOT).indexOf(value.toLowerCase(java.util.Locale.ROOT));
-		if (start < 0) {
-			return null;
-		}
-		return text.substring(start, Math.min(text.length(), start + 200));
-	}
-
+	/** Segments [S1], [S2]... ou commence la preuve, pour la retrouver dans le document. */
 	private String segmentsFor(String evidence, PreparedDocument preparedDocument) {
 		if (evidence == null || evidence.isBlank()) {
 			return "";
 		}
+		String start = EvidenceMatcher.normalize(evidence.substring(0, Math.min(evidence.length(), 60)));
 		return preparedDocument.segments().stream()
-				.filter(segment -> segment.text().toLowerCase(java.util.Locale.ROOT)
-						.contains(evidence.toLowerCase(java.util.Locale.ROOT)))
+				.filter(segment -> EvidenceMatcher.normalize(segment.text()).contains(start))
 				.map(PreparedDocument.Segment::id)
 				.collect(Collectors.joining(","));
 	}

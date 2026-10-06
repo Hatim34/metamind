@@ -3,7 +3,6 @@ package be.icc.metamind.extraction;
 import java.time.Year;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 import java.util.Set;
 import java.util.regex.Pattern;
 
@@ -129,7 +128,7 @@ public class ConfidenceScorer {
 	}
 
 	private String normalized(String value) {
-		return value.toLowerCase(Locale.ROOT).replaceAll("\\s+", " ").trim();
+		return EvidenceMatcher.normalize(value);
 	}
 
 	private double clamp(double score) {
