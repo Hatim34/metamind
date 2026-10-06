@@ -114,6 +114,12 @@ class Api:
         self.dry = dry_run
         self.s = requests.Session()
 
+    # Pannes passageres de l'hebergeur, pas des refus de l'application :
+    # 502/503/504 et les codes Cloudflare 520-524 apparaissent quand l'instance
+    # sature ou redemarre. Les reessayer evite de perdre tout un chargement.
+    TRANSIENT = {429, 500, 502, 503, 504, 520, 521, 522, 523, 524}
+    MAX_ESSAIS = 5
+
     def call(self, method, path, token=None, expect=(200, 201, 202), **kw):
         if self.dry:
             print(f"DRY {method} {path}")
@@ -121,10 +127,24 @@ class Api:
         headers = kw.pop("headers", {})
         if token:
             headers["Authorization"] = f"Bearer {token}"
-        r = self.s.request(method, f"{self.base}{path}", headers=headers, timeout=120, **kw)
-        if r.status_code not in expect:
-            raise RuntimeError(f"{method} {path} -> {r.status_code} {r.text[:300]}")
-        return r.json() if r.content and "json" in r.headers.get("Content-Type", "") else {}
+        derniere = None
+        for essai in range(1, self.MAX_ESSAIS + 1):
+            try:
+                r = self.s.request(method, f"{self.base}{path}", headers=headers, timeout=180, **kw)
+            except requests.exceptions.RequestException as erreur:
+                derniere = f"{method} {path} -> reseau : {erreur}"
+            else:
+                if r.status_code in expect:
+                    return r.json() if r.content and "json" in r.headers.get("Content-Type", "") else {}
+                derniere = f"{method} {path} -> {r.status_code} {r.text[:300]}"
+                if r.status_code not in self.TRANSIENT:
+                    # Refus metier (400, 401, 403, 404, 409...) : inutile de reessayer.
+                    raise RuntimeError(derniere)
+            if essai < self.MAX_ESSAIS:
+                attente = min(60, 5 * 2 ** (essai - 1))
+                print(f"      incident passager ({essai}/{self.MAX_ESSAIS}), nouvelle tentative dans {attente}s")
+                time.sleep(attente)
+        raise RuntimeError(derniere)
 
     def login(self, email, password):
         return self.call("POST", "/auth/login", json={"email": email, "password": password}).get("token")
@@ -204,18 +224,27 @@ def create_librarians(api, admin, inst, inst_id, password, rng, n):
     users = []
     for prenom, nom in zip(rng.sample(prenoms, n), rng.sample(noms, n)):
         slug = lambda x: "".join(c for c in x.lower().replace(" ", "") if c.isalnum())
-        email = f"{slug(prenom)}.{slug(nom)}@{inst['domain']}"
-        try:
-            api.call("POST", "/auth/register", json={"firstName": prenom, "lastName": nom, "email": email,
-                                                     "institution": inst["name"], "password": password})
-        except RuntimeError as exc:
-            if "409" not in str(exc) and "existe" not in str(exc).lower():
-                raise
-        uid = find_user_id(api, admin, email, inst_id)
-        if uid:
-            api.call("PATCH", f"/admin/users/{uid}", admin, json={"statut": "ACTIF"})
-        users.append({"email": email, "prenom": prenom, "nom": nom, "id": uid})
-        print(f"    bibliothécaire : {prenom} {nom} <{email}>")
+        local_part = f"{slug(prenom)}.{slug(nom)}"
+        for suffix in ["", ".seed", ".seed2", ".seed3"]:
+            email = f"{local_part}{suffix}@{inst['domain']}"
+            try:
+                api.call("POST", "/auth/register", json={"firstName": prenom, "lastName": nom, "email": email,
+                                                         "institution": inst["name"], "password": password})
+            except RuntimeError as exc:
+                if "409" not in str(exc) and "existe" not in str(exc).lower():
+                    raise
+            uid = find_user_id(api, admin, email, inst_id)
+            if uid:
+                api.call("PATCH", f"/admin/users/{uid}", admin, json={"statut": "ACTIF"})
+            try:
+                api.login(email, password)
+            except RuntimeError as exc:
+                if "401" not in str(exc) or suffix == ".seed3":
+                    raise
+                continue
+            users.append({"email": email, "prenom": prenom, "nom": nom, "id": uid})
+            print(f"    bibliothécaire : {prenom} {nom} <{email}>")
+            break
     return users
 
 
