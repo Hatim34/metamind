@@ -97,7 +97,7 @@ sh scripts/controle-deploiement.sh https://metamind-app.duckdns.org
 Controle du parcours API REST :
 
 ```bash
-sh scripts/controle-api.sh https://metamind-app.duckdns.org/api/v1
+METAMIND_SEED_PASSWORD=... sh scripts/controle-api.sh https://metamind-app.duckdns.org/api/v1
 ```
 
 Verifications manuelles utiles :
@@ -110,18 +110,19 @@ curl -i https://metamind-app.duckdns.org/api/v1/open-data/rss
 
 ## Comptes de test
 
+Le mot de passe des comptes de test est celui de la variable `METAMIND_SEED_PASSWORD`
+definie sur Render. Il n'est jamais ecrit dans le depot, qui est public.
+
 Compte bibliothecaire :
 
 ```text
 Email : sarah@institution-a.example
-Mot de passe : 558435
 ```
 
 Compte administrateur :
 
 ```text
 Email : admin@metamind.example
-Mot de passe : 558435
 ```
 
 ## Elements a remettre pour la partie deploiement
@@ -135,8 +136,9 @@ https://metamind-app.duckdns.org
 Donnees de connexion :
 
 ```text
-Bibliothecaire : sarah@institution-a.example / 558435
-Administrateur : admin@metamind.example / 558435
+Bibliothecaire : sarah@institution-a.example
+Administrateur : admin@metamind.example
+Mot de passe : transmis separement (variable METAMIND_SEED_PASSWORD)
 ```
 
 ## Exploitation

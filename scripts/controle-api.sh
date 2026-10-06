@@ -3,6 +3,8 @@ set -eu
 
 BASE_URL="${1:-http://localhost:8080/api/v1}"
 BASE_URL="${BASE_URL%/}"
+# Mot de passe des comptes de demonstration : jamais ecrit dans le depot.
+PASSWORD="${METAMIND_SEED_PASSWORD:?Definissez METAMIND_SEED_PASSWORD avant de lancer le controle.}"
 TMP_DIR="$(mktemp -d)"
 LOGIN_RESPONSE="$TMP_DIR/login.json"
 PUBLICATION_RESPONSE="$TMP_DIR/publication.json"
@@ -47,7 +49,7 @@ check_status GET "/publications" 200 "$TMP_DIR/publications.json"
 
 check_status POST "/auth/login" 200 "$LOGIN_RESPONSE" \
 	-H "Content-Type: application/json" \
-	-d '{"email":"sarah@institution-a.example","password":"558435"}'
+	-d "{\"email\":\"sarah@institution-a.example\",\"password\":\"$PASSWORD\"}"
 
 TOKEN="$(extract_json_string "$LOGIN_RESPONSE" token)"
 if [ -z "$TOKEN" ]; then

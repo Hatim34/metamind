@@ -27,10 +27,10 @@ Les exports Open Data publics sont disponibles via `/api/v1/open-data/rss` et `/
 
 L'authentification utilise un jeton JWT signe. Apres connexion, le frontend envoie le header `Authorization: Bearer <token>` sur les routes protegees : profil, credits, extraction, publications privees et administration.
 
-Comptes de test :
+Comptes de test (mot de passe defini par la variable `METAMIND_SEED_PASSWORD`, jamais ecrit dans le depot) :
 
-- Bibliothecaire : `sarah@institution-a.example` / `558435`
-- Administrateur : `admin@metamind.example` / `558435`
+- Bibliothecaire : `sarah@institution-a.example`
+- Administrateur : `admin@metamind.example`
 
 ## Validation locale
 
@@ -41,7 +41,7 @@ cd ../frontend
 npm run build
 npm test -- --watch=false --browsers=ChromeHeadless
 cd ..
-sh scripts/controle-api.sh http://localhost:8080/api/v1
+METAMIND_SEED_PASSWORD=... sh scripts/controle-api.sh http://localhost:8080/api/v1
 ```
 
 ## Deploiement
