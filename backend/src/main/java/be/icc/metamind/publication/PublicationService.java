@@ -3,6 +3,7 @@ package be.icc.metamind.publication;
 import java.time.LocalDate;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -75,14 +76,61 @@ public class PublicationService {
 	@Transactional(readOnly = true)
 	public List<PublicationResponse> findPublications(String search, UserEntity currentUser) {
 		String value = Optional.ofNullable(search).orElse("").trim();
+		// Sans recherche, le filtrage de visibilite est fait en base : charger toute la
+		// table ramenait le texte integral de chaque document pour rien.
 		List<DocumentEntity> documents = value.isBlank()
-				? documentRepository.findAll()
+				? visibleDocuments(currentUser)
 				: documentRepository.search(value);
 
-		return documents.stream()
+		return toResponses(documents.stream()
 				.filter(document -> isVisibleFor(document, currentUser))
-				.map(this::toResponse)
+				.toList());
+	}
+
+	/**
+	 * Convertit une liste de documents en une seule passe.
+	 *
+	 * La conversion unitaire interrogeait la base trois fois par document (metadonnees,
+	 * auteurs, mots-cles) : plus de trois cents requetes pour afficher le catalogue.
+	 * Les donnees liees sont ici chargees en trois requetes au total.
+	 */
+	private List<PublicationResponse> toResponses(List<DocumentEntity> documents) {
+		if (documents.isEmpty()) {
+			return List.of();
+		}
+		List<Long> ids = documents.stream().map(DocumentEntity::getId).toList();
+
+		Map<Long, MetadataEntity> metadataByDocument = metadataRepository.findByDocument_IdIn(ids).stream()
+				.collect(Collectors.toMap(metadata -> metadata.getDocument().getId(), metadata -> metadata, (first, second) -> first));
+
+		Map<Long, String> authorsByDocument = documentAuthorRepository.findForDocuments(ids).stream()
+				.collect(Collectors.groupingBy(
+						link -> link.getDocument().getId(),
+						Collectors.mapping(link -> link.getAuthor().getFullName(), Collectors.joining(", "))));
+
+		Map<Long, List<String>> keywordsByDocument = documentKeywordRepository.findForDocuments(ids).stream()
+				.collect(Collectors.groupingBy(
+						link -> link.getDocument().getId(),
+						Collectors.mapping(link -> link.getKeyword().getLibelle(), Collectors.toList())));
+
+		return documents.stream()
+				.map(document -> PublicationResponse.from(
+						document,
+						metadataByDocument.get(document.getId()),
+						authorsByDocument.getOrDefault(document.getId(), ""),
+						keywordsByDocument.getOrDefault(document.getId(), List.of())))
 				.toList();
+	}
+
+	/** Documents que cet utilisateur a le droit de voir, selectionnes par la base. */
+	private List<DocumentEntity> visibleDocuments(UserEntity currentUser) {
+		if (currentUser == null) {
+			return documentRepository.findPubliclyVisible();
+		}
+		if (currentUser.getRole() == UserRole.ADMIN) {
+			return documentRepository.findAll();
+		}
+		return documentRepository.findVisibleForInstitution(currentUser.getInstitution().getId());
 	}
 
 	@Transactional(readOnly = true)

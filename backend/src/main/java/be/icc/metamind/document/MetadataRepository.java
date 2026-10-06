@@ -10,6 +10,9 @@ import org.springframework.data.repository.query.Param;
 public interface MetadataRepository extends JpaRepository<MetadataEntity, Long> {
 	Optional<MetadataEntity> findByDocumentId(Long documentId);
 
+	/** Metadonnees de plusieurs documents en une requete, pour eviter un acces par document. */
+	List<MetadataEntity> findByDocument_IdIn(List<Long> documentIds);
+
 	boolean existsByTitreIgnoreCase(String titre);
 
 	/** Un DOI identifie une seule publication : sert a refuser un doublon avant d'ecrire. */
