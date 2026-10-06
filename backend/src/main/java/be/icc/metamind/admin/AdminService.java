@@ -21,6 +21,7 @@ import be.icc.metamind.credit.CreditMovementType;
 import be.icc.metamind.institution.InstitutionRepository;
 import be.icc.metamind.institution.InstitutionResponse;
 import be.icc.metamind.user.UserEntity;
+import be.icc.metamind.user.AdministratorGuard;
 import be.icc.metamind.user.UserRepository;
 import be.icc.metamind.user.UserResponse;
 
@@ -51,6 +52,7 @@ public class AdminService {
 	private final DocumentRepository documentRepository;
 	private final MetadataRepository metadataRepository;
 	private final CreditMovementRepository creditMovementRepository;
+	private final AdministratorGuard administratorGuard;
 
 	public AdminService(
 			UserRepository userRepository,
@@ -59,7 +61,8 @@ public class AdminService {
 			AuditLogRepository auditLogRepository,
 			DocumentRepository documentRepository,
 			MetadataRepository metadataRepository,
-			CreditMovementRepository creditMovementRepository
+			CreditMovementRepository creditMovementRepository,
+			AdministratorGuard administratorGuard
 	) {
 		this.userRepository = userRepository;
 		this.institutionRepository = institutionRepository;
@@ -68,6 +71,7 @@ public class AdminService {
 		this.documentRepository = documentRepository;
 		this.metadataRepository = metadataRepository;
 		this.creditMovementRepository = creditMovementRepository;
+		this.administratorGuard = administratorGuard;
 	}
 
 	@Transactional(readOnly = true)
@@ -83,6 +87,10 @@ public class AdminService {
 	public UserResponse updateUser(long id, AdminUserUpdateRequest request, UserEntity admin) {
 		UserEntity user = userRepository.findById(id)
 				.orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Le compte utilisateur est introuvable."));
+		// Retrograder ou desactiver le dernier administrateur rendrait la plateforme iningerable.
+		if (administratorGuard.removesAdministration(request.role(), request.status())) {
+			administratorGuard.ensureAnotherActiveAdministratorRemains(user, "modifier ce compte");
+		}
 		user.updateAdministration(request.role(), request.status());
 		auditLogRepository.save(new AuditLogEntity(
 				admin,

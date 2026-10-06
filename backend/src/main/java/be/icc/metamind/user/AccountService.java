@@ -21,13 +21,15 @@ public class AccountService {
 	private final PasswordService passwordService;
 	private final JwtService jwtService;
 	private final LoginAttemptService loginAttemptService;
+	private final AdministratorGuard administratorGuard;
 
-	public AccountService(UserRepository userRepository, InstitutionRepository institutionRepository, PasswordService passwordService, JwtService jwtService, LoginAttemptService loginAttemptService) {
+	public AccountService(UserRepository userRepository, InstitutionRepository institutionRepository, PasswordService passwordService, JwtService jwtService, LoginAttemptService loginAttemptService, AdministratorGuard administratorGuard) {
 		this.userRepository = userRepository;
 		this.institutionRepository = institutionRepository;
 		this.passwordService = passwordService;
 		this.jwtService = jwtService;
 		this.loginAttemptService = loginAttemptService;
+		this.administratorGuard = administratorGuard;
 	}
 
 	@Transactional(readOnly = true)
@@ -128,6 +130,7 @@ public class AccountService {
 	@Transactional
 	public UserResponse requestAccountDeletion(long id) {
 		UserEntity user = findUser(id);
+		administratorGuard.ensureAnotherActiveAdministratorRemains(user, "supprimer ce compte");
 		user.anonymizeAndDeactivate();
 		return UserResponse.from(user);
 	}
