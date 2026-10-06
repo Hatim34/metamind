@@ -10,8 +10,14 @@ import org.springframework.data.repository.query.Param;
 public interface MetadataRepository extends JpaRepository<MetadataEntity, Long> {
 	Optional<MetadataEntity> findByDocumentId(Long documentId);
 
-	/** Metadonnees de plusieurs documents en une requete, pour eviter un acces par document. */
-	List<MetadataEntity> findByDocument_IdIn(List<Long> documentIds);
+	/** Metadonnees de plusieurs documents en une requete, langue et type de document compris. */
+	@Query("""
+			select m from MetadataEntity m
+			left join fetch m.language
+			left join fetch m.documentType
+			where m.document.id in :documentIds
+			""")
+	List<MetadataEntity> findForDocuments(@Param("documentIds") List<Long> documentIds);
 
 	boolean existsByTitreIgnoreCase(String titre);
 

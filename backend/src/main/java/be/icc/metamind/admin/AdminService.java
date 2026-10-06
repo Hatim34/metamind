@@ -92,12 +92,16 @@ public class AdminService {
 			administratorGuard.ensureAnotherActiveAdministratorRemains(user, "modifier ce compte");
 		}
 		user.updateAdministration(request.role(), request.status());
+		if (request.institutionId() != null) {
+			user.assignInstitution(institutionRepository.findById(request.institutionId())
+					.orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "L'institution est introuvable.")));
+		}
 		auditLogRepository.save(new AuditLogEntity(
 				admin,
 				"MODIFICATION_UTILISATEUR",
 				"users",
 				id,
-				"Role ou statut modifie",
+				request.institutionId() == null ? "Role ou statut modifie" : "Role, statut ou institution modifie",
 				ClientIpResolver.current()
 		));
 		return UserResponse.from(user);

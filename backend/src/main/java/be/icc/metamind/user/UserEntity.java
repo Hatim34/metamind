@@ -102,6 +102,10 @@ public class UserEntity {
 		this.institution = institution;
 	}
 
+	public void assignInstitution(InstitutionEntity institution) {
+		this.institution = institution;
+	}
+
 	public void updateAdministration(UserRole role, UserStatus status) {
 		if (role != null) {
 			this.role = role;

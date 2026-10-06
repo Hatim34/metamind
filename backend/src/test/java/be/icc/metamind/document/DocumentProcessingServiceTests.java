@@ -39,8 +39,9 @@ class DocumentProcessingServiceTests {
 		when(documentUploadService.storePdfThumbnail(any(Path.class))).thenReturn("/tmp/cover.jpg");
 
 		DocumentCoverService documentCoverService = org.mockito.Mockito.mock(DocumentCoverService.class);
+		DocumentFileService documentFileService = org.mockito.Mockito.mock(DocumentFileService.class);
 
-		new DocumentProcessingService(documentRepository, documentUploadService, documentCoverService, null)
+		new DocumentProcessingService(documentRepository, documentUploadService, documentCoverService, documentFileService, null)
 				.process(7L, "/tmp/article.pdf");
 
 		assertEquals(DocumentStatus.A_VALIDER, document.getStatus());
@@ -50,5 +51,7 @@ class DocumentProcessingServiceTests {
 		verify(documentRepository).save(document);
 		// La couverture doit etre recopiee en base : le disque n'est pas persistant en production.
 		verify(documentCoverService).persistFromPath(document.getId(), "/tmp/cover.jpg");
+		// Apres un redeploiement, le fichier est recree depuis la base avant d'etre relu.
+		verify(documentFileService).restoreOnDisk(7L, "/tmp/article.pdf");
 	}
 }

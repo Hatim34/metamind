@@ -10,6 +10,7 @@ import be.icc.metamind.document.DocumentEntity;
 import be.icc.metamind.document.DocumentKeywordRepository;
 import be.icc.metamind.document.DocumentRepository;
 import be.icc.metamind.document.DocumentStatus;
+import be.icc.metamind.document.DocumentSummary;
 import be.icc.metamind.document.DocumentVisibility;
 import be.icc.metamind.document.KeywordRepository;
 import be.icc.metamind.document.MetadataRepository;
@@ -84,7 +85,7 @@ class PublicationRepositoryTests {
 		assertThat(documentRepository.search("catalogage"))
 				.hasSize(1)
 				.first()
-				.extracting(DocumentEntity::getStatus)
+				.extracting(DocumentSummary::status)
 				.isEqualTo(DocumentStatus.A_VALIDER);
 	}
 

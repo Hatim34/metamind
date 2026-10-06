@@ -1,5 +1,6 @@
 package be.icc.metamind.document;
 
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -95,6 +96,12 @@ public class MetadataService {
 		String previousDoi = metadata.getDoi();
 
 		String title = cleanRequired(request.title(), "Le titre est obligatoire.");
+		if (request.authors() == null || request.authors().stream().noneMatch(author -> author != null && cleanOptional(author.fullName()) != null)) {
+			throw new ApiException(HttpStatus.BAD_REQUEST, "Au moins un auteur est obligatoire.");
+		}
+		if (request.publicationDate() == null) {
+			throw new ApiException(HttpStatus.BAD_REQUEST, "La date de publication est obligatoire.");
+		}
 		String summary = cleanOptional(request.summary());
 		String classification = cleanOptional(request.classification());
 		String doi = cleanOptional(request.doi());
@@ -262,9 +269,53 @@ public class MetadataService {
 	}
 
 	private MetadataResponse toResponse(MetadataEntity metadata) {
-		List<DocumentAuthorEntity> authors = documentAuthorRepository.findByDocument_IdOrderByAuthorOrderAsc(metadata.getDocument().getId());
-		List<DocumentKeywordEntity> keywords = documentKeywordRepository.findByDocument_Id(metadata.getDocument().getId());
-		return MetadataResponse.from(metadata, authors, keywords);
+		DocumentEntity document = metadata.getDocument();
+		List<MetadataAuthorResponse> authors = documentAuthorRepository.findByDocument_IdOrderByAuthorOrderAsc(document.getId())
+				.stream()
+				.map(link -> new MetadataAuthorResponse(link.getAuthor().getFullName(), link.getAuthor().getOrcid()))
+				.toList();
+		List<String> keywords = documentKeywordRepository.findByDocument_Id(document.getId())
+				.stream()
+				.map(link -> link.getKeyword().getLibelle())
+				.toList();
+		List<MetadataSuggestionEntity> suggestions = validationDecisionRecorder.suggestionsOf(document);
+		// Avant validation, auteurs et mots-cles n'existent que comme suggestions du modele :
+		// sans elles, le bibliothecaire voyait des champs vides et devait tout ressaisir.
+		if (metadata.getStatus() != MetadataStatus.VALIDE) {
+			if (authors.isEmpty()) {
+				authors = suggestedValues(suggestions, "auteurs").stream()
+						.map(name -> new MetadataAuthorResponse(name, null))
+						.toList();
+			}
+			if (keywords.isEmpty()) {
+				keywords = suggestedValues(suggestions, "mots_cles");
+			}
+		}
+		return MetadataResponse.from(metadata, authors, keywords, confidences(suggestions));
+	}
+
+	/** Valeurs d'un champ multivalue proposees par le modele, dans l'ordre du document. */
+	private List<String> suggestedValues(List<MetadataSuggestionEntity> suggestions, String field) {
+		return suggestions.stream()
+				.filter(suggestion -> field.equals(suggestion.getChamp()))
+				.findFirst()
+				.map(MetadataSuggestionEntity::getSuggestedValue)
+				.map(value -> Arrays.stream(value.split(","))
+						.map(String::trim)
+						.filter(item -> !item.isEmpty())
+						.distinct()
+						.toList())
+				.orElseGet(List::of);
+	}
+
+	private Map<String, Double> confidences(List<MetadataSuggestionEntity> suggestions) {
+		Map<String, Double> byField = new LinkedHashMap<>();
+		for (MetadataSuggestionEntity suggestion : suggestions) {
+			if (suggestion.getConfidenceScore() != null) {
+				byField.putIfAbsent(suggestion.getChamp(), suggestion.getConfidenceScore().doubleValue());
+			}
+		}
+		return byField;
 	}
 
 	private String cleanRequired(String value, String errorMessage) {

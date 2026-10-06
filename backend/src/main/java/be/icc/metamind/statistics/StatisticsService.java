@@ -11,9 +11,9 @@ import java.util.TreeMap;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import be.icc.metamind.document.DocumentEntity;
 import be.icc.metamind.document.DocumentRepository;
 import be.icc.metamind.document.DocumentStatus;
+import be.icc.metamind.document.DocumentSummary;
 import be.icc.metamind.document.DocumentVisibility;
 import be.icc.metamind.document.MetadataEntity;
 import be.icc.metamind.document.MetadataRepository;
@@ -46,7 +46,7 @@ public class StatisticsService {
 	public StatisticsResponse getStatistics(UserEntity currentUser, LocalDate startDate, LocalDate endDate) {
 		// Les metadonnees sont chargees une seule fois : les agregats lisaient la base par document.
 		Map<Long, MetadataEntity> metadataByDocument = metadataByDocument(currentUser);
-		List<DocumentEntity> documents = scopedDocuments(currentUser, startDate, endDate, metadataByDocument);
+		List<DocumentSummary> documents = scopedDocuments(currentUser, startDate, endDate, metadataByDocument);
 		long total = documents.size();
 		long published = countStatus(documents, DocumentStatus.PUBLIE);
 		long pendingValidation = countStatus(documents, DocumentStatus.A_VALIDER);
@@ -82,16 +82,17 @@ public class StatisticsService {
 		return byDocument;
 	}
 
-	private List<DocumentEntity> scopedDocuments(
+	private List<DocumentSummary> scopedDocuments(
 			UserEntity currentUser,
 			LocalDate startDate,
 			LocalDate endDate,
 			Map<Long, MetadataEntity> metadataByDocument
 	) {
-		return documentRepository.findAll().stream()
-				.filter(document -> currentUser.getRole() == UserRole.ADMIN
-						|| Objects.equals(document.getInstitution().getId(), currentUser.getInstitution().getId()))
-				.filter(document -> matchesPeriod(metadataByDocument.get(document.getId()), startDate, endDate))
+		List<DocumentSummary> documents = currentUser.getRole() == UserRole.ADMIN
+				? documentRepository.findSummaries()
+				: documentRepository.findSummariesByInstitution(currentUser.getInstitution().getId());
+		return documents.stream()
+				.filter(document -> matchesPeriod(metadataByDocument.get(document.id()), startDate, endDate))
 				.toList();
 	}
 
@@ -107,25 +108,25 @@ public class StatisticsService {
 				&& (endDate == null || !publicationDate.isAfter(endDate));
 	}
 
-	private long countStatus(List<DocumentEntity> documents, DocumentStatus status) {
-		return documents.stream().filter(document -> document.getStatus() == status).count();
+	private long countStatus(List<DocumentSummary> documents, DocumentStatus status) {
+		return documents.stream().filter(document -> document.status() == status).count();
 	}
 
-	private long countRejectedMetadata(List<DocumentEntity> documents, Map<Long, MetadataEntity> metadataByDocument) {
+	private long countRejectedMetadata(List<DocumentSummary> documents, Map<Long, MetadataEntity> metadataByDocument) {
 		return metadataOf(documents, metadataByDocument)
 				.filter(metadata -> metadata.getStatus() == MetadataStatus.REJETE)
 				.count();
 	}
 
 	/** Metadonnees des documents du perimetre, sans requete supplementaire. */
-	private Stream<MetadataEntity> metadataOf(List<DocumentEntity> documents, Map<Long, MetadataEntity> metadataByDocument) {
+	private Stream<MetadataEntity> metadataOf(List<DocumentSummary> documents, Map<Long, MetadataEntity> metadataByDocument) {
 		return documents.stream()
-				.map(document -> metadataByDocument.get(document.getId()))
+				.map(document -> metadataByDocument.get(document.id()))
 				.filter(Objects::nonNull);
 	}
 
-	private long countVisibility(List<DocumentEntity> documents, DocumentVisibility visibility) {
-		return documents.stream().filter(document -> document.getVisibility() == visibility).count();
+	private long countVisibility(List<DocumentSummary> documents, DocumentVisibility visibility) {
+		return documents.stream().filter(document -> document.visibility() == visibility).count();
 	}
 
 	private int creditBalance(UserEntity currentUser) {
@@ -144,7 +145,7 @@ public class StatisticsService {
 		return Math.round((count * 10000.0) / total) / 100.0;
 	}
 
-	private double averageProcessingHours(List<DocumentEntity> documents, Map<Long, MetadataEntity> metadataByDocument) {
+	private double averageProcessingHours(List<DocumentSummary> documents, Map<Long, MetadataEntity> metadataByDocument) {
 		List<Long> durations = metadataOf(documents, metadataByDocument)
 				.filter(metadata -> metadata.getGeneratedAt() != null && metadata.getValidatedAt() != null)
 				.map(metadata -> Duration.between(metadata.getGeneratedAt(), metadata.getValidatedAt()).toMinutes())
@@ -156,13 +157,13 @@ public class StatisticsService {
 		return Math.round((averageMinutes / 60.0) * 100.0) / 100.0;
 	}
 
-	private Map<String, Long> distributionByDocumentType(List<DocumentEntity> documents, Map<Long, MetadataEntity> metadataByDocument) {
+	private Map<String, Long> distributionByDocumentType(List<DocumentSummary> documents, Map<Long, MetadataEntity> metadataByDocument) {
 		return orderedDistribution(metadataOf(documents, metadataByDocument)
 				.map(metadata -> metadata.getDocumentType() == null ? "Non renseigne" : metadata.getDocumentType().getLibelle())
 				.collect(Collectors.groupingBy(value -> value, TreeMap::new, Collectors.counting())));
 	}
 
-	private Map<String, Long> distributionByClassification(List<DocumentEntity> documents, Map<Long, MetadataEntity> metadataByDocument) {
+	private Map<String, Long> distributionByClassification(List<DocumentSummary> documents, Map<Long, MetadataEntity> metadataByDocument) {
 		return orderedDistribution(metadataOf(documents, metadataByDocument)
 				.map(metadata -> metadata.getClassification() == null || metadata.getClassification().isBlank() ? "Non renseigne" : metadata.getClassification())
 				.collect(Collectors.groupingBy(value -> value, TreeMap::new, Collectors.counting())));

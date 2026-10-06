@@ -3,6 +3,7 @@ package be.icc.metamind.document;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -52,9 +53,18 @@ public record MetadataResponse(
 		String doi,
 
 		@JsonProperty("texte_extrait")
-		String extractedText
+		String extractedText,
+
+		/** Confiance calculee par champ lors de la derniere extraction, entre 0 et 1. */
+		@JsonProperty("confiances")
+		Map<String, Double> confidences
 ) {
-	public static MetadataResponse from(MetadataEntity metadata, List<DocumentAuthorEntity> authors, List<DocumentKeywordEntity> keywords) {
+	public static MetadataResponse from(
+			MetadataEntity metadata,
+			List<MetadataAuthorResponse> authors,
+			List<String> keywords,
+			Map<String, Double> confidences
+	) {
 		return new MetadataResponse(
 				metadata.getId(),
 				metadata.getDocument().getId(),
@@ -66,16 +76,13 @@ public record MetadataResponse(
 				metadata.getStatus(),
 				metadata.getValidatedAt(),
 				metadata.getValidatedBy() == null ? null : metadata.getValidatedBy().getId(),
-				authors.stream()
-						.map(author -> new MetadataAuthorResponse(author.getAuthor().getFullName(), author.getAuthor().getOrcid()))
-						.toList(),
-				keywords.stream()
-						.map(keyword -> keyword.getKeyword().getLibelle())
-						.toList(),
+				authors,
+				keywords,
 				metadata.getLanguage() == null ? null : metadata.getLanguage().getCode(),
 				metadata.getDocumentType() == null ? null : metadata.getDocumentType().getCode(),
 				metadata.getDoi(),
-				metadata.getDocument().getExtractedText()
+				metadata.getDocument().getExtractedText(),
+				confidences
 		);
 	}
 }

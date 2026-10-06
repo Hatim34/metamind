@@ -126,6 +126,46 @@ class MetadataReferenceValidationTests {
 				.hasMessageContaining("poeme");
 	}
 
+	@Test
+	void showsTheModelSuggestionsBeforeValidation() {
+		Fixture fixture = extractedDocument();
+		// Avant validation, aucun auteur ni mot-cle n'est encore rattache au document.
+		documentAuthorRepository.deleteByDocument_Id(fixture.documentId());
+		documentKeywordRepository.deleteByDocument_Id(fixture.documentId());
+
+		MetadataResponse response = metadataService.getMetadata(fixture.documentId(), fixture.user());
+
+		assertThat(response.authors()).extracting(MetadataAuthorResponse::fullName).containsExactly("Sarah Lemaire");
+		assertThat(response.keywords()).containsExactly("metadonnees", "Dublin Core", "catalogage");
+		assertThat(response.confidences()).containsKey("titre");
+	}
+
+	@Test
+	void refusesAPublicationWithoutAuthor() {
+		Fixture fixture = extractedDocument();
+		MetadataValidationRequest valid = request("fr", null, null);
+		MetadataValidationRequest withoutAuthor = new MetadataValidationRequest(
+				valid.title(), valid.summary(), valid.publicationDate(), valid.classification(), valid.visibility(),
+				List.of(), valid.keywords(), valid.language(), valid.documentType(), valid.doi());
+
+		assertThatThrownBy(() -> metadataService.validateMetadata(fixture.documentId(), withoutAuthor, fixture.user()))
+				.isInstanceOf(ApiException.class)
+				.hasMessageContaining("auteur");
+	}
+
+	@Test
+	void refusesAPublicationWithoutDate() {
+		Fixture fixture = extractedDocument();
+		MetadataValidationRequest valid = request("fr", null, null);
+		MetadataValidationRequest withoutDate = new MetadataValidationRequest(
+				valid.title(), valid.summary(), null, valid.classification(), valid.visibility(),
+				valid.authors(), valid.keywords(), valid.language(), valid.documentType(), valid.doi());
+
+		assertThatThrownBy(() -> metadataService.validateMetadata(fixture.documentId(), withoutDate, fixture.user()))
+				.isInstanceOf(ApiException.class)
+				.hasMessageContaining("date");
+	}
+
 	private SuggestionDecision decisionOf(Fixture fixture, String field) {
 		return suggestionRepository.findAll().stream()
 				.filter(suggestion -> suggestion.getEnrichment().getDocument().getId().equals(fixture.documentId()))

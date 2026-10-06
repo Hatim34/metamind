@@ -9,6 +9,9 @@ public record AdminUserUpdateRequest(
 		UserRole role,
 
 		@JsonProperty("statut")
-		UserStatus status
+		UserStatus status,
+
+		@JsonProperty("institution_id")
+		Long institutionId
 ) {
 }

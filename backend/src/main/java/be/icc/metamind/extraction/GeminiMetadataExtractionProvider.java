@@ -4,6 +4,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 import be.icc.metamind.api.ApiException;
@@ -21,7 +22,7 @@ import tools.jackson.databind.ObjectMapper;
 @Component
 @ConditionalOnProperty(name = "metamind.llm.provider", havingValue = "gemini")
 public class GeminiMetadataExtractionProvider implements MetadataExtractionProvider {
-	private static final String PROMPT_VERSION = "extraction-v4";
+	private static final String PROMPT_VERSION = "extraction-v5";
 
 	private final RestClient restClient;
 	private final ObjectMapper objectMapper;
@@ -99,7 +100,7 @@ public class GeminiMetadataExtractionProvider implements MetadataExtractionProvi
 			// Un champ absent reste vide : il sera signale au bibliothecaire au lieu d'etre invente.
 			return new MetadataExtractionData(
 					textOrNull(metadata, "title"),
-					textOrNull(metadata, "author"),
+					authors(metadata),
 					textOrNull(metadata, "summary"),
 					textOrNull(metadata, "classification"),
 					keywords(metadata.path("keywords")),
@@ -144,6 +145,24 @@ public class GeminiMetadataExtractionProvider implements MetadataExtractionProvi
 		return cleaned.isEmpty() ? null : cleaned;
 	}
 
+	/**
+	 * Auteurs joints par des virgules, format attendu par la suite de la chaine.
+	 * Le prompt v5 demande une liste ; une virgule interne ("Nom, Prenom") casserait le
+	 * decoupage a la validation, elle est donc remplacee par une espace.
+	 */
+	private String authors(JsonNode metadata) {
+		JsonNode list = metadata.path("authors");
+		if (!list.isArray()) {
+			return textOrNull(metadata, "author");
+		}
+		String joined = StreamSupport.stream(list.spliterator(), false)
+				.map(JsonNode::asText)
+				.map(name -> name.replace(',', ' ').replaceAll("\\s+", " ").trim())
+				.filter(name -> !name.isBlank())
+				.collect(Collectors.joining(", "));
+		return joined.isEmpty() ? null : joined;
+	}
+
 	private List<String> keywords(JsonNode node) {
 		if (!node.isArray()) {
 			return List.of();
@@ -152,7 +171,7 @@ public class GeminiMetadataExtractionProvider implements MetadataExtractionProvi
 				.map(JsonNode::asText)
 				.map(String::trim)
 				.filter(value -> !value.isBlank())
-				.limit(8)
+				.limit(12)
 				.toList();
 	}
 

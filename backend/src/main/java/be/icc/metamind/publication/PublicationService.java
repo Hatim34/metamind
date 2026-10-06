@@ -18,8 +18,10 @@ import be.icc.metamind.document.DocumentKeywordEntity;
 import be.icc.metamind.document.DocumentKeywordRepository;
 import be.icc.metamind.document.DocumentRepository;
 import be.icc.metamind.document.DocumentStatus;
+import be.icc.metamind.document.DocumentSummary;
 import be.icc.metamind.document.DocumentUploadService;
 import be.icc.metamind.document.DocumentCoverService;
+import be.icc.metamind.document.DocumentFileService;
 import be.icc.metamind.document.DocumentUploadService.ImportedDocument;
 import be.icc.metamind.document.DocumentUploadService.StoredFile;
 import be.icc.metamind.document.DocumentUploadService.StoredImage;
@@ -49,6 +51,7 @@ public class PublicationService {
 	private final DocumentKeywordRepository documentKeywordRepository;
 	private final DocumentUploadService documentUploadService;
 	private final DocumentCoverService documentCoverService;
+	private final DocumentFileService documentFileService;
 	private final ApplicationEventPublisher eventPublisher;
 
 	public PublicationService(
@@ -60,6 +63,7 @@ public class PublicationService {
 			DocumentKeywordRepository documentKeywordRepository,
 			DocumentUploadService documentUploadService,
 			DocumentCoverService documentCoverService,
+			DocumentFileService documentFileService,
 			ApplicationEventPublisher eventPublisher
 	) {
 		this.documentRepository = documentRepository;
@@ -70,15 +74,14 @@ public class PublicationService {
 		this.documentKeywordRepository = documentKeywordRepository;
 		this.documentUploadService = documentUploadService;
 		this.documentCoverService = documentCoverService;
+		this.documentFileService = documentFileService;
 		this.eventPublisher = eventPublisher;
 	}
 
 	@Transactional(readOnly = true)
 	public List<PublicationResponse> findPublications(String search, UserEntity currentUser) {
 		String value = Optional.ofNullable(search).orElse("").trim();
-		// Sans recherche, le filtrage de visibilite est fait en base : charger toute la
-		// table ramenait le texte integral de chaque document pour rien.
-		List<DocumentEntity> documents = value.isBlank()
+		List<DocumentSummary> documents = value.isBlank()
 				? visibleDocuments(currentUser)
 				: documentRepository.search(value);
 
@@ -94,13 +97,13 @@ public class PublicationService {
 	 * auteurs, mots-cles) : plus de trois cents requetes pour afficher le catalogue.
 	 * Les donnees liees sont ici chargees en trois requetes au total.
 	 */
-	private List<PublicationResponse> toResponses(List<DocumentEntity> documents) {
+	private List<PublicationResponse> toResponses(List<DocumentSummary> documents) {
 		if (documents.isEmpty()) {
 			return List.of();
 		}
-		List<Long> ids = documents.stream().map(DocumentEntity::getId).toList();
+		List<Long> ids = documents.stream().map(DocumentSummary::id).toList();
 
-		Map<Long, MetadataEntity> metadataByDocument = metadataRepository.findByDocument_IdIn(ids).stream()
+		Map<Long, MetadataEntity> metadataByDocument = metadataRepository.findForDocuments(ids).stream()
 				.collect(Collectors.toMap(metadata -> metadata.getDocument().getId(), metadata -> metadata, (first, second) -> first));
 
 		Map<Long, String> authorsByDocument = documentAuthorRepository.findForDocuments(ids).stream()
@@ -116,21 +119,29 @@ public class PublicationService {
 		return documents.stream()
 				.map(document -> PublicationResponse.from(
 						document,
-						metadataByDocument.get(document.getId()),
-						authorsByDocument.getOrDefault(document.getId(), ""),
-						keywordsByDocument.getOrDefault(document.getId(), List.of())))
+						metadataByDocument.get(document.id()),
+						authorsByDocument.getOrDefault(document.id(), ""),
+						keywordsByDocument.getOrDefault(document.id(), List.of())))
 				.toList();
 	}
 
 	/** Documents que cet utilisateur a le droit de voir, selectionnes par la base. */
-	private List<DocumentEntity> visibleDocuments(UserEntity currentUser) {
+	private List<DocumentSummary> visibleDocuments(UserEntity currentUser) {
 		if (currentUser == null) {
-			return documentRepository.findPubliclyVisible();
+			return documentRepository.findPublishedSummaries();
 		}
 		if (currentUser.getRole() == UserRole.ADMIN) {
-			return documentRepository.findAll();
+			return documentRepository.findSummaries();
 		}
-		return documentRepository.findVisibleForInstitution(currentUser.getInstitution().getId());
+		return documentRepository.findSummariesVisibleForInstitution(currentUser.getInstitution().getId());
+	}
+
+	/** Documents que cet utilisateur peut gerer : tous pour l'administrateur, sinon ceux de son institution. */
+	private List<DocumentSummary> managedDocuments(UserEntity currentUser) {
+		if (currentUser.getRole() == UserRole.ADMIN) {
+			return documentRepository.findSummaries();
+		}
+		return documentRepository.findSummariesByInstitution(currentUser.getInstitution().getId());
 	}
 
 	@Transactional(readOnly = true)
@@ -152,15 +163,16 @@ public class PublicationService {
 			UserEntity currentUser
 	) {
 		String value = Optional.ofNullable(search).orElse("").trim();
-		List<DocumentEntity> documents = value.isBlank()
-				? documentRepository.findAll()
+		List<DocumentSummary> documents = value.isBlank()
+				? managedDocuments(currentUser)
 				: documentRepository.search(value);
 
-		List<PublicationResponse> responses = documents.stream()
+		List<PublicationResponse> responses = toResponses(documents.stream()
 				.filter(document -> isInManagementScope(document, currentUser))
 				.filter(document -> canFilterInstitution(document, institutionId, currentUser))
-				.filter(document -> status == null || document.getStatus() == status)
-				.map(this::toResponse)
+				.filter(document -> status == null || document.status() == status)
+				.toList())
+				.stream()
 				.filter(publication -> startDate == null || publication.publicationDate() != null && !publication.publicationDate().isBefore(startDate))
 				.filter(publication -> endDate == null || publication.publicationDate() != null && !publication.publicationDate().isAfter(endDate))
 				.sorted(documentComparator(sort, direction))
@@ -168,11 +180,11 @@ public class PublicationService {
 		return PageResponse.from(responses, page, size);
 	}
 
-	private boolean canFilterInstitution(DocumentEntity document, Long institutionId, UserEntity currentUser) {
+	private boolean canFilterInstitution(DocumentSummary document, Long institutionId, UserEntity currentUser) {
 		if (currentUser.getRole() != UserRole.ADMIN) {
 			return true;
 		}
-		return institutionId == null || document.getInstitution().getId().equals(institutionId);
+		return institutionId == null || document.institutionId().equals(institutionId);
 	}
 
 	private Comparator<PublicationResponse> documentComparator(String sort, String direction) {
@@ -240,14 +252,14 @@ public class PublicationService {
 		String authorFilter = Optional.ofNullable(author).orElse("").trim().toLowerCase();
 		String languageFilter = Optional.ofNullable(language).orElse("").trim().toLowerCase();
 		String documentTypeFilter = Optional.ofNullable(documentType).orElse("").trim().toLowerCase();
-		List<DocumentEntity> documents = value.isBlank()
-				? documentRepository.findAll()
+		List<DocumentSummary> documents = value.isBlank()
+				? documentRepository.findPublishedSummaries()
 				: documentRepository.search(value);
 
-		return documents.stream()
-				.filter(document -> document.getStatus() == DocumentStatus.PUBLIE)
-				.filter(document -> document.getVisibility() == DocumentVisibility.PUBLIC)
-				.map(this::toResponse)
+		return toResponses(documents.stream()
+				.filter(DocumentSummary::isPublished)
+				.toList())
+				.stream()
 				.filter(publication -> authorFilter.isBlank() || publication.author().toLowerCase().contains(authorFilter))
 				.filter(publication -> languageFilter.isBlank() || matchesText(publication.language(), languageFilter))
 				.filter(publication -> documentTypeFilter.isBlank() || matchesText(publication.documentType(), documentTypeFilter))
@@ -318,6 +330,7 @@ public class PublicationService {
 		}
 		document.updateCoverImagePath(coverPath);
 		documentCoverService.persistFromPath(document.getId(), coverPath);
+		documentFileService.persistFromPath(document.getId(), imported.filePath());
 		metadataRepository.save(new MetadataEntity(
 				document,
 				titleFromFileName(imported.fileName()),
@@ -349,7 +362,9 @@ public class PublicationService {
 		if (!isVisibleFor(document, currentUser)) {
 			throw new ApiException(HttpStatus.FORBIDDEN, "Ce fichier n'est pas accessible avec ce compte.");
 		}
-		return documentUploadService.loadDocumentFile(document.getFilePath());
+		// La base est le stockage durable ; le disque n'est qu'un repli pour les donnees anciennes.
+		return documentFileService.load(document.getId())
+				.orElseGet(() -> documentUploadService.loadDocumentFile(document.getFilePath()));
 	}
 
 	@Transactional
@@ -381,13 +396,22 @@ public class PublicationService {
 	}
 
 	private boolean isVisibleFor(DocumentEntity document, UserEntity currentUser) {
+		return isVisibleFor(document.getInstitution().getId(), document.getStatus() == DocumentStatus.PUBLIE
+				&& document.getVisibility() == DocumentVisibility.PUBLIC, currentUser);
+	}
+
+	private boolean isVisibleFor(DocumentSummary document, UserEntity currentUser) {
+		return isVisibleFor(document.institutionId(), document.isPublished(), currentUser);
+	}
+
+	private boolean isVisibleFor(Long institutionId, boolean published, UserEntity currentUser) {
 		if (currentUser != null && currentUser.getRole() == UserRole.ADMIN) {
 			return true;
 		}
-		if (currentUser != null && document.getInstitution().getId().equals(currentUser.getInstitution().getId())) {
+		if (currentUser != null && institutionId.equals(currentUser.getInstitution().getId())) {
 			return true;
 		}
-		return document.getStatus() == DocumentStatus.PUBLIE && document.getVisibility() == DocumentVisibility.PUBLIC;
+		return published;
 	}
 
 	private boolean canManage(DocumentEntity document, UserEntity currentUser) {
@@ -395,11 +419,11 @@ public class PublicationService {
 				|| document.getInstitution().getId().equals(currentUser.getInstitution().getId());
 	}
 
-	private boolean isInManagementScope(DocumentEntity document, UserEntity currentUser) {
+	private boolean isInManagementScope(DocumentSummary document, UserEntity currentUser) {
 		if (currentUser.getRole() == UserRole.ADMIN) {
 			return true;
 		}
-		return document.getInstitution().getId().equals(currentUser.getInstitution().getId());
+		return document.institutionId().equals(currentUser.getInstitution().getId());
 	}
 
 	private boolean matchesText(String value, String filter) {

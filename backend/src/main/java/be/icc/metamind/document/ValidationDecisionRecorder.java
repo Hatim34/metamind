@@ -49,7 +49,8 @@ public class ValidationDecisionRecorder {
 		}
 	}
 
-	private List<MetadataSuggestionEntity> suggestionsOf(DocumentEntity document) {
+	/** Suggestions du dernier enrichissement termine, vide si le document n'a jamais ete extrait. */
+	public List<MetadataSuggestionEntity> suggestionsOf(DocumentEntity document) {
 		return latestCompletedEnrichment(document)
 				.map(enrichment -> suggestionRepository.findByEnrichment_IdOrderByIdAsc(enrichment.getId()))
 				.orElseGet(List::of);

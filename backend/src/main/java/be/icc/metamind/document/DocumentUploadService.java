@@ -137,6 +137,41 @@ public class DocumentUploadService {
 		}
 	}
 
+	/** Fichier importe present sur le disque, vide s'il a disparu (redeploiement). */
+	public Optional<StoredFile> readDocumentFileIfPresent(String storedPath) {
+		try {
+			return Optional.of(loadDocumentFile(storedPath));
+		}
+		catch (ApiException exception) {
+			return Optional.empty();
+		}
+	}
+
+	/** Recree sur le disque un fichier conserve en base, pour pouvoir le retraiter. */
+	public void writeDocumentFile(String storedPath, byte[] content) {
+		Path path = Path.of(storedPath).toAbsolutePath().normalize();
+		if (!path.startsWith(storageRoot)) {
+			throw new ApiException(HttpStatus.BAD_REQUEST, "Le chemin du fichier est invalide.");
+		}
+		try {
+			Files.createDirectories(path.getParent());
+			Files.write(path, content);
+		}
+		catch (IOException exception) {
+			throw new ApiException(HttpStatus.INTERNAL_SERVER_ERROR, "Le fichier n'a pas pu etre recree.");
+		}
+	}
+
+	/** Nom de fichier tel qu'il est enregistre a l'import, apres validation du format. */
+	public String validatedFileName(MultipartFile file) {
+		validate(file);
+		return cleanOriginalFileName(file.getOriginalFilename());
+	}
+
+	public MediaType documentMediaType(String fileName) {
+		return documentMediaTypeFromPath(Path.of(fileName), null);
+	}
+
 	public StoredFile loadDocumentFile(String storedPath) {
 		if (storedPath == null || storedPath.isBlank()) {
 			throw new ApiException(HttpStatus.NOT_FOUND, "Aucun fichier n'est disponible pour ce document.");
@@ -234,7 +269,7 @@ public class DocumentUploadService {
 
 	private MediaType mediaTypeFromPath(Path path, String probedType) {
 		String mediaType = probedType == null || probedType.isBlank() ? null : probedType.toLowerCase(Locale.ROOT);
-		if (ALLOWED_IMAGE_MEDIA_TYPES.contains(mediaType)) {
+		if (mediaType != null && ALLOWED_IMAGE_MEDIA_TYPES.contains(mediaType)) {
 			return MediaType.parseMediaType(mediaType);
 		}
 		return switch (extension(path.getFileName().toString())) {
@@ -247,7 +282,7 @@ public class DocumentUploadService {
 
 	private MediaType documentMediaTypeFromPath(Path path, String probedType) {
 		String mediaType = probedType == null || probedType.isBlank() ? null : probedType.toLowerCase(Locale.ROOT);
-		if (ALLOWED_MEDIA_TYPES.contains(mediaType)) {
+		if (mediaType != null && ALLOWED_MEDIA_TYPES.contains(mediaType)) {
 			return MediaType.parseMediaType(mediaType);
 		}
 		return switch (extension(path.getFileName().toString())) {

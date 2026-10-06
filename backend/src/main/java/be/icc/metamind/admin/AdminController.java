@@ -6,6 +6,7 @@ import java.util.Map;
 import jakarta.validation.Valid;
 
 import be.icc.metamind.api.PageResponse;
+import be.icc.metamind.document.DocumentFileService;
 import be.icc.metamind.institution.InstitutionResponse;
 import be.icc.metamind.user.AccountService;
 import be.icc.metamind.user.UserEntity;
@@ -17,22 +18,26 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping("/api/v1/admin")
 public class AdminController {
 	private final AdminService service;
 	private final AccountService accountService;
+	private final DocumentFileService documentFileService;
 
-	public AdminController(AdminService service, AccountService accountService) {
+	public AdminController(AdminService service, AccountService accountService, DocumentFileService documentFileService) {
 		this.service = service;
 		this.accountService = accountService;
+		this.documentFileService = documentFileService;
 	}
 
 	@GetMapping("/users")
@@ -94,6 +99,19 @@ public class AdminController {
 	) {
 		accountService.authenticateAdmin(authorization);
 		return service.listLogs(page, size);
+	}
+
+	/**
+	 * Rattache un fichier aux documents importes sous ce nom dont le fichier a ete perdu
+	 * (documents importes avant que les fichiers soient conserves en base).
+	 */
+	@PostMapping(value = "/documents/files", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+	public FileRestoreResponse restoreDocumentFile(
+			@RequestHeader("Authorization") String authorization,
+			@RequestParam("fichier") MultipartFile file
+	) {
+		accountService.authenticateAdmin(authorization);
+		return new FileRestoreResponse(file.getOriginalFilename(), documentFileService.restoreMissingFiles(file));
 	}
 
 	@GetMapping(value = "/reports/documents.csv", produces = "text/csv")

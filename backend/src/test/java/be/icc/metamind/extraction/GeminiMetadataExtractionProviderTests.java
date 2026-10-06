@@ -62,6 +62,44 @@ class GeminiMetadataExtractionProviderTests {
 	}
 
 	@Test
+	void readsTheAuthorsAsAListInTheOrderOfTheDocument() {
+		RestClient.Builder restClientBuilder = RestClient.builder();
+		MockRestServiceServer server = MockRestServiceServer.bindTo(restClientBuilder).build();
+		GeminiMetadataExtractionProvider provider = new GeminiMetadataExtractionProvider(
+				restClientBuilder,
+				new ObjectMapper(),
+				"secret",
+				"gemini-test",
+				new TextPreparationService(15_000)
+		);
+		String response = """
+				{
+				  "candidates": [
+				    {
+				      "content": {
+				        "parts": [
+				          {
+				            "text": "{\\"title\\":\\"Titre\\",\\"authors\\":[\\"Mina Laurent\\",\\"Peeters, Jan\\"],\\"summary\\":null,\\"keywords\\":[]}"
+				          }
+				        ]
+				      }
+				    }
+				  ]
+				}
+				""";
+		server.expect(requestTo("https://generativelanguage.googleapis.com/v1beta/models/gemini-test:generateContent"))
+				.andRespond(withSuccess(response, MediaType.APPLICATION_JSON));
+
+		MetadataExtractionData metadata = provider.extract(publication());
+
+		// Une virgule interne casserait le decoupage des auteurs a la validation.
+		assertThat(metadata.author()).isEqualTo("Mina Laurent, Peeters Jan");
+		// Sans resume dans le document, le modele n'en redige pas : le champ reste vide.
+		assertThat(metadata.summary()).isNull();
+		server.verify();
+	}
+
+	@Test
 	void refusesExtractionWhenApiKeyIsMissing() {
 		GeminiMetadataExtractionProvider provider = new GeminiMetadataExtractionProvider(
 				RestClient.builder(),

@@ -16,12 +16,14 @@ public class DocumentProcessingService {
 	private final DocumentRepository documentRepository;
 	private final DocumentUploadService documentUploadService;
 	private final DocumentCoverService documentCoverService;
+	private final DocumentFileService documentFileService;
 	private final DocumentProcessingService self;
 
-	public DocumentProcessingService(DocumentRepository documentRepository, DocumentUploadService documentUploadService, DocumentCoverService documentCoverService, @Lazy DocumentProcessingService self) {
+	public DocumentProcessingService(DocumentRepository documentRepository, DocumentUploadService documentUploadService, DocumentCoverService documentCoverService, DocumentFileService documentFileService, @Lazy DocumentProcessingService self) {
 		this.documentRepository = documentRepository;
 		this.documentUploadService = documentUploadService;
 		this.documentCoverService = documentCoverService;
+		this.documentFileService = documentFileService;
 		this.self = self;
 	}
 
@@ -44,6 +46,8 @@ public class DocumentProcessingService {
 		}
 		document.markImportProcessing();
 		try {
+			// Apres un redeploiement, seul le fichier conserve en base existe encore.
+			documentFileService.restoreOnDisk(documentId, filePath);
 			String extractedText = documentUploadService.extractText(Path.of(filePath));
 			String coverPath = document.getCoverImagePath();
 			if (coverPath == null) {

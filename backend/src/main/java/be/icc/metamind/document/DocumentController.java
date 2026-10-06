@@ -10,8 +10,10 @@ import be.icc.metamind.publication.Visibility;
 import be.icc.metamind.user.AccountService;
 import be.icc.metamind.user.UserEntity;
 
+import java.time.Duration;
 import java.time.LocalDate;
 
+import org.springframework.http.CacheControl;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -108,7 +110,10 @@ public class DocumentController {
 	) {
 		UserEntity currentUser = authorization == null ? null : accountService.authenticate(authorization);
 		StoredImage image = publicationService.findCoverImage(id, currentUser);
+		// Une couverture ne change pas apres l'import : le navigateur la garde au lieu de
+		// la redemander a chaque affichage du catalogue.
 		return ResponseEntity.ok()
+				.cacheControl(CacheControl.maxAge(Duration.ofDays(7)).cachePrivate())
 				.contentType(image.mediaType())
 				.body(image.content());
 	}

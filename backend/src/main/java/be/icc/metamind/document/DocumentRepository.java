@@ -18,8 +18,10 @@ public interface DocumentRepository extends JpaRepository<DocumentEntity, Long> 
 	 * recherche, soit une quarantaine de secondes de reponse.
 	 */
 	@Query("""
-			select distinct d
+			select distinct new be.icc.metamind.document.DocumentSummary(
+				d.id, d.fileName, d.filePath, d.coverImagePath, d.status, d.visibility, i.id, i.name)
 			from DocumentEntity d
+			join d.institution i
 			left join MetadataEntity m on m.document = d
 			left join DocumentAuthorEntity da on da.document = d
 			left join da.author a
@@ -30,30 +32,53 @@ public interface DocumentRepository extends JpaRepository<DocumentEntity, Long> 
 			   or lower(coalesce(k.libelle, '')) like lower(concat('%', :search, '%'))
 			   or lower(coalesce(d.searchVector, '')) like lower(concat('%', :search, '%'))
 			""")
-	List<DocumentEntity> search(@Param("search") String search);
+	List<DocumentSummary> search(@Param("search") String search);
 
-	/**
-	 * Documents visibles par le catalogue public : publies et en acces public.
-	 *
-	 * Le filtrage se fait en base. Charger toute la table puis filtrer en memoire
-	 * ramenait aussi le texte integral de chaque document, soit une douzaine de
-	 * megaoctets a chaque affichage du catalogue.
-	 */
+	/** Tous les documents, sans le texte extrait. Reserve a la vue globale de l'administrateur. */
 	@Query("""
-			select d from DocumentEntity d
+			select new be.icc.metamind.document.DocumentSummary(
+				d.id, d.fileName, d.filePath, d.coverImagePath, d.status, d.visibility, i.id, i.name)
+			from DocumentEntity d
+			join d.institution i
+			""")
+	List<DocumentSummary> findSummaries();
+
+	/** Documents d'une institution, sans le texte extrait. */
+	@Query("""
+			select new be.icc.metamind.document.DocumentSummary(
+				d.id, d.fileName, d.filePath, d.coverImagePath, d.status, d.visibility, i.id, i.name)
+			from DocumentEntity d
+			join d.institution i
+			where i.id = :institutionId
+			""")
+	List<DocumentSummary> findSummariesByInstitution(@Param("institutionId") Long institutionId);
+
+	/** Documents du catalogue public : publies et en acces public. */
+	@Query("""
+			select new be.icc.metamind.document.DocumentSummary(
+				d.id, d.fileName, d.filePath, d.coverImagePath, d.status, d.visibility, i.id, i.name)
+			from DocumentEntity d
+			join d.institution i
 			where d.status = be.icc.metamind.document.DocumentStatus.PUBLIE
 			  and d.visibility = be.icc.metamind.document.DocumentVisibility.PUBLIC
 			""")
-	List<DocumentEntity> findPubliclyVisible();
+	List<DocumentSummary> findPublishedSummaries();
 
 	/** Documents visibles par un utilisateur connecte : ceux de son institution, plus les publics. */
 	@Query("""
-			select d from DocumentEntity d
-			where d.institution.id = :institutionId
+			select new be.icc.metamind.document.DocumentSummary(
+				d.id, d.fileName, d.filePath, d.coverImagePath, d.status, d.visibility, i.id, i.name)
+			from DocumentEntity d
+			join d.institution i
+			where i.id = :institutionId
 			   or (d.status = be.icc.metamind.document.DocumentStatus.PUBLIE
 			       and d.visibility = be.icc.metamind.document.DocumentVisibility.PUBLIC)
 			""")
-	List<DocumentEntity> findVisibleForInstitution(@Param("institutionId") Long institutionId);
+	List<DocumentSummary> findSummariesVisibleForInstitution(@Param("institutionId") Long institutionId);
+
+	/** Documents importes sous ce nom de fichier, pour leur rattacher un fichier perdu. */
+	@Query("select d.id from DocumentEntity d where d.fileName = :fileName")
+	List<Long> findIdsByFileName(@Param("fileName") String fileName);
 
 	long countByInstitution(InstitutionEntity institution);
 

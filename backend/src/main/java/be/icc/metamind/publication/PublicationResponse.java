@@ -7,6 +7,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import be.icc.metamind.document.DocumentEntity;
 import be.icc.metamind.document.DocumentStatus;
+import be.icc.metamind.document.DocumentSummary;
 import be.icc.metamind.document.DocumentVisibility;
 import be.icc.metamind.document.MetadataEntity;
 
@@ -75,22 +76,26 @@ public record PublicationResponse(
 	}
 
 	public static PublicationResponse from(DocumentEntity document, MetadataEntity metadata, String author, List<String> keywords) {
+		return from(DocumentSummary.of(document), metadata, author, keywords);
+	}
+
+	public static PublicationResponse from(DocumentSummary document, MetadataEntity metadata, String author, List<String> keywords) {
 		return new PublicationResponse(
-				document.getId(),
-				metadata == null || metadata.getTitre() == null ? document.getFileName() : metadata.getTitre(),
+				document.id(),
+				metadata == null || metadata.getTitre() == null ? document.fileName() : metadata.getTitre(),
 				author,
-				document.getInstitution().getName(),
+				document.institutionName(),
 				metadata == null || metadata.getPublicationDate() == null ? 0 : metadata.getPublicationDate().getYear(),
 				metadata == null ? null : metadata.getResume(),
 				metadata == null ? null : metadata.getPublicationDate(),
 				metadata == null ? null : metadata.getClassification(),
 				metadata == null || metadata.getLanguage() == null ? null : metadata.getLanguage().getCode(),
 				metadata == null || metadata.getDocumentType() == null ? null : metadata.getDocumentType().getLibelle(),
-				toPublicationStatus(document.getStatus()),
-				toVisibility(document.getVisibility()),
+				toPublicationStatus(document.status()),
+				toVisibility(document.visibility()),
 				keywords,
-				document.getCoverImagePath() == null || document.getCoverImagePath().isBlank() ? null : "/api/v1/documents/" + document.getId() + "/image",
-				document.getFilePath() == null || document.getFilePath().isBlank() ? null : "/api/v1/documents/" + document.getId() + "/file"
+				document.coverImagePath() == null || document.coverImagePath().isBlank() ? null : "/api/v1/documents/" + document.id() + "/image",
+				document.filePath() == null || document.filePath().isBlank() ? null : "/api/v1/documents/" + document.id() + "/file"
 		);
 	}
 
