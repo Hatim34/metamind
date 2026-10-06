@@ -90,7 +90,7 @@ interface Facet { key: string; label: string; count: number; on: boolean; }
                   <span class="m-result__meta">
                     @if (p.language) { <span>{{ languageLabel(p.language) | t }}</span> }
                     @for (k of p.keywords.slice(0, 3); track k) { <span class="m-chip m-chip--quiet">{{ k }}</span> }
-                    <a [routerLink]="['/publications', p.id]" fragment="citer">{{ 'Citer' | t }}</a>
+                    <a [routerLink]="['/publications', p.id]" fragment="citer">{{ 'Voir la référence' | t }}</a>
                   </span>
                 </div>
               </article>

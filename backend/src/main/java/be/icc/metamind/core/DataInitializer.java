@@ -124,7 +124,7 @@ public class DataInitializer implements ApplicationRunner {
 		String password = passwordService.hash(seedPassword);
 		UserEntity sarah = createUserIfMissing("Sarah", "Lemaire", "sarah@institution-a.example", password, UserRole.LIBRARIAN, institutionA);
 		UserEntity jan = createUserIfMissing("Jan", "Peeters", "jan@institution-b.example", password, UserRole.LIBRARIAN, institutionB);
-		createUserIfMissing("Nadia", "Benali", "admin@metamind.example", password, UserRole.ADMIN, platform);
+		createUserIfMissing("Hatim", "Assal", "admin@metamind.example", password, UserRole.ADMIN, platform);
 		if (resetSeed) {
 			// Volontairement sans effet destructeur.
 			// Cette option executait "TRUNCATE TABLE documents CASCADE" a chaque demarrage.
