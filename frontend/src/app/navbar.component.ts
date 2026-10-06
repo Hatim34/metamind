@@ -6,6 +6,7 @@ export type NavigationLanguage = 'fr' | 'nl' | 'en';
 
 export interface NavigationLabels {
   title: string;
+  home: string;
   catalogue: string;
   newPublication: string;
   validationQueue: string;
@@ -16,6 +17,8 @@ export interface NavigationLabels {
   register: string;
   language: string;
   signOut: string;
+  publicZone: string;
+  workspaceZone: string;
 }
 
 @Component({
@@ -40,6 +43,17 @@ export class NavbarComponent {
 
   navigate(page: NavigationPage): void {
     this.pageChange.emit(page);
+  }
+
+  /**
+   * Onglet a mettre en evidence. Une fiche de publication vient du catalogue :
+   * l'onglet d'origine reste allume, sinon la barre parait eteinte.
+   */
+  isCurrent(tab: NavigationPage): boolean {
+    if (this.page === 'detail') {
+      return tab === 'catalogue';
+    }
+    return this.page === tab;
   }
 
   changeLanguage(language: NavigationLanguage): void {

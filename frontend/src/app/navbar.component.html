@@ -13,30 +13,38 @@
       <span class="nav-word">Metamind</span>
     </button>
     <div class="nav-links" role="navigation" aria-label="Navigation principale">
-      <button type="button" [class.active]="page === 'catalogue'" (click)="navigate('catalogue')">
-        <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="M21 21l-4.3-4.3" /></svg>
-        <span>{{ labels.catalogue }}</span>
-      </button>
-      <button type="button" *ngIf="authenticated" [class.active]="page === 'publication'" (click)="navigate('publication')">
-        <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
-        <span>{{ labels.newPublication }}</span>
-      </button>
-      <button type="button" *ngIf="authenticated" [class.active]="page === 'validation'" (click)="navigate('validation')">
-        <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16M4 12h16M4 19h10" /><path d="m17 17 2 2 4-4" /></svg>
-        <span>{{ labels.validationQueue }}</span>
-      </button>
-      <button type="button" *ngIf="authenticated" [class.active]="page === 'credits'" (click)="navigate('credits')">
-        <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8" /><path d="M15 9.5c-.4-.7-1.3-1.1-2.6-1.1-1.5 0-2.5.6-2.5 1.7 0 2.7 5.3 1.1 5.3 4 0 1.1-1 1.8-2.7 1.8-1.4 0-2.5-.5-2.9-1.3M12.5 6.7v10.6" /></svg>
-        <span>{{ labels.credits }}</span>
-      </button>
-      <button type="button" *ngIf="administrator" [class.active]="page === 'administration'" (click)="navigate('administration')">
-        <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v18h18" /><path d="M7 14l4-4 3 3 5-6" /></svg>
-        <span>{{ labels.administration }}</span>
-      </button>
-      <button type="button" *ngIf="authenticated" [class.active]="page === 'profil'" (click)="navigate('profil')">
-        <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4" /><path d="M4 21c0-4 4-6 8-6s8 2 8 6" /></svg>
-        <span>{{ labels.profile }}</span>
-      </button>
+      <!-- Zone publique : accessible sans compte. -->
+      <div class="nav-group" [attr.aria-label]="labels.publicZone">
+        <button type="button" [class.active]="isCurrent('accueil')" (click)="navigate('accueil')">
+          <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10.5 12 4l9 6.5" /><path d="M5.5 9.5V20h13V9.5" /></svg>
+          <span>{{ labels.home }}</span>
+        </button>
+        <button type="button" [class.active]="isCurrent('catalogue')" (click)="navigate('catalogue')">
+          <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="M21 21l-4.3-4.3" /></svg>
+          <span>{{ labels.catalogue }}</span>
+        </button>
+      </div>
+
+      <!-- Zone de travail : reservee aux comptes connectes. -->
+      <div class="nav-group nav-group-workspace" *ngIf="authenticated" [attr.aria-label]="labels.workspaceZone">
+        <span class="nav-group-label" aria-hidden="true">{{ labels.workspaceZone }}</span>
+        <button type="button" [class.active]="isCurrent('publication')" (click)="navigate('publication')">
+          <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4" /><path d="m7.5 8.5 4.5-4.5 4.5 4.5" /><path d="M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3" /></svg>
+          <span>{{ labels.newPublication }}</span>
+        </button>
+        <button type="button" [class.active]="isCurrent('validation')" (click)="navigate('validation')">
+          <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16M4 12h16M4 19h10" /><path d="m17 17 2 2 4-4" /></svg>
+          <span>{{ labels.validationQueue }}</span>
+        </button>
+        <button type="button" [class.active]="isCurrent('credits')" (click)="navigate('credits')">
+          <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8" /><path d="M15 9.5c-.4-.7-1.3-1.1-2.6-1.1-1.5 0-2.5.6-2.5 1.7 0 2.7 5.3 1.1 5.3 4 0 1.1-1 1.8-2.7 1.8-1.4 0-2.5-.5-2.9-1.3M12.5 6.7v10.6" /></svg>
+          <span>{{ labels.credits }}</span>
+        </button>
+        <button type="button" *ngIf="administrator" [class.active]="isCurrent('administration')" (click)="navigate('administration')">
+          <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v18h18" /><path d="M7 14l4-4 3 3 5-6" /></svg>
+          <span>{{ labels.administration }}</span>
+        </button>
+      </div>
     </div>
     <div class="nav-actions">
       <div class="language-switch" [attr.aria-label]="labels.language">

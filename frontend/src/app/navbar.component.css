@@ -111,3 +111,41 @@
   color: var(--teal-dark);
   background: var(--teal-soft);
 }
+
+/* Deux zones distinctes : le site public, puis l'espace de travail du bibliothecaire.
+   Sans cette separation, tous les liens paraissent de meme nature. */
+.nav-group {
+  display: flex;
+  align-items: center;
+  gap: 0.15rem;
+}
+
+.nav-group-workspace {
+  position: relative;
+  margin-left: 0.9rem;
+  padding-left: 0.9rem;
+  border-left: 1px solid var(--line);
+}
+
+.nav-group-label {
+  font-family: var(--f-mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  margin-right: 0.45rem;
+  white-space: nowrap;
+}
+
+/* Sur petit ecran le trait et l'etiquette encombrent : on les retire. */
+@media (max-width: 900px) {
+  .nav-group-workspace {
+    margin-left: 0;
+    padding-left: 0;
+    border-left: none;
+  }
+
+  .nav-group-label {
+    display: none;
+  }
+}
