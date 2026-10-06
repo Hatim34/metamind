@@ -1,7 +1,7 @@
 import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { Observable } from 'rxjs';
-import { map } from 'rxjs/operators';
+import { Observable, throwError, timer } from 'rxjs';
+import { map, retry } from 'rxjs/operators';
 
 export interface Publication {
   id: number;
@@ -425,9 +425,33 @@ export class ApiService {
       .pipe(map((response) => this.toStatistics(response)));
   }
 
+  /**
+   * Lance l'extraction des metadonnees par le LLM.
+   *
+   * Le texte du document est extrait de maniere asynchrone juste apres l'import :
+   * demander l'extraction trop tot renvoie un 400 "le document ne contient pas de
+   * texte extrait". Ce n'est pas un echec mais une attente, donc on repatiente
+   * au lieu d'abandonner. Tous les autres refus (402 credits, 403, 404) remontent
+   * immediatement a l'appelant.
+   */
   extractMetadata(publicationId: number): Observable<MetadataExtraction> {
     return this.http.post<unknown>(`${this.baseUrl}/publications/${publicationId}/extraction`, {}, { headers: this.authHeaders() })
-      .pipe(map((response) => this.toMetadataExtraction(response)));
+      .pipe(
+        retry({
+          count: ApiService.extractionAttempts,
+          delay: (error: unknown, attempt: number) =>
+            ApiService.isTextNotReady(error) ? timer(2000 * attempt) : throwError(() => error)
+        }),
+        map((response) => this.toMetadataExtraction(response))
+      );
+  }
+
+  /** Nombre d'attentes avant de renoncer : le texte arrive en quelques secondes. */
+  private static readonly extractionAttempts = 8;
+
+  private static isTextNotReady(error: unknown): boolean {
+    const response = error as { status?: number; error?: { message?: string } };
+    return response?.status === 400 && /texte extrait/i.test(response?.error?.message ?? '');
   }
 
   exportPersonalData(userId: number): Observable<unknown> {
