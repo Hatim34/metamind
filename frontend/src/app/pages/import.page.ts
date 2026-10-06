@@ -116,7 +116,7 @@ export class ImportPage {
         next: (doc) => {
           this.patch(item, { state: 'importe', message: 'Importé', id: doc.id });
           if (extract) {
-            this.api.extractMetadata(doc.id).subscribe({
+            this.api.extractMetadataWhenReady(doc.id).subscribe({
               error: (e) => this.toasts.show(this.i18n.t(e?.status === 402 ? 'Crédits insuffisants pour lancer l\'extraction.' : 'L\'extraction n\'a pas pu être lancée.'), 'error')
             });
           }

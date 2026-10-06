@@ -104,7 +104,7 @@ export class FilePage {
 
   extract(doc: Publication): void {
     this.busy.update((s) => new Set(s).add(doc.id));
-    this.api.extractMetadata(doc.id).subscribe({
+    this.api.extractMetadataWhenReady(doc.id).subscribe({
       next: () => { this.toasts.show(this.i18n.t('Extraction lancée.')); this.load(); },
       error: (e) => {
         this.busy.update((s) => { const n = new Set(s); n.delete(doc.id); return n; });

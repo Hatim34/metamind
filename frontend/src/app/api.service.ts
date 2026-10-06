@@ -1,7 +1,7 @@
 import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable, throwError, timer } from 'rxjs';
-import { map, retry } from 'rxjs/operators';
+import { first, map, retry, switchMap, take } from 'rxjs/operators';
 
 export interface Publication {
   id: number;
@@ -445,6 +445,35 @@ export class ApiService {
         map((response) => this.toMetadataExtraction(response))
       );
   }
+
+  /**
+   * Attend que le texte du document soit disponible, puis lance l'analyse du LLM.
+   *
+   * L'import declenche une extraction de texte asynchrone. Appeler l'extraction
+   * aussitot provoque un refus previsible (400), visible en rouge dans la console
+   * du navigateur meme lorsque l'application le rattrape. Interroger le statut
+   * evite ce refus : on n'appelle le LLM que lorsque le document est pret.
+   */
+  extractMetadataWhenReady(publicationId: number): Observable<MetadataExtraction> {
+    return this.waitUntilTextReady(publicationId).pipe(
+      switchMap(() => this.extractMetadata(publicationId))
+    );
+  }
+
+  /**
+   * Interroge le statut jusqu'a ce que le texte soit extrait.
+   * Si l'attente expire, on laisse passer : le reessai de extractMetadata prend le relais.
+   */
+  private waitUntilTextReady(publicationId: number): Observable<Publication | null> {
+    return timer(0, 1500).pipe(
+      take(ApiService.readinessPolls),
+      switchMap(() => this.getPublication(publicationId)),
+      first((document) => document.status !== 'EN_ATTENTE' && document.status !== 'EXTRACTION', null)
+    );
+  }
+
+  /** Environ quinze secondes d'attente, largement suffisant pour un PDF courant. */
+  private static readonly readinessPolls = 10;
 
   /** Nombre d'attentes avant de renoncer : le texte arrive en quelques secondes. */
   private static readonly extractionAttempts = 8;
