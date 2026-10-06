@@ -5,6 +5,8 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -35,6 +37,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class CreditService {
+	private static final Logger log = LoggerFactory.getLogger(CreditService.class);
 	private static final List<CreditPackOptionResponse> PACK_OPTIONS = List.of(
 			new CreditPackOptionResponse(2, 100, new BigDecimal("50.00"), "EUR", "Pack standard"),
 			new CreditPackOptionResponse(3, 500, new BigDecimal("200.00"), "EUR", "Pack volume")
@@ -220,7 +223,13 @@ public class CreditService {
 					.build();
 			Session session = Session.create(params);
 			return session.getUrl();
-		} catch (StripeException | ArithmeticException exception) {
+		} catch (StripeException exception) {
+			// Le detail reste dans les journaux Render, jamais dans la reponse HTTP.
+			log.warn("Creation Checkout Stripe refusee (statut {}, type {}) : {}",
+					exception.getStatusCode(), exception.getClass().getSimpleName(), exception.getMessage());
+			throw new ApiException(HttpStatus.BAD_GATEWAY, "La session de paiement n'a pas pu etre creee.");
+		} catch (ArithmeticException exception) {
+			log.warn("Montant Stripe invalide pour le pack : {}", exception.getMessage());
 			throw new ApiException(HttpStatus.BAD_GATEWAY, "La session de paiement n'a pas pu etre creee.");
 		}
 	}
