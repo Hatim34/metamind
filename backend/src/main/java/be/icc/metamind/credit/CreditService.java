@@ -197,14 +197,10 @@ public class CreditService {
 		}
 		Stripe.apiKey = stripeSecretKey;
 		try {
-			SessionCreateParams.ConsentCollection consentCollection = SessionCreateParams.ConsentCollection.builder()
-					.setTermsOfService(SessionCreateParams.ConsentCollection.TermsOfService.REQUIRED)
-					.build();
 			SessionCreateParams params = SessionCreateParams.builder()
 					.setMode(SessionCreateParams.Mode.PAYMENT)
 					.setClientReferenceId(reference)
 					.setCustomerEmail(user.getEmail())
-					.setConsentCollection(consentCollection)
 					.putMetadata("institutionId", user.getInstitution().getId().toString())
 					.putMetadata("packId", Long.toString(packId))
 					.putMetadata("paymentReference", reference)
