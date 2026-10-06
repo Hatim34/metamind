@@ -202,6 +202,8 @@ textarea.m-input { line-height: 1.55; resize: vertical; }
 .m-pager { display: flex; justify-content: center; align-items: center; gap: 12px; padding-top: 28px; }
 
 /* ---------- couvertures typées ---------- */
+/* L'élément hôte est l'élément flex : sans flex: none, un titre long écrasait la vignette. */
+m-type-cover { display: block; flex: none; }
 .m-cover { flex: none; display: flex; flex-direction: column; justify-content: space-between; padding: 10px 8px; border-radius: 2px; border-left: 6px solid currentColor; font-size: 11px; }
 .m-cover__type { font: 500 15px/1.1 var(--f-display); }
 .m-cover--md { width: 72px; height: 96px; }
@@ -220,7 +222,10 @@ textarea.m-input { line-height: 1.55; resize: vertical; }
 .m-hero { background: var(--surface); border-bottom: 1px solid var(--line-ui); }
 .m-hero__in { padding-top: 56px; padding-bottom: 40px; display: flex; flex-wrap: wrap; gap: 40px; align-items: center; }
 .m-hero__copy { flex: 1 1 480px; display: flex; flex-direction: column; gap: 20px; }
-.m-hero__art { flex: 1 1 380px; min-height: 340px; border-radius: var(--radius-sheet); background: url("/hero-accueil.jpg") center / cover, var(--teal-soft); }
+.m-hero__art { position: relative; flex: 1 1 380px; min-height: 340px; margin: 0; border-radius: var(--radius-sheet); overflow: hidden; background: var(--teal-soft); }
+.m-hero__art img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.m-credit { position: absolute; right: 8px; bottom: 8px; max-width: calc(100% - 16px); padding: 2px 8px; border-radius: 4px; background: rgba(0, 0, 0, .55); color: #fff; font-size: 11px; }
+.m-credit a { color: inherit; }
 .m-search { display: flex; gap: 8px; flex-wrap: wrap; max-width: 640px; }
 .m-search .m-input { flex: 1 1 300px; width: auto; }
 .m-search--bar { max-width: none; margin-bottom: 28px; }
@@ -235,9 +240,14 @@ textarea.m-input { line-height: 1.55; resize: vertical; }
 .m-card:hover { box-shadow: var(--shadow-lifted); color: var(--ink); }
 .m-card__body { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
 .m-card__title { font-weight: 600; line-height: 1.35; }
-.m-inst { display: flex; flex-direction: column; background: var(--surface); border-radius: var(--radius-sheet); overflow: hidden; box-shadow: var(--shadow-sheet); text-decoration: none; color: var(--ink); }
-.m-inst__band { height: 96px; background: url("/institution-defaut.jpg") center / cover, var(--teal-soft); }
-.m-inst__body { padding: 14px 16px; display: flex; justify-content: space-between; gap: 8px; }
+.m-inst { display: flex; flex-direction: column; background: var(--surface); border-radius: var(--radius-sheet); overflow: hidden; box-shadow: var(--shadow-sheet); }
+.m-inst:hover { box-shadow: var(--shadow-lifted); }
+.m-inst__link { display: flex; flex-direction: column; text-decoration: none; color: var(--ink); }
+.m-inst__band { position: relative; height: 140px; background: url("/institution-defaut.jpg") center / cover, var(--teal-soft); }
+.m-inst__band img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.m-inst__body { padding: 14px 16px 6px; display: flex; justify-content: space-between; gap: 8px; }
+.m-inst__credit { margin: 0; padding: 0 16px 12px; color: var(--ink-soft); font-size: 11px; }
+.m-inst__credit a { color: inherit; }
 
 /* ---------- catalogue ---------- */
 .m-facets { display: flex; flex-direction: column; gap: 28px; }

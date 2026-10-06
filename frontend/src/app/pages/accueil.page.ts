@@ -3,6 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { ApiService, Publication } from '../api.service';
 import { TranslatePipe } from '../core/i18n';
+import { HOME_PHOTO, institutionPhoto } from '../core/photos';
 import { TypeCoverComponent } from '../ui/type-cover.component';
 
 @Component({
@@ -26,7 +27,10 @@ import { TypeCoverComponent } from '../ui/type-cover.component';
             <a routerLink="/catalogue" [queryParams]="{ langue: 'nl' }">{{ 'En néerlandais' | t }}</a>
           </div>
         </div>
-        <div class="m-hero__art" aria-hidden="true"></div>
+        <figure class="m-hero__art">
+          <img [src]="homePhoto.src" [alt]="'Salle de lecture de la bibliothèque universitaire de la KU Leuven' | t" />
+          <figcaption class="m-credit">{{ 'Photo' | t }} : <a [href]="homePhoto.source" target="_blank" rel="noopener">{{ homePhoto.credit }}</a></figcaption>
+        </figure>
       </div>
       <div class="m-wrap m-wrap--public m-figures">
         <div class="m-figure"><strong>{{ publications().length }}</strong><span>{{ 'publications en libre accès' | t }}</span></div>
@@ -48,7 +52,7 @@ import { TypeCoverComponent } from '../ui/type-cover.component';
         <div class="m-cards">
           @for (p of latest(); track p.id) {
             <a class="m-card" [routerLink]="['/publications', p.id]">
-              <m-type-cover [type]="p.documentType" [year]="p.year" />
+              <m-type-cover [type]="p.documentType" [year]="p.year" [imageUrl]="p.imageUrl" />
               <span class="m-card__body">
                 <span class="m-card__title">{{ p.title }}</span>
                 <span class="m-muted m-small">{{ p.institution }}</span>
@@ -64,10 +68,17 @@ import { TypeCoverComponent } from '../ui/type-cover.component';
         <h2 class="m-h2">{{ 'Institutions' | t }}</h2>
         <div class="m-cards">
           @for (inst of institutions(); track inst.name) {
-            <a class="m-inst" routerLink="/catalogue" [queryParams]="{ institution: inst.name }">
-              <span class="m-inst__band" aria-hidden="true"></span>
-              <span class="m-inst__body"><strong>{{ inst.name }}</strong><span class="m-muted">{{ inst.count }}</span></span>
-            </a>
+            <div class="m-inst">
+              <a class="m-inst__link" routerLink="/catalogue" [queryParams]="{ institution: inst.name }">
+                <span class="m-inst__band" aria-hidden="true">
+                  @if (inst.photo) { <img [src]="inst.photo.src" alt="" loading="lazy" /> }
+                </span>
+                <span class="m-inst__body"><strong>{{ inst.name }}</strong><span class="m-muted">{{ inst.count }}</span></span>
+              </a>
+              @if (inst.photo) {
+                <p class="m-inst__credit">{{ 'Photo' | t }} : <a [href]="inst.photo.source" target="_blank" rel="noopener">{{ inst.photo.credit }}</a></p>
+              }
+            </div>
           }
         </div>
       </section>
@@ -81,11 +92,15 @@ export class AccueilPage {
   query = '';
   readonly loading = signal(true);
   readonly publications = signal<Publication[]>([]);
-  readonly latest = computed(() => [...this.publications()].sort((a, b) => (b.year ?? 0) - (a.year ?? 0)).slice(0, 4));
+  readonly homePhoto = HOME_PHOTO;
+  readonly latest = computed(() => [...this.publications()].sort((a, b) => (b.year ?? 0) - (a.year ?? 0)).slice(0, 8));
   readonly institutions = computed(() => {
     const counts = new Map<string, number>();
     this.publications().forEach((p) => counts.set(p.institution, (counts.get(p.institution) ?? 0) + 1));
-    return [...counts.entries()].map(([name, count]) => ({ name, count })).sort((a, b) => b.count - a.count).slice(0, 8);
+    return [...counts.entries()]
+      .map(([name, count]) => ({ name, count, photo: institutionPhoto(name) }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 8);
   });
   readonly languages = computed(() => new Set(this.publications().map((p) => p.language).filter(Boolean)).size);
 

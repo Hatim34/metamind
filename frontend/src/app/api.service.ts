@@ -1,6 +1,6 @@
 import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { Observable, throwError, timer } from 'rxjs';
+import { Observable, forkJoin, of, throwError, timer } from 'rxjs';
 import { first, map, retry, switchMap, take } from 'rxjs/operators';
 
 export interface Publication {
@@ -127,6 +127,7 @@ export interface MetadataDetails {
   type_document?: string | null;
   doi?: string | null;
   texte_extrait?: string | null;
+  confiances?: Record<string, number>;
 }
 
 export interface MetadataValidationRequest {
@@ -321,17 +322,33 @@ export class ApiService {
     if (filters.endDate) {
       params = params.set('date_fin', filters.endDate);
     }
-    return this.http.get<PageResponse<unknown>>(`${this.baseUrl}/search`, { params })
-      .pipe(map((response) => response.contenu.map((item) => this.toPublication(item))));
+    return this.allPages(`${this.baseUrl}/search`, params)
+      .pipe(map((items) => items.map((item) => this.toPublication(item))));
   }
 
   getManagedDocuments(status?: PublicationStatus): Observable<Publication[]> {
-    let params = new HttpParams().set('size', '100');
+    let params = new HttpParams();
     if (status) {
       params = params.set('statut', status);
     }
-    return this.http.get<PageResponse<unknown>>(`${this.baseUrl}/documents`, { params, headers: this.authHeaders() })
-      .pipe(map((response) => response.contenu.map((item) => this.toPublication(item))));
+    return this.allPages(`${this.baseUrl}/documents`, params, this.authHeaders())
+      .pipe(map((items) => items.map((item) => this.toPublication(item))));
+  }
+
+  /**
+   * Toutes les pages d'une liste paginee. L'API plafonne une page a 100 elements, et le
+   * catalogue filtre et compte cote client : lire la premiere page seule cachait la
+   * plupart des documents (20 publications affichees sur 103).
+   */
+  private allPages(url: string, params: HttpParams, headers?: HttpHeaders): Observable<unknown[]> {
+    const pageParams = (page: number) => params.set('size', '100').set('page', String(page));
+    return this.http.get<PageResponse<unknown>>(url, { params: pageParams(0), headers }).pipe(
+      switchMap((firstPage) => firstPage.total_pages <= 1
+        ? of(firstPage.contenu)
+        : forkJoin(Array.from({ length: firstPage.total_pages - 1 }, (_, index) =>
+            this.http.get<PageResponse<unknown>>(url, { params: pageParams(index + 1), headers })))
+            .pipe(map((pages) => [...firstPage.contenu, ...pages.flatMap((page) => page.contenu)])))
+    );
   }
 
   createPublication(request: CreatePublicationRequest): Observable<Publication> {

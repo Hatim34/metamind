@@ -44,7 +44,7 @@ import { TypeCoverComponent } from '../ui/type-cover.component';
           <div class="m-sheet__head"><h2 class="m-h3">{{ 'À valider en priorité' | t }}</h2><a routerLink="/espace/file">{{ 'Toute la file' | t }}</a></div>
           @for (doc of queue().slice(0, 6); track doc.id) {
             <a class="m-line" [routerLink]="['/espace/documents', doc.id, 'validation']">
-              <m-type-cover [type]="doc.documentType" size="sm" />
+              <m-type-cover [type]="doc.documentType" size="sm" [imageUrl]="doc.imageUrl" />
               <span class="m-line__main"><strong class="m-ellipsis">{{ doc.title }}</strong><span class="m-muted m-small">{{ typeLabel(doc.documentType) | t }}, {{ doc.year }}</span></span>
               <span class="m-btn m-btn--primary m-btn--sm">{{ 'Valider' | t }}</span>
             </a>

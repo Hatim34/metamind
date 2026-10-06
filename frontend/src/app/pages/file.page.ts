@@ -32,7 +32,7 @@ import { TypeCoverComponent } from '../ui/type-cover.component';
               <tr>
                 <td>
                   <span class="m-doc">
-                    <m-type-cover [type]="doc.documentType" size="sm" />
+                    <m-type-cover [type]="doc.documentType" size="sm" [imageUrl]="doc.imageUrl" />
                     <span class="m-line__main"><strong class="m-ellipsis">{{ doc.title }}</strong><span class="m-muted m-small">{{ typeLabel(doc.documentType) | t }}@if (doc.year) {, {{ doc.year }}}</span></span>
                   </span>
                 </td>

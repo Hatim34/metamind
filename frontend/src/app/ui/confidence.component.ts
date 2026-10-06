@@ -5,7 +5,7 @@ import { inject } from '@angular/core';
 
 /**
  * Jauge de confiance (5 barres) + libellé, seuils 0,90 / 0,70 du Business Plan.
- * Tant que le backend n'envoie pas de vrai score, afficher « Confiance non calculée ».
+ * Le score vient de la dernière extraction ; sans extraction, « Confiance non calculée ».
  */
 @Component({
   selector: 'm-confidence',
@@ -24,13 +24,16 @@ export class ConfidenceComponent {
   readonly score = input<number | null | undefined>(null);
   readonly confirmed = input(false);
   readonly empty = input(false);
+  readonly required = input(true);
 
+  // Un champ vide n'est jamais « vérifié », même si le bibliothécaire l'a touché.
   readonly state = computed(() => {
-    if (this.confirmed()) return 'done';
     if (this.empty()) return 'low';
+    if (this.confirmed()) return 'done';
     return confidenceLevel(this.score());
   });
   readonly bars = computed(() => {
+    if (this.empty()) return [false, false, false, false, false];
     const filled = this.confirmed() ? 5 : this.score() == null ? 0 : Math.round((this.score() as number) * 5);
     return [0, 1, 2, 3, 4].map((i) => i < filled);
   });
@@ -41,7 +44,7 @@ export class ConfidenceComponent {
       case 'done': return t('Vérifié par vous');
       case 'high': return t('IA sûre à') + ' ' + pct;
       case 'mid': return t('À relire') + ' (' + pct + ')';
-      case 'low': return this.empty() ? t('À compléter') : t('Peu sûr, à corriger') + ' (' + pct + ')';
+      case 'low': return this.empty() ? t(this.required() ? 'À compléter' : 'Vide') : t('Peu sûr, à corriger') + ' (' + pct + ')';
       default: return t('Confiance non calculée');
     }
   });

@@ -81,7 +81,7 @@ interface Facet { key: string; label: string; count: number; on: boolean; }
           } @else {
             @for (p of pageItems(); track p.id) {
               <article class="m-result">
-                <m-type-cover [type]="p.documentType" [year]="p.year" />
+                <m-type-cover [type]="p.documentType" [year]="p.year" [imageUrl]="p.imageUrl" />
                 <div class="m-result__body">
                   <span class="m-muted m-small">{{ typeLabel(p.documentType) | t }}, {{ p.year }}, {{ p.institution }}</span>
                   <a class="m-result__title" [routerLink]="['/publications', p.id]">{{ p.title }}</a>

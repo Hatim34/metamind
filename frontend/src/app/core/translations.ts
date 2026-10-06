@@ -303,6 +303,11 @@ export const NL: Record<string, string> = {
   'Le paiement Stripe n’est pas configuré pour cet environnement.': 'Stripe-betaling is niet geconfigureerd voor deze omgeving.',
   'Stripe n’a pas pu créer la session de paiement. Vérifiez la configuration Stripe.': 'Stripe kon de betaalsessie niet maken. Controleer de Stripe-configuratie.',
   'Échec de l\'import': 'Import mislukt',
+  'Photo': 'Foto',
+  'Vide': 'Leeg',
+  'vide': 'leeg',
+  'à corriger': 'te corrigeren',
+  'Salle de lecture de la bibliothèque universitaire de la KU Leuven': 'Leeszaal van de universiteitsbibliotheek van de KU Leuven',
 };
 
 export const EN: Record<string, string> = {
@@ -609,4 +614,9 @@ export const EN: Record<string, string> = {
   'Le paiement Stripe n’est pas configuré pour cet environnement.': 'Stripe payment is not configured for this environment.',
   'Stripe n’a pas pu créer la session de paiement. Vérifiez la configuration Stripe.': 'Stripe could not create the payment session. Check the Stripe configuration.',
   'Échec de l\'import': 'Import failed',
+  'Photo': 'Photo',
+  'Vide': 'Empty',
+  'vide': 'empty',
+  'à corriger': 'to correct',
+  'Salle de lecture de la bibliothèque universitaire de la KU Leuven': 'Reading room of the KU Leuven university library',
 };

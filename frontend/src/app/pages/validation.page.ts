@@ -4,7 +4,7 @@ import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ApiService, MetadataAuthor, MetadataDetails, Publication } from '../api.service';
 import { I18nService, TranslatePipe } from '../core/i18n';
-import { languageLabel, typeLabel } from '../core/labels';
+import { confidenceLevel, languageLabel, typeLabel } from '../core/labels';
 import { ToastService } from '../core/toast.service';
 import { ConfidenceComponent } from '../ui/confidence.component';
 
@@ -91,7 +91,7 @@ interface FieldDef { id: FieldId; label: string; dc: string; required: boolean; 
               <div class="m-nrow__label">
                 <strong>{{ f.label | t }}@if (f.required) { <span aria-hidden="true"> *</span> }</strong>
                 <code>{{ f.dc }}</code>
-                <m-confidence [score]="null" [confirmed]="confirmed().has(f.id)" [empty]="isEmpty(f.id)" />
+                <m-confidence [score]="score(f.id)" [confirmed]="confirmed().has(f.id)" [empty]="isEmpty(f.id)" [required]="f.required" />
               </div>
               <div class="m-nrow__body">
                 @switch (f.id) {
@@ -124,7 +124,7 @@ interface FieldDef { id: FieldId; label: string; dc: string; required: boolean; 
                 }
                 <div class="m-nrow__foot">
                   <span class="m-muted m-small">{{ 'Proposé par l\\'IA à partir du texte extrait.' | t }}</span>
-                  <button type="button" class="m-btn m-btn--sm" [class.m-btn--confirmed]="confirmed().has(f.id)" [class.m-btn--ghost]="!confirmed().has(f.id)" (click)="$event.stopPropagation(); toggleConfirm(f.id)">
+                  <button type="button" class="m-btn m-btn--sm" [class.m-btn--confirmed]="confirmed().has(f.id)" [class.m-btn--ghost]="!confirmed().has(f.id)" [disabled]="isEmpty(f.id)" (click)="$event.stopPropagation(); toggleConfirm(f.id)">
                     {{ (confirmed().has(f.id) ? 'Vérifié' : 'Confirmer') | t }}
                   </button>
                 </div>
@@ -231,20 +231,35 @@ export class ValidationPage implements OnDestroy {
     }
   }
 
+  /** Score de confiance calculé à l'extraction ; les clés sont celles de l'API. */
+  score(id: FieldId): number | null {
+    const key = id === 'date' ? 'date_publication' : id;
+    return this.meta()?.confiances?.[key] ?? null;
+  }
+
   stateOf(id: FieldId): string {
+    if (this.isEmpty(id)) return 'low';
     if (this.confirmed().has(id)) return 'done';
-    return this.isEmpty(id) ? 'low' : 'unknown';
+    const level = confidenceLevel(this.score(id));
+    return level === 'unknown' ? 'unknown' : level;
   }
 
   stateLabel(id: FieldId): string {
-    return { done: 'vérifié', low: 'à compléter', unknown: 'à relire' }[this.stateOf(id)] ?? '';
+    if (this.isEmpty(id)) return this.fields.find((f) => f.id === id)?.required ? 'à compléter' : 'vide';
+    return { done: 'vérifié', high: 'à relire', mid: 'à relire', low: 'à corriger', unknown: 'à relire' }[this.stateOf(id)] ?? '';
   }
 
+  /** Corriger un champ vaut vérification, sauf s'il a été vidé : un champ vide n'est jamais vérifié. */
   touch(id: FieldId): void {
-    this.confirmed.update((s) => new Set(s).add(id));
+    this.confirmed.update((s) => {
+      const n = new Set(s);
+      this.isEmpty(id) ? n.delete(id) : n.add(id);
+      return n;
+    });
   }
 
   toggleConfirm(id: FieldId): void {
+    if (this.isEmpty(id)) return;
     this.confirmed.update((s) => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; });
   }
 

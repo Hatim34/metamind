@@ -69,6 +69,21 @@ describe('ApiService', () => {
     });
   });
 
+  it('lit toutes les pages du catalogue, pas seulement la premiere', () => {
+    let count = 0;
+    service.searchPublications('').subscribe((publications) => count = publications.length);
+
+    const item = (id: number) => ({ id, titre: 'Titre ' + id, auteur: 'Auteur', institution: 'ULB', annee: 2025, statut: 'PUBLIE', visibilite: 'PUBLIC', mots_cles: [] });
+    httpMock.expectOne('/api/v1/search?size=100&page=0').flush({
+      contenu: Array.from({ length: 100 }, (_, i) => item(i + 1)), page: 0, size: 100, total_elements: 103, total_pages: 2
+    });
+    httpMock.expectOne('/api/v1/search?size=100&page=1').flush({
+      contenu: [item(101), item(102), item(103)], page: 1, size: 100, total_elements: 103, total_pages: 2
+    });
+
+    expect(count).toBe(103);
+  });
+
   it('recherche les publications publiques avec filtres', () => {
     service.searchPublications('metadata', {
       author: 'Sarah',
@@ -81,7 +96,7 @@ describe('ApiService', () => {
       expect(publications[0].title).toBe('Analyse automatique des metadonnees');
     });
 
-    const request = httpMock.expectOne('/api/v1/search?q=metadata&author=Sarah&langue=fr&type=article&date_debut=2024-01-01&date_fin=2026-12-31');
+    const request = httpMock.expectOne('/api/v1/search?q=metadata&author=Sarah&langue=fr&type=article&date_debut=2024-01-01&date_fin=2026-12-31&size=100&page=0');
     expect(request.request.method).toBe('GET');
     request.flush({
       contenu: [{
