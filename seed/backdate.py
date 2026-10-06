@@ -73,7 +73,8 @@ def main():
         # Journaux liés au document : import puis validation.
         out.append(
             f"UPDATE logs_audit SET date_creation = CASE WHEN action ILIKE '%VALID%' OR action ILIKE '%REJET%' "
-            f"OR action ILIKE '%METADON%' THEN {ts(t_val)} ELSE {ts(t_import)} END "
+            # Le CASE est resolu en text par PostgreSQL : la conversion est explicite.
+            f"OR action ILIKE '%METADON%' THEN {ts(t_val)} ELSE {ts(t_import)} END::timestamp "
             f"WHERE entite_id = {doc_id} AND type_entite ILIKE ANY (ARRAY['%document%', '%metadon%', '%publication%']);")
 
     for code, info in result["institutions"].items():
