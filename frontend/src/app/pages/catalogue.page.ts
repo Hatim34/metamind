@@ -2,7 +2,9 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ApiService, Publication } from '../api.service';
-import { TranslatePipe } from '../core/i18n';
+import { toObservable } from '@angular/core/rxjs-interop';
+import { skip } from 'rxjs';
+import { I18nService, TranslatePipe } from '../core/i18n';
 import { coverKind, languageLabel, typeLabel } from '../core/labels';
 import { TypeCoverComponent } from '../ui/type-cover.component';
 
@@ -83,14 +85,13 @@ interface Facet { key: string; label: string; count: number; on: boolean; }
               <article class="m-result">
                 <m-type-cover [type]="p.documentType" [year]="p.year" [imageUrl]="p.imageUrl" />
                 <div class="m-result__body">
-                  <span class="m-muted m-small">{{ typeLabel(p.documentType) | t }}, {{ p.year }}, {{ p.institution }}</span>
+                  <span class="m-muted m-small">{{ typeLabel(p.documentType) | t }}@if (p.year) {, {{ p.year }}}, {{ p.institution }}</span>
                   <a class="m-result__title" [routerLink]="['/publications', p.id]">{{ p.title }}</a>
                   @if (p.author) { <span>{{ p.author }}</span> }
                   @if (p.summary) { <p class="m-result__snippet">{{ excerpt(p.summary) }}</p> }
                   <span class="m-result__meta">
                     @if (p.language) { <span>{{ languageLabel(p.language) | t }}</span> }
                     @for (k of p.keywords.slice(0, 3); track k) { <span class="m-chip m-chip--quiet">{{ k }}</span> }
-                    <a [routerLink]="['/publications', p.id]" fragment="citer">{{ 'Voir la référence' | t }}</a>
                   </span>
                 </div>
               </article>
@@ -112,6 +113,7 @@ export class CataloguePage {
   private readonly api = inject(ApiService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
+  private readonly i18n = inject(I18nService);
   readonly typeLabel = typeLabel;
   readonly languageLabel = languageLabel;
   private readonly pageSize = 10;
@@ -164,6 +166,8 @@ export class CataloguePage {
       this.page.set(0);
       this.load();
     });
+    // Changer de langue retraduit les résultats affichés, sans quitter la page.
+    toObservable(this.i18n.lang).pipe(skip(1)).subscribe(() => this.load());
   }
 
   load(): void {
@@ -171,7 +175,8 @@ export class CataloguePage {
     this.api.searchPublications(this.q, {
       author: this.author || undefined,
       startDate: this.yearFrom ? `${this.yearFrom}-01-01` : undefined,
-      endDate: this.yearTo ? `${this.yearTo}-12-31` : undefined
+      endDate: this.yearTo ? `${this.yearTo}-12-31` : undefined,
+      display: this.i18n.lang()
     }).subscribe({
       next: (items) => { this.items.set(items); this.loading.set(false); },
       error: () => { this.items.set([]); this.loading.set(false); }

@@ -1,8 +1,9 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { DatePipe, NgTemplateOutlet } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ApiService, AuditLog, Institution, UserSession } from '../api.service';
+import { ApiService, AuditLog, Institution, InstitutionPhoto, UserSession } from '../api.service';
 import { I18nService, TranslatePipe } from '../core/i18n';
+import { SessionService } from '../core/session.service';
 import { ToastService } from '../core/toast.service';
 
 type Tab = 'comptes' | 'utilisateurs' | 'institutions' | 'configuration' | 'journal';
@@ -42,9 +43,19 @@ type Tab = 'comptes' | 'utilisateurs' | 'institutions' | 'configuration' | 'jour
             </form>
             <div class="m-grid-cards">
               @for (i of institutions(); track i.id) {
-                <div class="m-sheet m-sheet--pad">
+                <div class="m-sheet m-sheet--pad m-stack">
+                  @if (photoOf(i.id); as photo) { <img class="m-inst-photo" [src]="photo.photoUrl" alt="" /> }
                   <div class="m-row-between"><strong>{{ i.name }}</strong><span [class]="i.active ? 'm-ok' : 'm-ko'">{{ (i.active ? 'Active' : 'Désactivée') | t }}</span></div>
                   <code class="m-small">{{ i.emailDomain }}</code>
+                  @if (i.active) {
+                    <label class="m-field m-small">{{ 'Photo (JPEG, PNG ou WebP, 5 Mo au plus)' | t }}
+                      <input type="file" accept="image/jpeg,image/png,image/webp" (change)="pickPhoto(i.id, $event)" />
+                    </label>
+                    <label class="m-field m-small">{{ 'Crédit de la photo (auteur, licence, source)' | t }}
+                      <input class="m-input m-input--sm" [name]="'credit' + i.id" [(ngModel)]="credits[i.id]" />
+                    </label>
+                    <button type="button" class="m-btn m-btn--sm" [disabled]="!pickedPhotos[i.id] || !credits[i.id]?.trim()" (click)="savePhoto(i.id)">{{ 'Enregistrer la photo' | t }}</button>
+                  }
                   @if (i.active) { <button type="button" class="m-btn m-btn--ghost m-btn--sm" (click)="deactivateInstitution(i)">{{ 'Désactiver' | t }}</button> }
                 </div>
               }
@@ -52,10 +63,10 @@ type Tab = 'comptes' | 'utilisateurs' | 'institutions' | 'configuration' | 'jour
           }
           @case ('configuration') {
             <h1 class="m-title">{{ 'Configuration' | t }}</h1>
-            <p class="m-muted">{{ 'Les clés API (LLM, Stripe) restent dans les variables d\\'environnement et ne s\\'affichent jamais ici.' | t }}</p>
+            <p class="m-muted">{{ 'Chaque modification s\\'applique immédiatement. Les clés API, Stripe et DSpace restent dans les variables d\\'environnement du serveur.' | t }}</p>
             <form class="m-sheet m-sheet--pad m-stack" (ngSubmit)="saveConfig()">
               @for (key of configKeys(); track key) {
-                <label class="m-field"><code>{{ key }}</code><input class="m-input" [name]="key" [(ngModel)]="config[key]" /></label>
+                <label class="m-field">{{ (configLabels[key] ?? key) | t }}<input class="m-input" [name]="key" [(ngModel)]="config[key]" [type]="key === 'modele_llm' ? 'text' : 'number'" /></label>
               } @empty { <p class="m-muted">{{ 'Aucun paramètre.' | t }}</p> }
               <div class="m-actions"><button type="submit" class="m-btn m-btn--primary">{{ 'Enregistrer' | t }}</button>
                 <button type="button" class="m-btn m-btn--ghost" (click)="exportCsv()">{{ 'Exporter les documents (CSV)' | t }}</button></div>
@@ -90,17 +101,20 @@ type Tab = 'comptes' | 'utilisateurs' | 'institutions' | 'configuration' | 'jour
                 <td><code class="m-small">{{ u.email }}</code></td>
                 <td>{{ u.institution }}</td>
                 <td>
+                  @if (u.id === session.user()?.id) { {{ 'Administrateur' | t }} } @else {
                   <select class="m-input m-input--sm" [ngModel]="u.role" (ngModelChange)="changeRole(u, $event)" [name]="'role' + u.id" [attr.aria-label]="'Rôle' | t">
                     <option value="LIBRARIAN">{{ 'Bibliothécaire' | t }}</option>
-                    <option value="GESTIONNAIRE_FINANCIER">{{ 'Gestionnaire financier' | t }}</option>
                     <option value="ADMIN">{{ 'Administrateur' | t }}</option>
                   </select>
+                  }
                 </td>
                 <td class="m-right">
+                  @if (u.id === session.user()?.id) { <span class="m-muted m-small">{{ 'Votre compte' | t }}</span> } @else {
                   <span class="m-actions m-actions--row">
                     @if (u.status !== 'ACTIF') { <button type="button" class="m-btn m-btn--primary m-btn--sm" (click)="setStatus(u, 'ACTIF')">{{ 'Activer' | t }}</button> }
                     @if (u.status !== 'DESACTIVE') { <button type="button" class="m-btn m-btn--ghost m-btn--sm" (click)="setStatus(u, 'DESACTIVE')">{{ (u.status === 'EN_ATTENTE' ? 'Refuser' : 'Désactiver') | t }}</button> }
                   </span>
+                  }
                 </td>
               </tr>
             } @empty {
@@ -114,12 +128,23 @@ type Tab = 'comptes' | 'utilisateurs' | 'institutions' | 'configuration' | 'jour
 })
 export class AdminPage {
   private readonly api = inject(ApiService);
+  readonly session = inject(SessionService);
+  /** Paramètres réellement appliqués par le serveur (cahier des charges A2). */
+  readonly configLabels: Record<string, string | undefined> = {
+    modele_llm: 'Modèle Gemini utilisé pour l\'extraction',
+    taille_max_upload_mo: 'Taille maximale d\'un fichier importé (Mo, 50 au plus)',
+    tentatives_connexion_max: 'Échecs de connexion avant blocage de 15 minutes',
+    jwt_duree_secondes: 'Durée d\'une session (secondes)'
+  };
   private readonly toasts = inject(ToastService);
   private readonly i18n = inject(I18nService);
 
   readonly tab = signal<Tab>('comptes');
   readonly users = signal<UserSession[]>([]);
   readonly institutions = signal<Institution[]>([]);
+  readonly photos = signal<InstitutionPhoto[]>([]);
+  credits: Record<number, string | undefined> = {};
+  pickedPhotos: Record<number, File> = {};
   readonly logs = signal<AuditLog[]>([]);
   readonly configKeys = signal<string[]>([]);
   readonly pending = computed(() => this.users().filter((u) => u.status === 'EN_ATTENTE'));
@@ -147,7 +172,34 @@ export class AdminPage {
   }
 
   loadUsers(): void { this.api.getAdminUsers().subscribe({ next: (u) => this.users.set(u), error: () => undefined }); }
-  loadInstitutions(): void { this.api.getInstitutions().subscribe({ next: (i) => this.institutions.set(i), error: () => undefined }); }
+  loadInstitutions(): void {
+    this.api.getInstitutions().subscribe({ next: (i) => this.institutions.set(i), error: () => undefined });
+    this.api.getInstitutionPhotos().subscribe({
+      next: (photos) => {
+        this.photos.set(photos);
+        photos.forEach((p) => { this.credits[p.institutionId] ??= p.credit; });
+      },
+      error: () => undefined
+    });
+  }
+
+  photoOf(institutionId: number): InstitutionPhoto | undefined {
+    return this.photos().find((p) => p.institutionId === institutionId);
+  }
+
+  pickPhoto(institutionId: number, event: Event): void {
+    const file = (event.target as HTMLInputElement).files?.[0];
+    if (file) this.pickedPhotos[institutionId] = file;
+  }
+
+  savePhoto(institutionId: number): void {
+    const file = this.pickedPhotos[institutionId];
+    if (!file) return;
+    this.api.uploadInstitutionPhoto(institutionId, file, (this.credits[institutionId] ?? '').trim()).subscribe({
+      next: () => { delete this.pickedPhotos[institutionId]; this.toasts.show(this.i18n.t('Photo enregistrée.')); this.loadInstitutions(); },
+      error: (e) => this.toasts.show(e?.error?.message ?? this.i18n.t('La modification a échoué.'), 'error')
+    });
+  }
 
   setStatus(user: UserSession, statut: 'ACTIF' | 'DESACTIVE'): void {
     this.api.updateAdminUser(user.id, { statut }).subscribe({
@@ -156,7 +208,7 @@ export class AdminPage {
     });
   }
 
-  changeRole(user: UserSession, role: 'LIBRARIAN' | 'GESTIONNAIRE_FINANCIER' | 'ADMIN'): void {
+  changeRole(user: UserSession, role: 'LIBRARIAN' | 'ADMIN'): void {
     this.api.updateAdminUser(user.id, { role }).subscribe({
       next: () => { this.toasts.show(this.i18n.t('Rôle modifié.')); this.loadUsers(); },
       error: () => this.toasts.show(this.i18n.t('La modification a échoué.'), 'error')
@@ -176,9 +228,11 @@ export class AdminPage {
   }
 
   saveConfig(): void {
-    this.api.updateAdminConfig(this.config).subscribe({
-      next: () => this.toasts.show(this.i18n.t('Configuration enregistrée.')),
-      error: () => this.toasts.show(this.i18n.t('La modification a échoué.'), 'error')
+    const values = Object.fromEntries(Object.entries(this.config).map(([key, value]) => [key, String(value)]));
+    this.api.updateAdminConfig(values).subscribe({
+      next: (saved) => { this.config = { ...saved }; this.toasts.show(this.i18n.t('Configuration enregistrée.')); },
+      // Le serveur explique pourquoi une valeur est refusée (plage autorisée, modèle invalide).
+      error: (e) => this.toasts.show(e?.error?.message ?? this.i18n.t('La modification a échoué.'), 'error')
     });
   }
 

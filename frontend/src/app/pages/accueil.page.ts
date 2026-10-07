@@ -1,9 +1,10 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
-import { ApiService, Publication } from '../api.service';
-import { TranslatePipe } from '../core/i18n';
-import { institutionPhoto } from '../core/photos';
+import { ApiService, InstitutionPhoto, Publication } from '../api.service';
+import { toObservable } from '@angular/core/rxjs-interop';
+import { switchMap } from 'rxjs';
+import { I18nService, TranslatePipe } from '../core/i18n';
 import { TypeCoverComponent } from '../ui/type-cover.component';
 
 @Component({
@@ -68,12 +69,12 @@ import { TypeCoverComponent } from '../ui/type-cover.component';
             <div class="m-inst">
               <a class="m-inst__link" routerLink="/catalogue" [queryParams]="{ institution: inst.name }">
                 <span class="m-inst__band" aria-hidden="true">
-                  @if (inst.photo) { <img [src]="inst.photo.src" alt="" loading="lazy" /> }
+                  @if (inst.photo) { <img [src]="inst.photo.photoUrl" alt="" loading="lazy" /> }
                 </span>
                 <span class="m-inst__body"><strong>{{ inst.name }}</strong><span class="m-muted">{{ inst.count }}</span></span>
               </a>
               @if (inst.photo) {
-                <p class="m-inst__credit">{{ 'Photo' | t }} : <a [href]="inst.photo.source" target="_blank" rel="noopener">{{ inst.photo.credit }}</a></p>
+                <p class="m-inst__credit">{{ 'Photo' | t }} : {{ inst.photo.credit }}</p>
               }
             </div>
           }
@@ -85,6 +86,7 @@ import { TypeCoverComponent } from '../ui/type-cover.component';
 export class AccueilPage {
   private readonly api = inject(ApiService);
   private readonly router = inject(Router);
+  private readonly i18n = inject(I18nService);
 
   query = '';
   readonly loading = signal(true);
@@ -94,14 +96,18 @@ export class AccueilPage {
     const counts = new Map<string, number>();
     this.publications().forEach((p) => counts.set(p.institution, (counts.get(p.institution) ?? 0) + 1));
     return [...counts.entries()]
-      .map(([name, count]) => ({ name, count, photo: institutionPhoto(name) }))
+      .map(([name, count]) => ({ name, count, photo: this.photos().find((p) => p.name === name) ?? null }))
       .sort((a, b) => b.count - a.count)
       .slice(0, 8);
   });
   readonly languages = computed(() => new Set(this.publications().map((p) => p.language).filter(Boolean)).size);
 
+  readonly photos = signal<InstitutionPhoto[]>([]);
+
   constructor() {
-    this.api.searchPublications('').subscribe({
+    this.api.getInstitutionPhotos().subscribe({ next: (photos) => this.photos.set(photos), error: () => undefined });
+    // Chargé à l'ouverture puis à chaque changement de langue : les titres suivent la langue choisie.
+    toObservable(this.i18n.lang).pipe(switchMap((lang) => this.api.searchPublications('', { display: lang }))).subscribe({
       next: (items) => { this.publications.set(items); this.loading.set(false); },
       error: () => this.loading.set(false)
     });

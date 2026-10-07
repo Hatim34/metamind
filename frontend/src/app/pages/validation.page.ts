@@ -7,6 +7,7 @@ import { I18nService, TranslatePipe } from '../core/i18n';
 import { confidenceLevel, languageLabel, typeLabel } from '../core/labels';
 import { ToastService } from '../core/toast.service';
 import { ConfidenceComponent } from '../ui/confidence.component';
+import { TypeCoverComponent } from '../ui/type-cover.component';
 
 type FieldId = 'titre' | 'auteurs' | 'resume' | 'mots_cles' | 'date' | 'classification';
 interface FieldDef { id: FieldId; label: string; dc: string; required: boolean; }
@@ -17,7 +18,7 @@ interface FieldDef { id: FieldId; label: string; dc: string; required: boolean; 
  */
 @Component({
   standalone: true,
-  imports: [FormsModule, RouterLink, TranslatePipe, ConfidenceComponent],
+  imports: [FormsModule, RouterLink, TranslatePipe, ConfidenceComponent, TypeCoverComponent],
   template: `
     @if (meta(); as m) {
       <div class="m-vhead">
@@ -135,6 +136,16 @@ interface FieldDef { id: FieldId; label: string; dc: string; required: boolean; 
             </article>
           }
 
+          <div class="m-notice-sheet__foot">
+            <div><strong>{{ 'Image de la notice' | t }}</strong>
+              <p class="m-muted m-small">{{ 'Affichée dans le catalogue. Par défaut, la première page du document.' | t }}</p></div>
+            <div class="m-actions">
+              <m-type-cover [type]="pub()?.documentType" [imageUrl]="pub()?.imageUrl" />
+              <label class="m-btn m-btn--ghost m-btn--sm">{{ 'Changer l\\'image' | t }}
+                <input class="m-sr" type="file" accept="image/jpeg,image/png,image/webp" (change)="changeImage($event)" />
+              </label>
+            </div>
+          </div>
           <div class="m-notice-sheet__foot">
             <div><strong>{{ 'Visibilité après publication' | t }}</strong>
               <p class="m-muted m-small">{{ 'Public : visible par tous. Institution : réservé aux bibliothécaires de votre institution.' | t }}</p></div>
@@ -331,6 +342,17 @@ export class ValidationPage implements OnDestroy {
     }).subscribe({
       next: () => { this.toasts.show(this.i18n.t('Publié. La fiche est dans le catalogue.')); this.next(); },
       error: () => { this.busy.set(false); this.toasts.show(this.i18n.t('La publication a échoué. Vérifiez les champs.'), 'error'); }
+    });
+  }
+
+  changeImage(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    input.value = '';
+    if (!file) return;
+    this.api.replaceDocumentImage(this.id, file).subscribe({
+      next: (p) => { this.pub.set(p); this.toasts.show(this.i18n.t('Image mise à jour.')); },
+      error: (e) => this.toasts.show(e?.error?.message ?? this.i18n.t('La modification a échoué.'), 'error')
     });
   }
 

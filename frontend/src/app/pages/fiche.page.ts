@@ -7,9 +7,8 @@ import { languageLabel, typeLabel } from '../core/labels';
 import { TypeCoverComponent } from '../ui/type-cover.component';
 import { ToastService } from '../core/toast.service';
 
-type CitationFormat = 'apa' | 'bibtex' | 'ris';
 
-/** Fiche publication (C2) : notice complète, lecture du PDF en ligne, téléchargement, citation. */
+/** Fiche publication (C2) : notice complète, lecture du PDF en ligne, téléchargement. */
 @Component({
   standalone: true,
   imports: [RouterLink, TranslatePipe, TypeCoverComponent],
@@ -32,7 +31,7 @@ type CitationFormat = 'apa' | 'bibtex' | 'ris';
             <h1 class="m-title">{{ display().title }}</h1>
             @if (p.author) { <p class="m-fiche__authors">{{ p.author }}</p> }
 			@if (translation() && translation()!.translated) {
-			  <p class="m-muted m-small">{{ 'Traduction automatique de la notice. La citation reste dans la langue originale.' | t }}</p>
+			  <p class="m-muted m-small">{{ 'Traduction automatique de la notice.' | t }}</p>
 			}
 
             <dl class="m-notice">
@@ -40,7 +39,7 @@ type CitationFormat = 'apa' | 'bibtex' | 'ris';
               @if (p.documentType) { <dt>{{ 'Type' | t }}</dt><dd>{{ typeLabel(p.documentType) | t }}</dd> }
               @if (p.language) { <dt>{{ 'Langue' | t }}</dt><dd>{{ languageLabel(p.language) | t }}</dd> }
               <dt>{{ 'Institution' | t }}</dt><dd><a routerLink="/catalogue" [queryParams]="{ institution: p.institution }">{{ p.institution }}</a></dd>
-              @if (p.classification) { <dt>{{ 'Classification' | t }}</dt><dd>{{ p.classification }}</dd> }
+              @if (display().classification) { <dt>{{ 'Classification' | t }}</dt><dd>{{ display().classification }}</dd> }
               @if (display().keywords.length) {
                 <dt>{{ 'Mots-clés' | t }}</dt>
                 <dd class="m-chips">@for (k of display().keywords; track k) { <a class="m-chip" routerLink="/catalogue" [queryParams]="{ q: k }">{{ k }}</a> }</dd>
@@ -55,7 +54,7 @@ type CitationFormat = 'apa' | 'bibtex' | 'ris';
             }
 
             @if (readerUrl()) {
-              <section class="m-reader">
+              <section class="m-reader" id="lecteur">
                 <div class="m-reader__bar">
                   <strong>{{ 'Lecture en ligne' | t }}</strong>
                   <button type="button" class="m-btn m-btn--ghost m-btn--sm" (click)="closeReader()">{{ 'Fermer' | t }}</button>
@@ -64,18 +63,6 @@ type CitationFormat = 'apa' | 'bibtex' | 'ris';
               </section>
             }
 
-            <section id="citer" class="m-sheet m-sheet--pad">
-              <div class="m-row-between">
-                <h2 class="m-h4">{{ 'Citer cette publication' | t }}</h2>
-                <div class="m-seg" role="tablist" [attr.aria-label]="'Format de citation' | t">
-                  @for (f of formats; track f.id) {
-                    <button type="button" role="tab" [attr.aria-selected]="format() === f.id" [class.is-on]="format() === f.id" (click)="format.set(f.id)">{{ f.label }}</button>
-                  }
-                </div>
-              </div>
-              <pre class="m-code">{{ citation() }}</pre>
-              <button type="button" class="m-btn m-btn--ghost m-btn--sm" (click)="copy()">{{ 'Copier' | t }}</button>
-            </section>
 
             <p class="m-ai-note m-small">
               {{ 'Métadonnées proposées par une IA puis vérifiées par un bibliothécaire de' | t }} {{ p.institution }}.
@@ -103,30 +90,14 @@ export class FichePage implements OnDestroy {
   private readonly i18n = inject(I18nService);
   readonly typeLabel = typeLabel;
   readonly languageLabel = languageLabel;
-  readonly formats: { id: CitationFormat; label: string }[] = [{ id: 'apa', label: 'APA' }, { id: 'bibtex', label: 'BibTeX' }, { id: 'ris', label: 'RIS' }];
 
   readonly pub = signal<Publication | null>(null);
 	readonly translation = signal<PublicationTranslation | null>(null);
   readonly error = signal(false);
   readonly coverUrl = signal<string | null>(null);
   readonly readerUrl = signal<SafeResourceUrl | null>(null);
-  readonly format = signal<CitationFormat>('apa');
   private objectUrls: string[] = [];
 
-  readonly citation = computed(() => {
-    const p = this.pub();
-    if (!p) return '';
-    const authors = p.author || '[Auteur inconnu]';
-    const year = p.year || 's.d.';
-    switch (this.format()) {
-      case 'bibtex':
-        return `@misc{metamind${p.id},\n  title = {${p.title}},\n  author = {${authors.replace(/, /g, ' and ')}},\n  year = {${year}},\n  institution = {${p.institution}}\n}`;
-      case 'ris':
-        return ['TY  - GEN', `TI  - ${p.title}`, ...authors.split(/,\s*/).map((a) => `AU  - ${a}`), `PY  - ${year}`, `PB  - ${p.institution}`, 'ER  -'].join('\n');
-      default:
-        return `${authors} (${year}). ${p.title}. ${p.institution}.`;
-    }
-  });
 
 	readonly display = computed(() => {
 		const p = this.pub();
@@ -134,7 +105,8 @@ export class FichePage implements OnDestroy {
 		return {
 			title: translated?.title ?? p?.title ?? '',
 			summary: translated?.summary ?? p?.summary ?? null,
-			keywords: translated?.keywords ?? p?.keywords ?? []
+			keywords: translated?.keywords ?? p?.keywords ?? [],
+			classification: translated?.classification ?? p?.classification ?? null
 		};
 	});
 
@@ -171,7 +143,11 @@ export class FichePage implements OnDestroy {
     const p = this.pub();
     if (!p) return;
     this.api.downloadPublicationFile(p.id).subscribe({
-      next: (blob) => this.readerUrl.set(this.sanitizer.bypassSecurityTrustResourceUrl(this.track(blob))),
+      next: (blob) => {
+        this.readerUrl.set(this.sanitizer.bypassSecurityTrustResourceUrl(this.track(blob)));
+        // Le lecteur s'affiche sous la notice : on y descend, sinon le clic semblait sans effet.
+        setTimeout(() => document.getElementById('lecteur')?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+      },
       error: () => this.toasts.show(this.i18n.t('Le fichier n\'est pas disponible.'), 'error')
     });
   }
@@ -194,9 +170,6 @@ export class FichePage implements OnDestroy {
     });
   }
 
-  copy(): void {
-    navigator.clipboard?.writeText(this.citation()).then(() => this.toasts.show(this.i18n.t('Citation copiée.')));
-  }
 
   private track(blob: Blob): string {
     const url = URL.createObjectURL(blob);

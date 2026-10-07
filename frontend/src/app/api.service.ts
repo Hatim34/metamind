@@ -31,6 +31,7 @@ export interface PublicationTranslation {
   summary: string | null;
   keywords: string[];
   translated: boolean;
+  classification?: string | null;
 }
 
 export type PublicationStatus = 'EN_ATTENTE' | 'EXTRACTION' | 'A_VALIDER' | 'REJETE' | 'ECHEC' | 'PUBLIE' | 'SUPPRIME';
@@ -51,6 +52,13 @@ export interface Institution {
   name: string;
   emailDomain: string;
   active: boolean;
+}
+
+export interface InstitutionPhoto {
+  institutionId: number;
+  name: string;
+  photoUrl: string;
+  credit: string;
 }
 
 export interface CreditBalance {
@@ -237,6 +245,8 @@ export interface SearchFilters {
   documentType?: string;
   startDate?: string;
   endDate?: string;
+  /** Langue d'affichage : le serveur renvoie titres, résumés et mots-clés traduits s'ils sont prêts. */
+  display?: string;
 }
 
 export interface UpdatePublicationStatusRequest {
@@ -244,7 +254,7 @@ export interface UpdatePublicationStatusRequest {
 }
 
 export interface AdminUserUpdateRequest {
-  role?: 'LIBRARIAN' | 'GESTIONNAIRE_FINANCIER' | 'ADMIN';
+  role?: 'LIBRARIAN' | 'ADMIN';
   statut?: 'EN_ATTENTE' | 'ACTIF' | 'DESACTIVE';
 }
 
@@ -303,6 +313,14 @@ export class ApiService {
     });
   }
 
+  /** Remplace l'image de la notice (photo ou figure de l'article) ; renvoie la publication mise à jour. */
+  replaceDocumentImage(publicationId: number, image: File): Observable<Publication> {
+    const data = new FormData();
+    data.append('image', image);
+    return this.http.put<unknown>(`${this.baseUrl}/documents/${publicationId}/image`, data, { headers: this.authHeaders() })
+      .pipe(map((response) => this.toPublication(response)));
+  }
+
   loadCoverImage(publicationId: number): Observable<Blob> {
     return this.http.get(`${this.baseUrl}/documents/${publicationId}/image`, {
       headers: this.optionalAuthHeaders(),
@@ -342,6 +360,9 @@ export class ApiService {
     }
     if (filters.endDate) {
       params = params.set('date_fin', filters.endDate);
+    }
+    if (filters.display) {
+      params = params.set('affichage', filters.display);
     }
     return this.allPages(`${this.baseUrl}/search`, params)
       .pipe(map((items) => items.map((item) => this.toPublication(item))));
@@ -405,6 +426,23 @@ export class ApiService {
   deletePublication(publicationId: number): Observable<Publication> {
     return this.http.delete<unknown>(`${this.baseUrl}/publications/${publicationId}`, { headers: this.authHeaders() })
       .pipe(map((response) => this.toPublication(response)));
+  }
+
+  /** Photos et crédits des institutions, choisis par l'administrateur (public). */
+  getInstitutionPhotos(): Observable<InstitutionPhoto[]> {
+    return this.http.get<Record<string, any>[]>(`${this.baseUrl}/institutions/photos`).pipe(map((items) => items.map((item) => ({
+      institutionId: item['institution_id'],
+      name: item['nom'],
+      photoUrl: this.toResourceUrl(item['photo_url']) ?? '',
+      credit: item['credit'] ?? ''
+    }))));
+  }
+
+  uploadInstitutionPhoto(institutionId: number, image: File, credit: string): Observable<unknown> {
+    const data = new FormData();
+    data.append('image', image);
+    data.append('credit', credit);
+    return this.http.put(`${this.baseUrl}/institutions/${institutionId}/photo`, data, { headers: this.authHeaders() });
   }
 
   getInstitutions(): Observable<Institution[]> {
@@ -633,7 +671,8 @@ export class ApiService {
       title: item['titre'] ?? item['title'],
       summary: item['resume'] ?? item['summary'] ?? null,
       keywords: item['mots_cles'] ?? item['keywords'] ?? [],
-      translated: item['traduite'] ?? item['translated'] ?? false
+      translated: item['traduite'] ?? item['translated'] ?? false,
+      classification: item['classification'] ?? null
     };
   }
 
