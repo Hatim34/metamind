@@ -17,27 +17,27 @@ type Layout = 'public' | 'espace' | 'admin' | 'bare';
     <a class="m-skip" href="#contenu">{{ 'Aller au contenu' | t }}</a>
     @if (layout() !== 'bare') {
       <header class="m-header">
-        <div class="m-header__in" [class.m-wrap--public]="layout() === 'public'">
-          <a class="m-logo" [routerLink]="session.isLoggedIn() && layout() !== 'public' ? session.homeUrl() : '/'">
+        <div class="m-header__in">
+          <a class="m-logo" [routerLink]="session.isLoggedIn() ? session.homeUrl() : '/'">
             <span class="m-logo__mark" aria-hidden="true">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round"><circle cx="6" cy="6" r="2.2"/><circle cx="18" cy="6" r="2.2"/><circle cx="12" cy="18" r="2.2"/><path d="M7.6 7.6 11 16M16.4 7.6 13 16M8.2 6h7.6"/></svg>
             </span>
             <span class="m-logo__name">Metamind</span>
           </a>
 
-          @if (layout() === 'public') {
+          <!-- Connecté, on garde la même barre sur toutes les pages, catalogue et accueil compris. -->
+          @if (!session.isLoggedIn()) {
             <nav class="m-nav" [attr.aria-label]="'Navigation principale' | t">
               <a routerLink="/catalogue" routerLinkActive="is-active">{{ 'Catalogue' | t }}</a>
               <a routerLink="/legal">{{ 'À propos des données' | t }}</a>
             </nav>
-          }
-          @if (layout() === 'espace' || layout() === 'admin') {
+          } @else {
             <nav class="m-nav" [attr.aria-label]="'Espace' | t">
               <a routerLink="/espace" routerLinkActive="is-active" [routerLinkActiveOptions]="{ exact: true }">{{ 'Tableau de bord' | t }}</a>
-              <a routerLink="/espace/import" routerLinkActive="is-active">{{ 'Importer' | t }}</a>
-              <a routerLink="/espace/file" routerLinkActive="is-active">{{ 'File de validation' | t }}</a>
+              @if (!session.isAdmin()) { <a routerLink="/espace/import" routerLinkActive="is-active">{{ 'Importer' | t }}</a> }
+              <a routerLink="/espace/file" routerLinkActive="is-active">{{ (session.isAdmin() ? 'Documents' : 'File de validation') | t }}</a>
               <a routerLink="/espace/credits" routerLinkActive="is-active">{{ 'Crédits' | t }}</a>
-              <a routerLink="/catalogue">{{ 'Catalogue' | t }}</a>
+              <a routerLink="/catalogue" routerLinkActive="is-active">{{ 'Catalogue' | t }}</a>
               @if (session.isAdmin()) { <a routerLink="/admin" routerLinkActive="is-active">{{ 'Administration' | t }}</a> }
             </nav>
           }
@@ -49,7 +49,7 @@ type Layout = 'public' | 'espace' | 'admin' | 'bare';
               }
             </span>
             @if (session.user(); as user) {
-              @if ((layout() === 'espace' || layout() === 'admin') && credits() !== null) {
+              @if (credits() !== null) {
                 <a class="m-header__credits" routerLink="/espace/credits">{{ 'Crédits' | t }} <strong>{{ credits() }}</strong></a>
               }
               <details class="m-menu">
@@ -121,8 +121,8 @@ export class ShellComponent {
         current = current.firstChild;
       }
       this.layout.set((current.snapshot.data['layout'] as Layout) ?? 'public');
-      // Même en-tête dans l'espace et dans l'administration : le solde reste affiché partout.
-      if (this.session.isLoggedIn() && (this.layout() === 'espace' || this.layout() === 'admin')) {
+      // Même en-tête partout une fois connecté : le solde reste affiché, catalogue compris.
+      if (this.session.isLoggedIn()) {
         this.api.getCreditAccount().subscribe({ next: (account) => this.credits.set(account.balance.balance), error: () => this.credits.set(null) });
       }
     });

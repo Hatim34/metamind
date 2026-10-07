@@ -146,7 +146,8 @@ export class ImportPage {
         const doc = await firstValueFrom(this.api.importDocument(item.file, this.visibility));
         this.patch(item, { id: doc.id, state: 'lecture', message: 'Lecture du fichier…' });
       } catch (e: any) {
-        this.patch(item, { state: 'erreur', message: e?.status === 409 ? 'Doublon possible' : 'Échec de l\'import' });
+        // Le serveur précise la cause (taille réglée par l'administrateur, format refusé).
+        this.patch(item, { state: 'erreur', message: e?.status === 409 ? 'Doublon possible' : e?.error?.message ?? 'Échec de l\'import' });
       }
     }
     for (const item of this.items().filter((i) => i.state === 'lecture')) {

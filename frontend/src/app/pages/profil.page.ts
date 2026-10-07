@@ -25,7 +25,7 @@ import { ToastService } from '../core/toast.service';
         <p class="m-muted">{{ 'Vous pouvez télécharger toutes les données vous concernant ou demander la suppression de votre compte.' | t }}</p>
         <div class="m-actions">
           <button type="button" class="m-btn m-btn--ghost" (click)="exportData()">{{ 'Télécharger mes données' | t }}</button>
-          <button type="button" class="m-btn m-btn--danger" (click)="deleteAccount()">{{ 'Supprimer mon compte' | t }}</button>
+          @if (!session.isAdmin()) { <button type="button" class="m-btn m-btn--danger" (click)="deleteAccount()">{{ 'Supprimer mon compte' | t }}</button> }
         </div>
       </section>
     </div>

@@ -26,7 +26,7 @@ const TABS: { status: PublicationStatus; label: string }[] = [
   template: `
     <div class="m-wrap m-page">
       <div class="m-page__head">
-        <h1 class="m-title">{{ 'File de validation' | t }}</h1>
+        <h1 class="m-title">{{ (session.isAdmin() ? 'Documents' : 'File de validation') | t }}</h1>
         <div class="m-actions">
           @if (session.isAdmin()) {
             <select class="m-input m-input--sm" [(ngModel)]="institution" name="institution" [attr.aria-label]="'Institution' | t">
@@ -46,7 +46,7 @@ const TABS: { status: PublicationStatus; label: string }[] = [
         }
       </div>
 
-      @if (status() === 'EN_ATTENTE' && extractable().length) {
+      @if (!session.isAdmin() && status() === 'EN_ATTENTE' && extractable().length) {
         <div class="m-callout">
           <span>{{ extractable().length }} {{ 'documents dont le texte est lu attendent l\\'analyse par l\\'IA.' | t }}</span>
           <button type="button" class="m-btn m-btn--primary m-btn--sm" [disabled]="running()" (click)="extractAll()">
@@ -76,28 +76,25 @@ const TABS: { status: PublicationStatus; label: string }[] = [
                 <td><span [class]="'m-badge m-badge--' + doc.status">{{ labels[doc.status] | t }}</span></td>
                 <td class="m-right">
                   <span class="m-actions m-actions--row">
-                    @switch (doc.status) {
-                      @case ('A_VALIDER') { <a class="m-btn m-btn--primary m-btn--sm" [routerLink]="['/espace/documents', doc.id, 'validation']">{{ 'Valider' | t }}</a> }
-                      @case ('EN_ATTENTE') {
-                        @if (doc.textReady) { <button type="button" class="m-btn m-btn--primary m-btn--sm" [disabled]="busy().has(doc.id)" (click)="extract(doc)">{{ (busy().has(doc.id) ? 'Analyse…' : 'Extraire (1 crédit)') | t }}</button> }
-                        @else { <span class="m-muted m-small">{{ 'Lecture du fichier…' | t }}</span> }
-                      }
-                      @case ('EXTRACTION') { <span class="m-muted m-small">{{ (doc.textReady ? 'Analyse par l\\'IA…' : 'Lecture du fichier…') | t }}</span> }
-                      @case ('REJETE') { <button type="button" class="m-btn m-btn--ghost m-btn--sm" [disabled]="busy().has(doc.id)" (click)="extract(doc)">{{ 'Relancer l\\'analyse (1 crédit)' | t }}</button> }
-                      @case ('ECHEC') { <button type="button" class="m-btn m-btn--ghost m-btn--sm" (click)="retry(doc)">{{ 'Relancer la lecture' | t }}</button> }
-                      @case ('PUBLIE') { <a class="m-btn m-btn--ghost m-btn--sm" [routerLink]="['/publications', doc.id]">{{ 'Voir la fiche' | t }}</a> }
-                    }
-                    <details class="m-menu m-menu--end">
-                      <summary class="m-btn m-btn--ghost m-btn--icon" [attr.aria-label]="'Plus d\\'actions' | t">⋯</summary>
-                      <div class="m-menu__panel">
-                        @if (doc.status === 'EN_ATTENTE' && !doc.textReady) { <button type="button" (click)="retry(doc)">{{ 'Relancer la lecture du fichier' | t }}</button> }
-                        @if (confirming() === doc.id) {
-                          <button type="button" class="is-danger" (click)="remove(doc)">{{ 'Confirmer la suppression' | t }}</button>
-                        } @else {
-                          <button type="button" class="is-danger" (click)="confirming.set(doc.id)">{{ 'Supprimer' | t }}</button>
+                    @if (!session.isAdmin()) {
+                      @switch (doc.status) {
+                        @case ('A_VALIDER') { <a class="m-btn m-btn--primary m-btn--sm" [routerLink]="['/espace/documents', doc.id, 'validation']">{{ 'Valider' | t }}</a> }
+                        @case ('EN_ATTENTE') {
+                          @if (doc.textReady) { <button type="button" class="m-btn m-btn--primary m-btn--sm" [disabled]="busy().has(doc.id)" (click)="extract(doc)">{{ (busy().has(doc.id) ? 'Analyse…' : 'Extraire (1 crédit)') | t }}</button> }
+                          @else { <button type="button" class="m-btn m-btn--ghost m-btn--sm" (click)="retry(doc)">{{ 'Relancer la lecture' | t }}</button> }
                         }
-                      </div>
-                    </details>
+                        @case ('EXTRACTION') { <span class="m-muted m-small">{{ (doc.textReady ? 'Analyse par l\\'IA…' : 'Lecture du fichier…') | t }}</span> }
+                        @case ('REJETE') { <button type="button" class="m-btn m-btn--ghost m-btn--sm" [disabled]="busy().has(doc.id)" (click)="extract(doc)">{{ 'Relancer l\\'analyse (1 crédit)' | t }}</button> }
+                        @case ('ECHEC') { <button type="button" class="m-btn m-btn--ghost m-btn--sm" (click)="retry(doc)">{{ 'Relancer la lecture' | t }}</button> }
+                      }
+                    }
+                    @if (doc.status === 'PUBLIE') { <a class="m-btn m-btn--ghost m-btn--sm" [routerLink]="['/publications', doc.id]">{{ 'Voir la fiche' | t }}</a> }
+                    @if (confirming() === doc.id) {
+                      <button type="button" class="m-btn m-btn--danger m-btn--sm" (click)="remove(doc)">{{ 'Confirmer' | t }}</button>
+                      <button type="button" class="m-btn m-btn--ghost m-btn--sm" (click)="confirming.set(null)">{{ 'Annuler' | t }}</button>
+                    } @else {
+                      <button type="button" class="m-btn m-btn--ghost m-btn--sm" (click)="confirming.set(doc.id)">{{ 'Supprimer' | t }}</button>
+                    }
                   </span>
                 </td>
               </tr>

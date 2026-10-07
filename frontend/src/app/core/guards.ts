@@ -14,3 +14,9 @@ export const adminGuard: CanActivateFn = () => {
   }
   return inject(Router).createUrlTree([session.isLoggedIn() ? '/espace' : '/connexion']);
 };
+
+/** Importer et valider sont réservés au bibliothécaire (B3, B6) : l'administrateur supervise. */
+export const librarianGuard: CanActivateFn = () => {
+  const session = inject(SessionService);
+  return session.isAdmin() ? inject(Router).createUrlTree(['/espace/file']) : true;
+};

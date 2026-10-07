@@ -38,13 +38,14 @@
 }
 
 *, *::before, *::after { box-sizing: border-box; }
-html { scroll-padding-top: 24px; }
+html { scroll-padding-top: 88px; }
 body { margin: 0; background: var(--ground); color: var(--ink); font: 400 15px/1.55 var(--f-body); -webkit-font-smoothing: antialiased; }
 a { color: var(--teal-dark); }
 a:hover { color: var(--teal); }
 button, input, select, textarea { font: inherit; color: inherit; }
 button { cursor: pointer; }
 :focus-visible { outline: 2px solid var(--teal); outline-offset: 2px; }
+app-root { display: block; }
 main { display: block; min-height: 60vh; }
 main:focus { outline: none; }
 img { max-width: 100%; }
@@ -244,6 +245,7 @@ m-type-cover { display: block; flex: none; }
 .m-inst__body { padding: 14px 16px 6px; display: flex; justify-content: space-between; gap: 8px; }
 .m-inst__credit { margin: 0; padding: 0 16px 12px; color: var(--ink-soft); font-size: 11px; }
 .m-inst__credit a { color: inherit; }
+.m-inst-photo { width: 100%; height: 120px; object-fit: cover; border-radius: var(--radius-control); }
 
 /* ---------- catalogue ---------- */
 .m-facets { display: flex; flex-direction: column; gap: 28px; }

@@ -27,10 +27,12 @@ const FIELD_LABELS: Record<string, string> = {
             @else { {{ 'Aucune notice en attente de relecture.' | t }} }
           </p>
         </div>
-        <div class="m-actions">
-          <a class="m-btn m-btn--ghost" routerLink="/espace/import">{{ 'Importer des documents' | t }}</a>
-          @if (queue().length) { <a class="m-btn m-btn--primary" [routerLink]="['/espace/documents', queue()[0].id, 'validation']">{{ 'Reprendre la validation' | t }}</a> }
-        </div>
+        @if (!session.isAdmin()) {
+          <div class="m-actions">
+            <a class="m-btn m-btn--ghost" routerLink="/espace/import">{{ 'Importer des documents' | t }}</a>
+            @if (queue().length) { <a class="m-btn m-btn--primary" [routerLink]="['/espace/documents', queue()[0].id, 'validation']">{{ 'Reprendre la validation' | t }}</a> }
+          </div>
+        }
       </div>
 
       @if (stats(); as s) {
@@ -38,9 +40,13 @@ const FIELD_LABELS: Record<string, string> = {
           <div class="m-kpi"><span>{{ 'À valider' | t }}</span><strong>{{ s.pendingValidationPublications }}</strong></div>
           <div class="m-kpi"><span>{{ 'Publiées' | t }}</span><strong>{{ s.publishedPublications }}</strong><small>{{ 'dont' | t }} {{ s.publicPublications }} {{ 'publiques' | t }}, {{ s.institutionOnlyPublications }} {{ 'réservées' | t }}</small></div>
           <div class="m-kpi"><span>{{ (session.isAdmin() ? 'Crédits, toutes institutions' : 'Crédits restants') | t }}</span><strong>{{ s.creditBalance }}</strong><small><a routerLink="/espace/credits">{{ 'Acheter des crédits' | t }}</a></small></div>
-          <div class="m-kpi"><span>{{ 'Temps moyen de traitement' | t }}</span>
+          <div class="m-kpi"><span>{{ 'Délai moyen de relecture' | t }}</span>
             <strong>{{ s.averageProcessingHours != null ? (s.averageProcessingHours | number: '1.0-1') + ' h' : '–' }}</strong>
-            @if (s.validationRate != null) { <small>{{ 'Taux de validation' | t }} {{ s.validationRate | number: '1.0-0' }} %</small> }
+            <small>{{ 'entre la proposition de l\\'IA et la validation' | t }}</small>
+          </div>
+          <div class="m-kpi"><span>{{ 'Taux de validation' | t }}</span>
+            <strong>{{ (s.validationRate ?? 0) | number: '1.0-0' }} %</strong>
+            <small>{{ 'des documents publiés' | t }} · {{ 'rejet' | t }} {{ (s.rejectionRate ?? 0) | number: '1.0-0' }} %</small>
           </div>
         </div>
       }
@@ -49,10 +55,10 @@ const FIELD_LABELS: Record<string, string> = {
         <section class="m-sheet">
           <div class="m-sheet__head"><h2 class="m-h3">{{ 'À valider en priorité' | t }}</h2><a routerLink="/espace/file">{{ 'Toute la file' | t }}</a></div>
           @for (doc of queue().slice(0, 6); track doc.id) {
-            <a class="m-line" [routerLink]="['/espace/documents', doc.id, 'validation']">
+            <a class="m-line" [routerLink]="session.isAdmin() ? ['/espace/file'] : ['/espace/documents', doc.id, 'validation']">
               <m-type-cover [type]="doc.documentType" size="sm" [imageUrl]="doc.imageUrl" />
               <span class="m-line__main"><strong class="m-ellipsis">{{ doc.title }}</strong><span class="m-muted m-small">{{ typeLabel(doc.documentType) | t }}@if (doc.year) {, {{ doc.year }}}@if (session.isAdmin()) { · {{ doc.institution }}}</span></span>
-              <span class="m-btn m-btn--primary m-btn--sm">{{ 'Valider' | t }}</span>
+              @if (!session.isAdmin()) { <span class="m-btn m-btn--primary m-btn--sm">{{ 'Valider' | t }}</span> }
             </a>
           } @empty {
             <p class="m-empty">{{ 'Rien à valider. Importez de nouveaux documents pour remplir la file.' | t }}</p>

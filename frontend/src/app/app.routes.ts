@@ -1,5 +1,5 @@
 import { Routes } from '@angular/router';
-import { adminGuard, authGuard } from './core/guards';
+import { adminGuard, authGuard, librarianGuard } from './core/guards';
 
 const pub = { layout: 'public' };
 const espace = { layout: 'espace' };
@@ -17,9 +17,9 @@ export const routes: Routes = [
 
   { path: 'espace', canActivate: [authGuard], data: espace, children: [
     { path: '', loadComponent: () => import('./pages/espace.page').then((m) => m.EspacePage), data: espace, title: 'Tableau de bord – Metamind' },
-    { path: 'import', loadComponent: () => import('./pages/import.page').then((m) => m.ImportPage), data: espace, title: 'Importer – Metamind' },
+    { path: 'import', canActivate: [librarianGuard], loadComponent: () => import('./pages/import.page').then((m) => m.ImportPage), data: espace, title: 'Importer – Metamind' },
     { path: 'file', loadComponent: () => import('./pages/file.page').then((m) => m.FilePage), data: espace, title: 'File de validation – Metamind' },
-    { path: 'documents/:id/validation', loadComponent: () => import('./pages/validation.page').then((m) => m.ValidationPage), data: espace, title: 'Valider les métadonnées – Metamind' },
+    { path: 'documents/:id/validation', canActivate: [librarianGuard], loadComponent: () => import('./pages/validation.page').then((m) => m.ValidationPage), data: espace, title: 'Valider les métadonnées – Metamind' },
     { path: 'credits', loadComponent: () => import('./pages/credits.page').then((m) => m.CreditsPage), data: espace, title: 'Crédits – Metamind' },
     { path: 'profil', loadComponent: () => import('./pages/profil.page').then((m) => m.ProfilPage), data: espace, title: 'Profil – Metamind' }
   ] },

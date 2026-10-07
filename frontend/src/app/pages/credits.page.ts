@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { ApiService, CreditAccount, CreditPackOption } from '../api.service';
 import { I18nService, TranslatePipe } from '../core/i18n';
+import { SessionService } from '../core/session.service';
 import { ToastService } from '../core/toast.service';
 
 /** Crédits (B9, B10) : solde, achat via Stripe Checkout avec CGV et renonciation à la rétractation, historique. */
@@ -25,6 +26,9 @@ import { ToastService } from '../core/toast.service';
           <strong>{{ account()?.balance?.balance ?? '–' }} <small>{{ 'crédits' | t }}</small></strong>
           <span class="m-small">{{ '1 crédit = 1 extraction réussie.' | t }}</span>
         </div>
+        @if (session.isAdmin()) {
+          <p class="m-muted">{{ 'L\\'achat est réservé aux bibliothécaires. L\\'administrateur ajuste les crédits des institutions depuis l\\'administration.' | t }}</p>
+        } @else {
         <div class="m-packs">
           @for (pack of packs(); track pack.id) {
             <div class="m-pack" [class.is-on]="chosen()?.id === pack.id">
@@ -37,6 +41,7 @@ import { ToastService } from '../core/toast.service';
             <p class="m-muted">{{ 'Aucune offre disponible pour le moment.' | t }}</p>
           }
         </div>
+        }
       </div>
 
       @if (chosen(); as pack) {
@@ -74,6 +79,7 @@ import { ToastService } from '../core/toast.service';
 })
 export class CreditsPage implements OnDestroy {
   private readonly api = inject(ApiService);
+  readonly session = inject(SessionService);
   private readonly route = inject(ActivatedRoute);
   private readonly toasts = inject(ToastService);
   private readonly i18n = inject(I18nService);
@@ -131,9 +137,6 @@ export class CreditsPage implements OnDestroy {
 
   private paymentErrorMessage(error: { status?: number; error?: { message?: string } }): string {
     if (error?.status === 401) return 'Votre session a expiré. Connectez-vous de nouveau.';
-    if (error?.status === 403 && error.error?.message?.includes('gestionnaire financier')) {
-      return 'Un gestionnaire financier doit effectuer cet achat.';
-    }
     if (error?.status === 403) return 'Les achats sont suspendus pour votre institution.';
     if (error?.status === 503) return 'Le paiement Stripe n’est pas configuré pour cet environnement.';
     if (error?.status === 502) return 'Stripe n’a pas pu créer la session de paiement. Vérifiez la configuration Stripe.';
