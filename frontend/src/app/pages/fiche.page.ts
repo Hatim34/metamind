@@ -3,7 +3,7 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { ApiService, Publication, PublicationTranslation } from '../api.service';
 import { I18nService, TranslatePipe } from '../core/i18n';
-import { languageLabel, typeLabel } from '../core/labels';
+import { classificationLabel, languageLabel, typeLabel } from '../core/labels';
 import { TypeCoverComponent } from '../ui/type-cover.component';
 import { ToastService } from '../core/toast.service';
 
@@ -53,13 +53,14 @@ import { ToastService } from '../core/toast.service';
               </section>
             }
 
-            @if (readerUrl()) {
+            @if (readerOpen()) {
               <section class="m-reader" id="lecteur">
                 <div class="m-reader__bar">
                   <strong>{{ 'Lecture en ligne' | t }}</strong>
                   <button type="button" class="m-btn m-btn--ghost m-btn--sm" (click)="closeReader()">{{ 'Fermer' | t }}</button>
                 </div>
-                <iframe [src]="readerUrl()" [title]="p.title"></iframe>
+                @if (readerUrl(); as url) { <iframe [src]="url" [title]="p.title"></iframe> }
+                @else { <p class="m-empty">{{ 'Chargement du document…' | t }}</p> }
               </section>
             }
 
@@ -96,6 +97,7 @@ export class FichePage implements OnDestroy {
   readonly error = signal(false);
   readonly coverUrl = signal<string | null>(null);
   readonly readerUrl = signal<SafeResourceUrl | null>(null);
+  readonly readerOpen = signal(false);
   private objectUrls: string[] = [];
 
 
@@ -106,7 +108,7 @@ export class FichePage implements OnDestroy {
 			title: translated?.title ?? p?.title ?? '',
 			summary: translated?.summary ?? p?.summary ?? null,
 			keywords: translated?.keywords ?? p?.keywords ?? [],
-			classification: translated?.classification ?? p?.classification ?? null
+			classification: classificationLabel(translated?.classification ?? p?.classification, this.i18n.lang()) || null
 		};
 	});
 
@@ -139,21 +141,27 @@ export class FichePage implements OnDestroy {
     return !d || d.endsWith('-01-01') ? String(p.year) : d;
   }
 
+  /**
+   * Le lecteur s'ouvre et la page y descend tout de suite ; le PDF s'affiche dès qu'il est
+   * téléchargé. Attendre le fichier avant de réagir donnait l'impression d'un bouton inactif.
+   */
   openReader(): void {
     const p = this.pub();
     if (!p) return;
+    this.readerOpen.set(true);
+    setTimeout(() => document.getElementById('lecteur')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
+    if (this.readerUrl()) return;
     this.api.downloadPublicationFile(p.id).subscribe({
-      next: (blob) => {
-        this.readerUrl.set(this.sanitizer.bypassSecurityTrustResourceUrl(this.track(blob)));
-        // Le lecteur s'affiche sous la notice : on y descend, sinon le clic semblait sans effet.
-        setTimeout(() => document.getElementById('lecteur')?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
-      },
-      error: () => this.toasts.show(this.i18n.t('Le fichier n\'est pas disponible.'), 'error')
+      next: (blob) => this.readerUrl.set(this.sanitizer.bypassSecurityTrustResourceUrl(this.track(blob))),
+      error: () => {
+        this.readerOpen.set(false);
+        this.toasts.show(this.i18n.t('Le fichier n\'est pas disponible.'), 'error');
+      }
     });
   }
 
   closeReader(): void {
-    this.readerUrl.set(null);
+    this.readerOpen.set(false);
   }
 
   download(): void {
