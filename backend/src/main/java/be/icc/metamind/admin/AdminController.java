@@ -8,6 +8,8 @@ import jakarta.validation.Valid;
 import be.icc.metamind.api.PageResponse;
 import be.icc.metamind.document.DocumentFileService;
 import be.icc.metamind.institution.InstitutionResponse;
+import be.icc.metamind.publication.PublicationResponse;
+import be.icc.metamind.publication.PublicationService;
 import be.icc.metamind.user.AccountService;
 import be.icc.metamind.user.UserEntity;
 import be.icc.metamind.user.UserResponse;
@@ -33,11 +35,13 @@ public class AdminController {
 	private final AdminService service;
 	private final AccountService accountService;
 	private final DocumentFileService documentFileService;
+	private final PublicationService publicationService;
 
-	public AdminController(AdminService service, AccountService accountService, DocumentFileService documentFileService) {
+	public AdminController(AdminService service, AccountService accountService, DocumentFileService documentFileService, PublicationService publicationService) {
 		this.service = service;
 		this.accountService = accountService;
 		this.documentFileService = documentFileService;
+		this.publicationService = publicationService;
 	}
 
 	@GetMapping("/users")
@@ -112,6 +116,17 @@ public class AdminController {
 	) {
 		accountService.authenticateAdmin(authorization);
 		return new FileRestoreResponse(file.getOriginalFilename(), documentFileService.restoreMissingFiles(file));
+	}
+
+	/** Remplace l'image d'un document (vignette du catalogue et de la fiche). */
+	@PutMapping(value = "/documents/{id}/image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+	public PublicationResponse replaceDocumentImage(
+			@PathVariable long id,
+			@RequestHeader("Authorization") String authorization,
+			@RequestParam("image") MultipartFile image
+	) {
+		accountService.authenticateAdmin(authorization);
+		return publicationService.replaceCoverImage(id, image);
 	}
 
 	@GetMapping(value = "/reports/documents.csv", produces = "text/csv")

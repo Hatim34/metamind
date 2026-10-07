@@ -15,7 +15,9 @@ public record DocumentSummary(
 		DocumentStatus status,
 		DocumentVisibility visibility,
 		Long institutionId,
-		String institutionName
+		String institutionName,
+		/** Texte du fichier lu : le document peut etre analyse par l'IA. */
+		boolean textReady
 ) {
 	public static DocumentSummary of(DocumentEntity document) {
 		return new DocumentSummary(
@@ -26,7 +28,8 @@ public record DocumentSummary(
 				document.getStatus(),
 				document.getVisibility(),
 				document.getInstitution().getId(),
-				document.getInstitution().getName()
+				document.getInstitution().getName(),
+				document.hasExtractedText()
 		);
 	}
 

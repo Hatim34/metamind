@@ -125,7 +125,7 @@ public class ExtractionService {
 		}
 		catch (RuntimeException primaryException) {
 			enrichment.markFailed(failureMessage(primaryException));
-			document.markExtractionFailed();
+			document.markAnalysisFailed();
 			refundCredit(institution);
 			throw toApiException(primaryException);
 		}

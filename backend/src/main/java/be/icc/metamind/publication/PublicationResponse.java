@@ -53,7 +53,10 @@ public record PublicationResponse(
 		String imageUrl,
 
 		@JsonProperty("fichier_url")
-		String fileUrl
+		String fileUrl,
+
+		@JsonProperty("texte_pret")
+		boolean textReady
 ) {
 	public static PublicationResponse from(Publication publication) {
 		return new PublicationResponse(
@@ -71,7 +74,8 @@ public record PublicationResponse(
 				publication.visibility(),
 				publication.keywords(),
 				null,
-				null
+				null,
+				false
 		);
 	}
 
@@ -94,9 +98,22 @@ public record PublicationResponse(
 				toPublicationStatus(document.status()),
 				toVisibility(document.visibility()),
 				keywords,
-				document.coverImagePath() == null || document.coverImagePath().isBlank() ? null : "/api/v1/documents/" + document.id() + "/image",
-				document.filePath() == null || document.filePath().isBlank() ? null : "/api/v1/documents/" + document.id() + "/file"
+				imageUrl(document),
+				document.filePath() == null || document.filePath().isBlank() ? null : "/api/v1/documents/" + document.id() + "/file",
+				document.textReady()
 		);
+	}
+
+	/**
+	 * L'image est gardee 7 jours par le navigateur : la version dans l'URL change quand
+	 * l'image est remplacee (chaque image stockee a un chemin unique), sinon l'ancienne
+	 * resterait affichee.
+	 */
+	private static String imageUrl(DocumentSummary document) {
+		if (document.coverImagePath() == null || document.coverImagePath().isBlank()) {
+			return null;
+		}
+		return "/api/v1/documents/" + document.id() + "/image?v=" + Integer.toHexString(document.coverImagePath().hashCode());
 	}
 
 	private static PublicationStatus toPublicationStatus(DocumentStatus status) {

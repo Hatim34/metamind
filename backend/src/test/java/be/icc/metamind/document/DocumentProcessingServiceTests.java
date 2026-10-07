@@ -22,7 +22,7 @@ class DocumentProcessingServiceTests {
 	private DocumentUploadService documentUploadService;
 
 	@Test
-	void processExtractsTextAndMakesDocumentReadyForMetadataExtraction() {
+	void processExtractsTextAndLeavesTheDocumentWaitingForAnalysis() {
 		DocumentEntity document = new DocumentEntity(
 				"article.pdf",
 				"/tmp/article.pdf",
@@ -44,7 +44,8 @@ class DocumentProcessingServiceTests {
 		new DocumentProcessingService(documentRepository, documentUploadService, documentCoverService, documentFileService, null)
 				.process(7L, "/tmp/article.pdf");
 
-		assertEquals(DocumentStatus.A_VALIDER, document.getStatus());
+		// Texte lu : le document attend l'analyse par l'IA, il n'est pas encore a valider.
+		assertEquals(DocumentStatus.EN_ATTENTE, document.getStatus());
 		assertEquals("Texte extrait", document.getExtractedText());
 		assertEquals("/tmp/cover.jpg", document.getCoverImagePath());
 		verify(documentRepository).findById(7L);

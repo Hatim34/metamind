@@ -158,6 +158,21 @@ class ValidationDecisionRecorderTests {
 				});
 	}
 
+	@Test
+	void aRejectedDocumentLeavesTheValidationQueue() {
+		Fixture fixture = extractedDocument();
+
+		metadataService.rejectMetadata(
+				fixture.documentId(),
+				new MetadataRejectionRequest("Le fichier importe n'est pas une publication."),
+				fixture.user());
+
+		assertThat(documentRepository.findById(fixture.documentId()))
+				.get()
+				.extracting(DocumentEntity::getStatus)
+				.isEqualTo(DocumentStatus.REJETE);
+	}
+
 	private MetadataValidationRequest request(String title, String classification, List<String> authors, List<String> keywords) {
 		return new MetadataValidationRequest(
 				title,

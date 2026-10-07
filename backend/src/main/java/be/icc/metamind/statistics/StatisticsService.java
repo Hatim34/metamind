@@ -50,8 +50,10 @@ public class StatisticsService {
 		long total = documents.size();
 		long published = countStatus(documents, DocumentStatus.PUBLIE);
 		long pendingValidation = countStatus(documents, DocumentStatus.A_VALIDER);
-		long publicDocuments = countVisibility(documents, DocumentVisibility.PUBLIC);
-		long institutionOnlyDocuments = countVisibility(documents, DocumentVisibility.INSTITUTION);
+		// "Publiees : X, dont Y publiques et Z reservees" : la repartition porte sur les seules publications.
+		List<DocumentSummary> publications = documents.stream().filter(document -> document.status() == DocumentStatus.PUBLIE).toList();
+		long publicDocuments = countVisibility(publications, DocumentVisibility.PUBLIC);
+		long institutionOnlyDocuments = countVisibility(publications, DocumentVisibility.INSTITUTION);
 		long rejected = countRejectedMetadata(documents, metadataByDocument);
 		int creditBalance = creditBalance(currentUser);
 		String scope = currentUser.getRole() == UserRole.ADMIN ? "GLOBAL" : currentUser.getInstitution().getName();
@@ -91,7 +93,9 @@ public class StatisticsService {
 		List<DocumentSummary> documents = currentUser.getRole() == UserRole.ADMIN
 				? documentRepository.findSummaries()
 				: documentRepository.findSummariesByInstitution(currentUser.getInstitution().getId());
+		// Un document supprime n'est plus compte : il faussait le total et le taux de validation.
 		return documents.stream()
+				.filter(document -> document.status() != DocumentStatus.SUPPRIME)
 				.filter(document -> matchesPeriod(metadataByDocument.get(document.id()), startDate, endDate))
 				.toList();
 	}

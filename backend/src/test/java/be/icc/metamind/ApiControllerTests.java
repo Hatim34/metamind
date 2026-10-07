@@ -304,6 +304,42 @@ class ApiControllerTests {
 	}
 
 	@Test
+	void adminReplacesTheImageOfADocumentUnderANewAddress() throws Exception {
+		byte[] firstPage = new byte[] { 1, 2, 3, 4 };
+		byte[] figure = new byte[] { 9, 8, 7, 6, 5 };
+		String created = mockMvc.perform(multipart("/api/v1/documents")
+						.file(new MockMultipartFile("fichier", "article-figure.txt", MediaType.TEXT_PLAIN_VALUE,
+								"Article avec une figure.".getBytes(StandardCharsets.UTF_8)))
+						.file(new MockMultipartFile("image", "premiere-page.png", MediaType.IMAGE_PNG_VALUE, firstPage))
+						.header("Authorization", bearerToken()))
+				.andExpect(status().isCreated())
+				.andReturn().getResponse().getContentAsString();
+		long id = com.jayway.jsonpath.JsonPath.<Number>read(created, "$.id").longValue();
+		String firstUrl = com.jayway.jsonpath.JsonPath.read(created, "$.image_url");
+
+		String replaced = mockMvc.perform(multipart(org.springframework.http.HttpMethod.PUT, "/api/v1/admin/documents/" + id + "/image")
+						.file(new MockMultipartFile("image", "figure.png", MediaType.IMAGE_PNG_VALUE, figure))
+						.header("Authorization", adminBearerToken()))
+				.andExpect(status().isOk())
+				.andReturn().getResponse().getContentAsString();
+
+		// Le navigateur garde l'image 7 jours : une nouvelle image doit avoir une nouvelle adresse.
+		org.assertj.core.api.Assertions.assertThat((String) com.jayway.jsonpath.JsonPath.read(replaced, "$.image_url"))
+				.isNotEqualTo(firstUrl);
+		mockMvc.perform(get("/api/v1/documents/" + id + "/image").header("Authorization", bearerToken()))
+				.andExpect(status().isOk())
+				.andExpect(content().bytes(figure));
+	}
+
+	@Test
+	void librarianCannotReplaceTheImageOfADocument() throws Exception {
+		mockMvc.perform(multipart(org.springframework.http.HttpMethod.PUT, "/api/v1/admin/documents/1/image")
+						.file(new MockMultipartFile("image", "figure.png", MediaType.IMAGE_PNG_VALUE, new byte[] { 1 }))
+						.header("Authorization", bearerToken()))
+				.andExpect(status().isForbidden());
+	}
+
+	@Test
 	void documentImportRejectsUnsupportedFormat() throws Exception {
 		MockMultipartFile file = new MockMultipartFile(
 				"fichier",
@@ -934,7 +970,9 @@ class ApiControllerTests {
 				.andExpect(jsonPath("$.total_publications", is(2)))
 				.andExpect(jsonPath("$.publications_publiees", is(1)))
 				.andExpect(jsonPath("$.publications_a_valider", is(1)))
-				.andExpect(jsonPath("$.publications_institution", is(1)))
+				// La repartition publique / reservee ne porte que sur les publications :
+				// le document a valider, reserve a l'institution, n'y entre pas.
+				.andExpect(jsonPath("$.publications_institution", is(0)))
 				.andExpect(jsonPath("$.taux_validation", is(50.0)))
 				.andExpect(jsonPath("$.taux_rejet", is(0.0)))
 				.andExpect(jsonPath("$.distribution_classifications['Non renseigne']", is(2)));
@@ -960,7 +998,7 @@ class ApiControllerTests {
 				.andExpect(jsonPath("$.scope", is("GLOBAL")))
 				.andExpect(jsonPath("$.total_publications", is(3)))
 				.andExpect(jsonPath("$.publications_publiees", is(2)))
-				.andExpect(jsonPath("$.publications_institution", is(2)))
+				.andExpect(jsonPath("$.publications_institution", is(1)))
 				.andExpect(jsonPath("$.distribution_types_documents['Non renseigne']", is(3)));
 	}
 

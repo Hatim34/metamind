@@ -57,10 +57,10 @@ public class DocumentProcessingService {
 			documentCoverService.persistFromPath(document.getId(), coverPath);
 		}
 		catch (ApiException exception) {
-			document.markExtractionFailed();
+			document.markFileUnreadable();
 		}
 		catch (RuntimeException exception) {
-			document.markExtractionFailed();
+			document.markFileUnreadable();
 		}
 		documentRepository.save(document);
 	}

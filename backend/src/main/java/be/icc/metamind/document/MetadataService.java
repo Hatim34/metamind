@@ -159,6 +159,8 @@ public class MetadataService {
 		MetadataEntity metadata = metadataRepository.findByDocumentId(document.getId())
 				.orElseThrow(() -> new ApiException(HttpStatus.BAD_REQUEST, "Aucune metadonnee a rejeter."));
 		metadata.reject(user);
+		// Sans ce statut, un document rejete restait dans la file "a valider" indefiniment.
+		document.updateStatus(DocumentStatus.REJETE);
 		validationDecisionRecorder.recordRejection(document);
 		recordMetadataHistory(document, "rejet", metadata.getStatus().name(), reason, user);
 		return toResponse(metadata);

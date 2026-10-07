@@ -142,7 +142,7 @@ paths:
         - $ref: '#/components/parameters/q'
         - name: statut
           in: query
-          schema: { type: string, enum: [EN_ATTENTE, EXTRACTION, A_VALIDER, PUBLIE, SUPPRIME] }
+          schema: { type: string, enum: [EN_ATTENTE, EXTRACTION, A_VALIDER, REJETE, ECHEC, PUBLIE, SUPPRIME] }
       responses:
         '200':
           description: Page de documents
@@ -789,6 +789,25 @@ paths:
         '400': { $ref: '#/components/responses/Error' }
         '403': { $ref: '#/components/responses/Error' }
 
+  /admin/documents/{id}/image:
+    put:
+      tags: [Administration]
+      summary: Remplacer l'image d'un document, par exemple par une figure de l'article (ADMIN)
+      parameters: [ { $ref: '#/components/parameters/id' } ]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [image]
+              properties:
+                image: { type: string, format: binary }
+      responses:
+        '200': { description: "Publication mise a jour ; image_url change pour contourner le cache du navigateur" }
+        '400': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
+
   /admin/reports/documents.csv:
     get:
       tags: [Administration]
@@ -861,10 +880,11 @@ components:
         classification: { type: string, nullable: true, example: Informatique documentaire }
         langue: { type: string, nullable: true, example: fr }
         type_document: { type: string, nullable: true, example: Article scientifique }
-        statut: { type: string, enum: [EN_ATTENTE, EXTRACTION, A_VALIDER, PUBLIE, SUPPRIME], example: PUBLIE }
+        statut: { type: string, enum: [EN_ATTENTE, EXTRACTION, A_VALIDER, REJETE, ECHEC, PUBLIE, SUPPRIME], example: PUBLIE }
         visibilite: { type: string, enum: [PUBLIC, INSTITUTION], example: PUBLIC }
-        image_url: { type: string, nullable: true, example: /api/v1/documents/1/image }
+        image_url: { type: string, nullable: true, example: "/api/v1/documents/1/image?v=3f2a91c" }
         fichier_url: { type: string, nullable: true, example: /api/v1/documents/1/file }
+        texte_pret: { type: boolean, description: "Texte du fichier lu : le document peut etre analyse par l'IA" }
         mots_cles:
           type: array
           items: { type: string, example: Dublin Core }

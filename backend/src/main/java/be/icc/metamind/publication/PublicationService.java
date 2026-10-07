@@ -355,6 +355,23 @@ public class PublicationService {
 				.orElseGet(() -> documentUploadService.loadCoverImage(document.getCoverImagePath()));
 	}
 
+	/**
+	 * Remplace l'image d'un document, par exemple par la figure la plus parlante de
+	 * l'article plutot que sa premiere page. Reserve a l'administrateur.
+	 */
+	@Transactional
+	public PublicationResponse replaceCoverImage(long id, MultipartFile image) {
+		if (image == null || image.isEmpty()) {
+			throw new ApiException(HttpStatus.BAD_REQUEST, "L'image est obligatoire.");
+		}
+		DocumentEntity document = documentRepository.findById(id)
+				.orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "La publication demandee est introuvable."));
+		String coverPath = documentUploadService.storeCoverImage(image);
+		document.updateCoverImagePath(coverPath);
+		documentCoverService.persistFromPath(document.getId(), coverPath);
+		return toResponse(document);
+	}
+
 	@Transactional(readOnly = true)
 	public StoredFile findDocumentFile(long id, UserEntity currentUser) {
 		DocumentEntity document = documentRepository.findById(id)
@@ -375,8 +392,8 @@ public class PublicationService {
 			throw new ApiException(HttpStatus.FORBIDDEN, "Cette publication ne peut pas etre modifiee avec ce compte.");
 		}
 		if (request.status() == PublicationStatus.EN_ATTENTE
-				|| request.status() == PublicationStatus.EN_FILE
 				|| request.status() == PublicationStatus.EXTRACTION
+				|| request.status() == PublicationStatus.REJETE
 				|| request.status() == PublicationStatus.ECHEC) {
 			throw new ApiException(HttpStatus.BAD_REQUEST, "Ce statut est reserve au traitement interne.");
 		}

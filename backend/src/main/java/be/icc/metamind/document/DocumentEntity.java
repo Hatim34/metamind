@@ -137,14 +137,28 @@ public class DocumentEntity {
 		this.searchVector = searchText;
 	}
 
-	public void markExtractionFailed() {
+	/** Le fichier n'a pas pu etre lu : seul un nouveau traitement du fichier peut le reprendre. */
+	public void markFileUnreadable() {
 		this.status = DocumentStatus.ECHEC;
 	}
 
+	/** L'analyse par l'IA a echoue : le texte reste disponible et l'analyse peut etre relancee. */
+	public void markAnalysisFailed() {
+		this.status = DocumentStatus.EN_ATTENTE;
+	}
+
+	/**
+	 * Texte lu : le document attend l'analyse par l'IA. Il n'est pas encore "a valider",
+	 * sinon la file de validation affichait des notices vides.
+	 */
 	public void completeImportProcessing(String extractedText, String coverImagePath) {
 		this.extractedText = extractedText;
 		this.coverImagePath = coverImagePath;
-		this.status = DocumentStatus.A_VALIDER;
+		this.status = DocumentStatus.EN_ATTENTE;
+	}
+
+	public boolean hasExtractedText() {
+		return extractedText != null && !extractedText.isBlank();
 	}
 
 	public void markImportProcessing() {

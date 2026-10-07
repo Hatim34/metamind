@@ -19,7 +19,8 @@ public interface DocumentRepository extends JpaRepository<DocumentEntity, Long> 
 	 */
 	@Query("""
 			select distinct new be.icc.metamind.document.DocumentSummary(
-				d.id, d.fileName, d.filePath, d.coverImagePath, d.status, d.visibility, i.id, i.name)
+				d.id, d.fileName, d.filePath, d.coverImagePath, d.status, d.visibility, i.id, i.name,
+				case when d.extractedText is null or length(d.extractedText) = 0 then false else true end)
 			from DocumentEntity d
 			join d.institution i
 			left join MetadataEntity m on m.document = d
@@ -37,7 +38,8 @@ public interface DocumentRepository extends JpaRepository<DocumentEntity, Long> 
 	/** Tous les documents, sans le texte extrait. Reserve a la vue globale de l'administrateur. */
 	@Query("""
 			select new be.icc.metamind.document.DocumentSummary(
-				d.id, d.fileName, d.filePath, d.coverImagePath, d.status, d.visibility, i.id, i.name)
+				d.id, d.fileName, d.filePath, d.coverImagePath, d.status, d.visibility, i.id, i.name,
+				case when d.extractedText is null or length(d.extractedText) = 0 then false else true end)
 			from DocumentEntity d
 			join d.institution i
 			""")
@@ -46,7 +48,8 @@ public interface DocumentRepository extends JpaRepository<DocumentEntity, Long> 
 	/** Documents d'une institution, sans le texte extrait. */
 	@Query("""
 			select new be.icc.metamind.document.DocumentSummary(
-				d.id, d.fileName, d.filePath, d.coverImagePath, d.status, d.visibility, i.id, i.name)
+				d.id, d.fileName, d.filePath, d.coverImagePath, d.status, d.visibility, i.id, i.name,
+				case when d.extractedText is null or length(d.extractedText) = 0 then false else true end)
 			from DocumentEntity d
 			join d.institution i
 			where i.id = :institutionId
@@ -56,7 +59,8 @@ public interface DocumentRepository extends JpaRepository<DocumentEntity, Long> 
 	/** Documents du catalogue public : publies et en acces public. */
 	@Query("""
 			select new be.icc.metamind.document.DocumentSummary(
-				d.id, d.fileName, d.filePath, d.coverImagePath, d.status, d.visibility, i.id, i.name)
+				d.id, d.fileName, d.filePath, d.coverImagePath, d.status, d.visibility, i.id, i.name,
+				case when d.extractedText is null or length(d.extractedText) = 0 then false else true end)
 			from DocumentEntity d
 			join d.institution i
 			where d.status = be.icc.metamind.document.DocumentStatus.PUBLIE
@@ -67,7 +71,8 @@ public interface DocumentRepository extends JpaRepository<DocumentEntity, Long> 
 	/** Documents visibles par un utilisateur connecte : ceux de son institution, plus les publics. */
 	@Query("""
 			select new be.icc.metamind.document.DocumentSummary(
-				d.id, d.fileName, d.filePath, d.coverImagePath, d.status, d.visibility, i.id, i.name)
+				d.id, d.fileName, d.filePath, d.coverImagePath, d.status, d.visibility, i.id, i.name,
+				case when d.extractedText is null or length(d.extractedText) = 0 then false else true end)
 			from DocumentEntity d
 			join d.institution i
 			where i.id = :institutionId
