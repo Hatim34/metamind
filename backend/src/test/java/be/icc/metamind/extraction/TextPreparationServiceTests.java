@@ -127,4 +127,14 @@ class TextPreparationServiceTests {
 		assertThat(prepared.excerpt()).startsWith("START").endsWith("END");
 		assertThat(prepared.segmentedExcerpt()).contains("[S1]");
 	}
+
+	@Test
+	void theBibliographyDoesNotDecideTheLanguageOfTheDocument() {
+		String body = "Cette thèse étudie les effets du climat sur les cultures dans les régions du nord. ".repeat(120);
+		String references = "References\n" + "Smith, J. (2020). The effects of the climate on the crops and the soils of the north. Journal of the Studies.\n".repeat(60);
+		String text = body + "\n" + references;
+
+		assertThat(service.withoutBibliography(text)).doesNotContain("Smith");
+		assertThat(service.prepare(text).language()).isEqualTo("fr");
+	}
 }

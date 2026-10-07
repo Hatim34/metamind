@@ -1,5 +1,6 @@
 package be.icc.metamind.publication;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Locale;
 import java.util.stream.StreamSupport;
@@ -12,6 +13,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.web.client.RestClient;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
@@ -27,7 +29,11 @@ public class GeminiPublicationTranslationProvider implements PublicationTranslat
 	private final PlatformSettings settings;
 
 	public GeminiPublicationTranslationProvider(RestClient.Builder restClientBuilder, ObjectMapper objectMapper, String apiKey, String model) {
-		this(restClientBuilder, objectMapper, apiKey, model, null);
+		this.restClient = restClientBuilder.baseUrl("https://generativelanguage.googleapis.com").build();
+		this.objectMapper = objectMapper;
+		this.apiKey = apiKey;
+		this.model = model;
+		this.settings = null;
 	}
 
 	@Autowired
@@ -38,7 +44,11 @@ public class GeminiPublicationTranslationProvider implements PublicationTranslat
 			@Value("${metamind.gemini.model:gemini-3.5-flash-lite}") String model,
 			PlatformSettings settings
 	) {
-		this.restClient = restClientBuilder.baseUrl("https://generativelanguage.googleapis.com").build();
+		// Sans limite, un modele sature faisait attendre plusieurs minutes ; l'essai suivant est plus utile.
+		SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
+		requestFactory.setConnectTimeout(Duration.ofSeconds(10));
+		requestFactory.setReadTimeout(Duration.ofSeconds(60));
+		this.restClient = restClientBuilder.clone().requestFactory(requestFactory).baseUrl("https://generativelanguage.googleapis.com").build();
 		this.objectMapper = objectMapper;
 		this.apiKey = apiKey;
 		this.model = model;

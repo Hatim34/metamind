@@ -6,6 +6,7 @@ import jakarta.validation.Valid;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -27,11 +28,13 @@ import be.icc.metamind.user.UserEntity;
 public class PublicationController {
 	private final PublicationService service;
 	private final PublicationTranslationService translationService;
+	private final PublicationTranslationJobs translationJobs;
 	private final AccountService accountService;
 
-	public PublicationController(PublicationService service, PublicationTranslationService translationService, AccountService accountService) {
+	public PublicationController(PublicationService service, PublicationTranslationService translationService, PublicationTranslationJobs translationJobs, AccountService accountService) {
 		this.service = service;
 		this.translationService = translationService;
+		this.translationJobs = translationJobs;
 		this.accountService = accountService;
 	}
 
@@ -47,15 +50,23 @@ public class PublicationController {
 		return service.findPublication(id, currentUser);
 	}
 
-	/** Traduit les champs descriptifs pour l'affichage, sans modifier la notice source. */
+	/**
+	 * Traduction d'affichage. Deja prete : 200. Sinon 202 avec la notice d'origine, et la
+	 * traduction est preparee en arriere-plan : la fiche s'affiche sans attendre le modele.
+	 */
 	@GetMapping("/{id}/traduction")
-	public PublicationTranslation translation(
+	public ResponseEntity<PublicationTranslation> translation(
 			@PathVariable long id,
 			@RequestParam("langue") String language,
 			@RequestHeader(value = "Authorization", required = false) String authorization
 	) {
 		UserEntity currentUser = accountService.authenticateOptional(authorization);
-		return translationService.translate(id, language, currentUser);
+		return translationService.ready(id, language, currentUser)
+				.map(ResponseEntity::ok)
+				.orElseGet(() -> {
+					translationJobs.translateSoon(id, currentUser);
+					return ResponseEntity.accepted().body(translationService.original(id, language, currentUser));
+				});
 	}
 
 	@PostMapping

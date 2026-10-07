@@ -85,7 +85,7 @@ public class TextPreparationService {
 				normalized,
 				excerpt,
 				segments(excerpt),
-				detectLanguage(normalized),
+				detectLanguage(withoutBibliography(normalized)),
 				detectDocumentType(excerpt),
 				detectDocumentDoi(normalized),
 				detect(DOI_PATTERN, normalized),
@@ -204,6 +204,29 @@ public class TextPreparationService {
 	private String foldAccents(String value) {
 		return Normalizer.normalize(value, Normalizer.Form.NFD)
 				.replaceAll("\\p{InCombiningDiacriticalMarks}+", "");
+	}
+
+	private static final Pattern BIBLIOGRAPHY_HEADING = Pattern.compile(
+			"(?im)^\\s*(?:\\d+\\.?\\s*)?(references|bibliography|bibliographie|r[ée]f[ée]rences(?: bibliographiques)?|literatuur(?:lijst)?|bronnen(?:lijst)?|works cited)\\s*:?\\s*$");
+
+	/**
+	 * Retire la bibliographie avant de deviner la langue : un article francais qui cite
+	 * des dizaines de references anglaises passait sinon pour un article anglais.
+	 * Seul un titre de section situe apres le premier tiers du texte est retenu,
+	 * pour ne pas couper un sommaire.
+	 */
+	String withoutBibliography(String text) {
+		if (text == null || text.isBlank()) {
+			return text;
+		}
+		Matcher matcher = BIBLIOGRAPHY_HEADING.matcher(text);
+		int cut = -1;
+		while (matcher.find()) {
+			if (matcher.start() > text.length() / 3) {
+				cut = matcher.start();
+			}
+		}
+		return cut > 0 ? text.substring(0, cut) : text;
 	}
 
 	private String detectLanguage(String text) {

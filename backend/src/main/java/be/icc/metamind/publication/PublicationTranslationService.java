@@ -5,6 +5,7 @@ import java.security.MessageDigest;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import be.icc.metamind.api.ApiException;
@@ -43,30 +44,44 @@ public class PublicationTranslationService {
 		this.objectMapper = objectMapper;
 	}
 
-	@Transactional
+	/**
+	 * Traduction deja disponible : la notice est dans la langue demandee, ou sa traduction
+	 * en cache correspond encore a la notice. Aucun appel au modele.
+	 */
+	public Optional<PublicationTranslation> ready(long documentId, String requestedLanguage, UserEntity currentUser) {
+		String targetLanguage = normalizeLanguage(requestedLanguage);
+		PublicationResponse publication = publicationService.findPublication(documentId, currentUser);
+		return ready(publication, targetLanguage);
+	}
+
+	/** Notice d'origine, affichee le temps que la traduction soit preparee. */
+	public PublicationTranslation original(long documentId, String requestedLanguage, UserEntity currentUser) {
+		return PublicationTranslation.source(publicationService.findPublication(documentId, currentUser), normalizeLanguage(requestedLanguage));
+	}
+
+	/**
+	 * Traduit puis met en cache. Volontairement hors transaction : l'appel au modele peut
+	 * durer, il ne doit pas garder une connexion a la base pendant ce temps.
+	 */
 	public PublicationTranslation translate(long documentId, String requestedLanguage, UserEntity currentUser) {
 		String targetLanguage = normalizeLanguage(requestedLanguage);
 		PublicationResponse publication = publicationService.findPublication(documentId, currentUser);
-		String sourceLanguage = normalizeSourceLanguage(publication.language());
-		if (sourceLanguage.equals(targetLanguage)) {
-			return PublicationTranslation.source(publication, targetLanguage);
+		Optional<PublicationTranslation> available = ready(publication, targetLanguage);
+		if (available.isPresent()) {
+			return available.get();
 		}
 
+		String sourceLanguage = sourceLanguage(publication);
 		TranslationSource source = new TranslationSource(publication.title(), publication.summary(), publication.keywords(), publication.classification());
 		String fingerprint = fingerprint(source);
-		PublicationTranslationEntity cached = translationRepository
-				.findByDocumentIdAndTargetLanguage(documentId, targetLanguage)
-				.orElse(null);
-		if (cached != null && fingerprint.equals(cached.getSourceFingerprint())) {
-			return new PublicationTranslation(targetLanguage, sourceLanguage, cached.getTitle(), cached.getSummary(), readKeywords(cached.getKeywordsJson()), true,
-					cached.getClassification() == null ? publication.classification() : cached.getClassification());
-		}
-
 		PublicationTranslationProvider provider = provider();
 		PublicationTranslation translated = provider.translate(source, sourceLanguage, targetLanguage);
 		DocumentEntity document = documentRepository.findById(documentId)
 				.orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "La publication demandee est introuvable."));
 		String keywordsJson = writeKeywords(translated.keywords());
+		PublicationTranslationEntity cached = translationRepository
+				.findByDocumentIdAndTargetLanguage(documentId, targetLanguage)
+				.orElse(null);
 		if (cached == null) {
 			cached = new PublicationTranslationEntity(document, targetLanguage, fingerprint, translated.title(), translated.summary(), keywordsJson, provider.modelName());
 		} else {
@@ -76,6 +91,18 @@ public class PublicationTranslationService {
 		translationRepository.save(cached);
 		return new PublicationTranslation(targetLanguage, sourceLanguage, translated.title(), translated.summary(), translated.keywords(), translated.translated(),
 				translated.classification() == null ? publication.classification() : translated.classification());
+	}
+
+	private Optional<PublicationTranslation> ready(PublicationResponse publication, String targetLanguage) {
+		String sourceLanguage = sourceLanguage(publication);
+		if (sourceLanguage.equals(targetLanguage)) {
+			return Optional.of(PublicationTranslation.source(publication, targetLanguage));
+		}
+		String fingerprint = fingerprint(new TranslationSource(publication.title(), publication.summary(), publication.keywords(), publication.classification()));
+		return translationRepository.findByDocumentIdAndTargetLanguage(publication.id(), targetLanguage)
+				.filter(cached -> fingerprint.equals(cached.getSourceFingerprint()))
+				.map(cached -> new PublicationTranslation(targetLanguage, sourceLanguage, cached.getTitle(), cached.getSummary(), readKeywords(cached.getKeywordsJson()), true,
+						cached.getClassification() == null ? publication.classification() : cached.getClassification()));
 	}
 
 	/**
@@ -90,7 +117,7 @@ public class PublicationTranslationService {
 			return publications;
 		}
 		List<Long> ids = publications.stream()
-				.filter(publication -> !target.equals(normalizeSourceLanguage(publication.language())))
+				.filter(publication -> !target.equals(sourceLanguage(publication)))
 				.map(PublicationResponse::id)
 				.toList();
 		if (ids.isEmpty()) {
@@ -117,6 +144,16 @@ public class PublicationTranslationService {
 			throw new ApiException(HttpStatus.BAD_REQUEST, "La langue de traduction doit etre fr, nl ou en.");
 		}
 		return normalized;
+	}
+
+	/**
+	 * Langue du titre et du resume tels qu'ils seront affiches. La langue enregistree de la
+	 * notice ne sert que si le texte ne permet pas de trancher : une notice marquee « anglais »
+	 * dont le titre est en francais doit quand meme etre traduite vers l'anglais.
+	 */
+	private String sourceLanguage(PublicationResponse publication) {
+		String guessed = TextLanguage.guess(publication.title() + " " + (publication.summary() == null ? "" : publication.summary()));
+		return guessed != null ? guessed : normalizeSourceLanguage(publication.language());
 	}
 
 	private String normalizeSourceLanguage(String language) {
