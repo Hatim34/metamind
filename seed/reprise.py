@@ -12,6 +12,8 @@ Etapes, a lancer dans l'ordre (chacune peut etre relancee sans risque) :
                dans la file pour la demonstration (voir notice_publiee pour la regle suivie)
   noms         remet en « Prenom Nom » les auteurs publies sous la forme « Nom, Prenom »
   figures      remplace la premiere page par la figure retenue de l'article (figures_retenues.txt)
+  photos       place en base les photos de campus actuelles, avec leur credit
+  traductions  lance la traduction de toutes les notices publiees (en arriere-plan sur le serveur)
   ajout        importe, analyse et publie les documents ajoutes par « collect.py --ajout »,
                au nom d'un bibliothecaire de leur institution (METAMIND_SEED_PASSWORD requis)
 
@@ -139,15 +141,20 @@ def a_extraire(api, token):
 
 
 def etape_extraction(api, token, args):
-    for doc in a_extraire(api, token):
-        debut = time.time()
-        try:
-            api.call("POST", f"/documents/{doc['id']}/extraction", token)
-            meta = api.call("GET", f"/documents/{doc['id']}/metadata", token)
-            print(f"  #{doc['id']} {time.time() - debut:4.1f}s  {len(meta.get('auteurs') or [])} auteurs, "
-                  f"resume {'oui' if meta.get('resume') else 'non'}  {meta.get('titre', '')[:60]}")
-        except RuntimeError as erreur:
-            print(f"  #{doc['id']} ECHEC {erreur}")
+    with Bibliothecaire(api, token) as bibliothecaire:
+        for doc in a_extraire(api, token):
+            extraire(api, bibliothecaire.pour(doc["institution"]), doc)
+
+
+def extraire(api, token, doc):
+    debut = time.time()
+    try:
+        api.call("POST", f"/documents/{doc['id']}/extraction", token)
+        meta = api.call("GET", f"/documents/{doc['id']}/metadata", token)
+        print(f"  #{doc['id']} {time.time() - debut:4.1f}s  {len(meta.get('auteurs') or [])} auteurs, "
+              f"resume {'oui' if meta.get('resume') else 'non'}  {meta.get('titre', '')[:60]}")
+    except RuntimeError as erreur:
+        print(f"  #{doc['id']} ECHEC {erreur}")
 
 
 def etape_evaluation(api, token, args):
@@ -240,7 +247,7 @@ def etape_publication(api, token, args):
     candidats = [doc for doc in tous_les_documents(api, token, statut="A_VALIDER") if doc["id"] in par_id]
     rng = random.Random(args.seed)
     rng.shuffle(candidats)
-    gardes = {}
+    gardes, a_publier = {}, []
     for doc in candidats:
         meta = api.call("GET", f"/documents/{doc['id']}/metadata", token)
         if meta.get("statut") != "EN_ATTENTE":
@@ -250,12 +257,20 @@ def etape_publication(api, token, args):
             print(f"  garde dans la file #{doc['id']} [{doc['institution']}]")
             continue
         corps = notice_publiee(meta, par_id[doc["id"]]["verite_terrain"])
-        publier(api, token, doc["id"], corps)
-        print(f"  publie #{doc['id']} [{doc['institution']}] {corps['titre'][:70]}")
+        a_publier.append((doc, corps))
+    with Bibliothecaire(api, token) as bibliothecaire:
+        for doc, corps in sorted(a_publier, key=lambda element: element[0]["institution"]):
+            publier(api, bibliothecaire.pour(doc["institution"]), doc["id"], corps)
+            print(f"  publie #{doc['id']} [{doc['institution']}] {corps['titre'][:70]}")
 
 
 def etape_noms(api, token, args):
     """Notices deja publiees avec un auteur ecrit « Nom, Prenom » : remises en « Prenom Nom »."""
+    with Bibliothecaire(api, token) as bibliothecaire:
+        corriger_noms(api, token, bibliothecaire)
+
+
+def corriger_noms(api, token, bibliothecaire):
     for doc in tous_les_documents(api, token, statut="PUBLIE"):
         meta = api.call("GET", f"/documents/{doc['id']}/metadata", token)
         auteurs = meta.get("auteurs") or []
@@ -268,7 +283,7 @@ def etape_noms(api, token, args):
             "mots_cles": meta.get("mots_cles") or [], "langue": meta.get("langue"),
             "type_document": meta.get("type_document"), "doi": meta.get("doi"),
         }
-        api.call("PUT", f"/documents/{doc['id']}/metadata", token, json=corps)
+        api.call("PUT", f"/documents/{doc['id']}/metadata", bibliothecaire.pour(doc["institution"]), json=corps)
         print(f"  #{doc['id']} {', '.join(a['nom_complet'] for a in corps['auteurs'])[:90]}")
 
 
@@ -303,6 +318,39 @@ def etape_figures(api, token, args):
 INSTITUTION_PAR_CODE = {"ULB": "Université libre de Bruxelles", "UCL": "UCLouvain", "ULG": "Université de Liège",
                         "KUL": "KU Leuven", "UGE": "Universiteit Gent", "VUB": "Vrije Universiteit Brussel"}
 BIBLIOTHECAIRE = "sarah@institution-a.example"
+
+
+class Bibliothecaire:
+    """
+    Seul un bibliothecaire importe, analyse et valide (cahier des charges B3, B5, B6) :
+    le compte de demonstration est rattache a l'institution du document le temps de l'action,
+    puis retrouve l'UCLouvain.
+    """
+
+    def __init__(self, api, jeton_admin):
+        mot_de_passe = os.environ.get("METAMIND_SEED_PASSWORD")
+        if not mot_de_passe:
+            sys.exit("Definis METAMIND_SEED_PASSWORD (mot de passe des comptes de demonstration).")
+        self.api, self.admin, self.mot_de_passe = api, jeton_admin, mot_de_passe
+        self.institutions = {i["nom"]: i["id"] for i in api.call("GET", "/admin/institutions", jeton_admin)}
+        self.compte = next(u for u in api.call("GET", "/admin/users", jeton_admin, params={"size": 100})["contenu"]
+                           if u["email"] == BIBLIOTHECAIRE)
+        self.actuelle, self.jeton = None, None
+
+    def pour(self, institution):
+        if institution != self.actuelle:
+            self.api.call("PATCH", f"/admin/users/{self.compte['id']}", self.admin,
+                          json={"institution_id": self.institutions[institution]})
+            self.jeton, self.actuelle = self.api.login(BIBLIOTHECAIRE, self.mot_de_passe), institution
+        return self.jeton
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *erreur):
+        self.api.call("PATCH", f"/admin/users/{self.compte['id']}", self.admin,
+                      json={"institution_id": self.institutions["UCLouvain"]})
+        print(f"  {BIBLIOTHECAIRE} de retour a l'UCLouvain")
 
 
 def attendre_texte(api, token, doc_id, limite=120):
@@ -365,6 +413,34 @@ def etape_ajout(api, token, args):
         print(f"  {BIBLIOTHECAIRE} de retour a l'UCLouvain")
 
 
+PHOTOS_INSTITUTIONS = {
+    "Université libre de Bruxelles": ("ULB.jpg", "Jndemi, CC BY 3.0, Wikimedia Commons"),
+    "UCLouvain": ("UCL.jpg", "EmDee, CC BY 4.0, Wikimedia Commons"),
+    "Université de Liège": ("ULG.jpg", "Marc Ryckaert, CC BY 4.0, Wikimedia Commons"),
+    "KU Leuven": ("KUL.jpg", "Juhanson, CC BY-SA 3.0, Wikimedia Commons"),
+    "Universiteit Gent": ("UGE.jpg", "ElienSmits, CC BY-SA 4.0, Wikimedia Commons"),
+    "Vrije Universiteit Brussel": ("VUB.jpg", "Romaine, CC0, Wikimedia Commons"),
+}
+
+
+def etape_photos(api, token, args):
+    """Les photos etaient figees dans le code du site : elles passent en base, modifiables par l'administrateur."""
+    dossier = ROOT.parent / "frontend" / "public" / "institutions"
+    institutions = {i["nom"]: i["id"] for i in api.call("GET", "/admin/institutions", token)}
+    for nom, (fichier, credit) in PHOTOS_INSTITUTIONS.items():
+        if nom not in institutions or not (dossier / fichier).exists():
+            print(f"  {nom} : ignore")
+            continue
+        api.call("PUT", f"/institutions/{institutions[nom]}/photo", token,
+                 files={"image": (fichier, (dossier / fichier).read_bytes(), "image/jpeg")}, data={"credit": credit})
+        print(f"  {nom} <- {fichier}")
+
+
+def etape_traductions(api, token, args):
+    api.call("POST", "/admin/traductions", token, expect=(200, 202, 204))
+    print("  traduction de toutes les notices publiees lancee sur le serveur (quelques minutes)")
+
+
 ETAPES = {
     "fichiers": etape_fichiers,
     "nettoyage": etape_nettoyage,
@@ -374,6 +450,8 @@ ETAPES = {
     "noms": etape_noms,
     "figures": etape_figures,
     "ajout": etape_ajout,
+    "photos": etape_photos,
+    "traductions": etape_traductions,
 }
 
 
