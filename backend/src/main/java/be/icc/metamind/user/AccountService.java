@@ -49,7 +49,7 @@ public class AccountService {
 		}
 
 		loginAttemptService.reset(request.email());
-		return new AuthResponse(jwtService.createToken(user), 3600, UserResponse.from(user));
+		return new AuthResponse(jwtService.createToken(user), (int) jwtService.sessionSeconds(), UserResponse.from(user));
 	}
 
 	@Transactional

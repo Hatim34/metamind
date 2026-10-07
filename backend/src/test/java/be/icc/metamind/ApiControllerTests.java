@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.startsWith;
+import static org.hamcrest.Matchers.containsString;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
@@ -11,6 +12,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.forwardedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -143,6 +145,14 @@ class ApiControllerTests {
 				institution,
 				null
 		);
+	}
+
+	@Test
+	void securityPolicyAllowsBlobResourcesForProtectedFiles() throws Exception {
+		mockMvc.perform(get("/api/v1/references"))
+				.andExpect(status().isOk())
+				.andExpect(header().string("Content-Security-Policy", containsString("img-src 'self' data: blob:")))
+				.andExpect(header().string("Content-Security-Policy", containsString("frame-src 'self' blob:")));
 	}
 
 	@Test
@@ -329,6 +339,43 @@ class ApiControllerTests {
 		mockMvc.perform(get("/api/v1/documents/" + id + "/image").header("Authorization", bearerToken()))
 				.andExpect(status().isOk())
 				.andExpect(content().bytes(figure));
+	}
+
+	@Test
+	void adminSupervisesButDoesNotImportDocuments() throws Exception {
+		mockMvc.perform(multipart("/api/v1/documents")
+						.file(new MockMultipartFile("fichier", "admin.txt", MediaType.TEXT_PLAIN_VALUE,
+								"Document importe par l'administrateur.".getBytes(StandardCharsets.UTF_8)))
+						.header("Authorization", adminBearerToken()))
+				.andExpect(status().isForbidden());
+	}
+
+	@Test
+	void adminCannotValidateANotice() throws Exception {
+		DocumentEntity document = documentRepository.findAll().stream()
+				.filter(item -> item.getStatus() == DocumentStatus.A_VALIDER)
+				.findFirst()
+				.orElseThrow();
+
+		mockMvc.perform(put("/api/v1/documents/" + document.getId() + "/metadata")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{"titre":"Titre","date_publication":"2025-01-01","visibilite":"PUBLIC",
+								 "auteurs":[{"nom_complet":"Sarah Lemaire"}],"mots_cles":[]}
+								""")
+						.header("Authorization", adminBearerToken()))
+				.andExpect(status().isForbidden());
+	}
+
+	@Test
+	void adminCannotChangeItsOwnRole() throws Exception {
+		UserEntity admin = userRepository.findByEmailIgnoreCase("admin@metamind.example").orElseThrow();
+
+		mockMvc.perform(patch("/api/v1/admin/users/" + admin.getId())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{\"role\":\"LIBRARIAN\"}")
+						.header("Authorization", adminBearerToken()))
+				.andExpect(status().isConflict());
 	}
 
 	@Test
@@ -687,16 +734,19 @@ class ApiControllerTests {
 	@Test
 	void administratorCanReadConfigurationAndLogs() throws Exception {
 		mockMvc.perform(get("/api/v1/admin/config")
-						.header("Authorization", adminBearerToken()))
+					.header("Authorization", adminBearerToken()))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.prix_credit_eur", is("0.50")))
-				.andExpect(jsonPath("$.taille_max_upload_mo", is("50")));
+				.andExpect(jsonPath("$.modele_llm", is("gemini-3.5-flash-lite")))
+				.andExpect(jsonPath("$.taille_max_upload_mo", is("50")))
+				.andExpect(jsonPath("$.tentatives_connexion_max", is("5")))
+				.andExpect(jsonPath("$.jwt_duree_secondes", is("3600")));
 
 		String body = """
 				{
 				  "modele_llm": "gemini-2.5-flash-lite",
-				  "prix_credit_eur": "0.60",
-				  "langues": "fr,nl,en"
+				  "taille_max_upload_mo": "25",
+				  "tentatives_connexion_max": "6",
+				  "jwt_duree_secondes": "1800"
 				}
 				""";
 
@@ -706,8 +756,9 @@ class ApiControllerTests {
 				.content(body))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.modele_llm", is("gemini-2.5-flash-lite")))
-				.andExpect(jsonPath("$.prix_credit_eur", is("0.60")))
-				.andExpect(jsonPath("$.langues", is("fr,nl,en")));
+				.andExpect(jsonPath("$.taille_max_upload_mo", is("25")))
+				.andExpect(jsonPath("$.tentatives_connexion_max", is("6")))
+				.andExpect(jsonPath("$.jwt_duree_secondes", is("1800")));
 
 		mockMvc.perform(get("/api/v1/admin/logs")
 						.header("Authorization", adminBearerToken()))

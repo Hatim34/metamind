@@ -8,24 +8,38 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import be.icc.metamind.api.ApiException;
+import be.icc.metamind.config.PlatformSettings;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 @Service
 public class LoginAttemptService {
-	private static final int MAX_FAILURES = 5;
+	private static final int DEFAULT_MAX_FAILURES = 5;
 	private static final Duration BLOCK_DURATION = Duration.ofMinutes(15);
 
 	private final Clock clock;
+	private final PlatformSettings settings;
 	private final Map<String, LoginAttempt> attempts = new ConcurrentHashMap<>();
 
-	public LoginAttemptService() {
-		this(Clock.systemUTC());
+	@Autowired
+	public LoginAttemptService(PlatformSettings settings) {
+		this(Clock.systemUTC(), settings);
 	}
 
 	LoginAttemptService(Clock clock) {
+		this(clock, null);
+	}
+
+	private LoginAttemptService(Clock clock, PlatformSettings settings) {
 		this.clock = clock;
+		this.settings = settings;
+	}
+
+	/** Nombre d'echecs avant blocage, regle par l'administrateur (configuration A2). */
+	private int maxFailures() {
+		return settings == null ? DEFAULT_MAX_FAILURES : settings.maxLoginFailures();
 	}
 
 	public void assertAllowed(String email) {
@@ -51,7 +65,7 @@ public class LoginAttemptService {
 		attempts.compute(key, (ignored, attempt) -> {
 			boolean expired = attempt != null && attempt.blockedUntil() != null && !attempt.blockedUntil().isAfter(now);
 			int failures = attempt == null || expired ? 1 : attempt.failures() + 1;
-			Instant blockedUntil = failures >= MAX_FAILURES ? now.plus(BLOCK_DURATION) : null;
+			Instant blockedUntil = failures >= maxFailures() ? now.plus(BLOCK_DURATION) : null;
 			return new LoginAttempt(failures, blockedUntil);
 		});
 	}

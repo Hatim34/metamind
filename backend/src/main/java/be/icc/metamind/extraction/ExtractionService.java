@@ -33,6 +33,7 @@ import be.icc.metamind.credit.CreditMovementRepository;
 import be.icc.metamind.credit.CreditMovementType;
 import be.icc.metamind.institution.InstitutionEntity;
 import be.icc.metamind.institution.InstitutionRepository;
+import be.icc.metamind.user.LibrarianActions;
 import be.icc.metamind.user.UserEntity;
 import be.icc.metamind.user.UserRole;
 
@@ -88,6 +89,7 @@ public class ExtractionService {
 
 	@Transactional(noRollbackFor = ApiException.class)
 	public MetadataExtractionResponse extract(long publicationId, UserEntity user) {
+		LibrarianActions.require(user, "lancer l'extraction");
 		DocumentEntity document = documentRepository.findById(publicationId)
 				.orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "La publication demandee est introuvable."));
 		InstitutionEntity institution = document.getInstitution();

@@ -8,6 +8,7 @@ import java.util.stream.Collectors;
 import be.icc.metamind.api.ApiException;
 import be.icc.metamind.api.ClientIpResolver;
 import be.icc.metamind.api.PageResponse;
+import be.icc.metamind.config.PlatformSettings;
 import be.icc.metamind.document.AuditLogEntity;
 import be.icc.metamind.document.AuditLogRepository;
 import be.icc.metamind.document.ConfigurationEntity;
@@ -31,20 +32,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class AdminService {
-	private static final Set<String> CONFIGURATION_KEYS = Set.of(
-			"modele_llm",
-			"fournisseur_llm",
-			"url_dspace",
-			"taille_max_upload_mo",
-			"langues",
-			"cle_api_llm",
-			"prix_credit_eur",
-			"stripe_actif",
-			"recherche_cache_secondes",
-			"tentatives_connexion_max",
-			"jwt_duree_secondes"
-	);
-
 	private final UserRepository userRepository;
 	private final InstitutionRepository institutionRepository;
 	private final ConfigurationRepository configurationRepository;
@@ -53,6 +40,7 @@ public class AdminService {
 	private final MetadataRepository metadataRepository;
 	private final CreditMovementRepository creditMovementRepository;
 	private final AdministratorGuard administratorGuard;
+	private final PlatformSettings platformSettings;
 
 	public AdminService(
 			UserRepository userRepository,
@@ -62,7 +50,8 @@ public class AdminService {
 			DocumentRepository documentRepository,
 			MetadataRepository metadataRepository,
 			CreditMovementRepository creditMovementRepository,
-			AdministratorGuard administratorGuard
+			AdministratorGuard administratorGuard,
+			PlatformSettings platformSettings
 	) {
 		this.userRepository = userRepository;
 		this.institutionRepository = institutionRepository;
@@ -72,6 +61,7 @@ public class AdminService {
 		this.metadataRepository = metadataRepository;
 		this.creditMovementRepository = creditMovementRepository;
 		this.administratorGuard = administratorGuard;
+		this.platformSettings = platformSettings;
 	}
 
 	@Transactional(readOnly = true)
@@ -87,6 +77,10 @@ public class AdminService {
 	public UserResponse updateUser(long id, AdminUserUpdateRequest request, UserEntity admin) {
 		UserEntity user = userRepository.findById(id)
 				.orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Le compte utilisateur est introuvable."));
+		// Un administrateur ne se retire pas lui-meme ses droits : un autre administrateur doit le faire.
+		if (user.getId().equals(admin.getId()) && (request.role() != null || request.status() != null)) {
+			throw new ApiException(HttpStatus.CONFLICT, "Vous ne pouvez pas modifier votre propre role ou statut.");
+		}
 		// Retrograder ou desactiver le dernier administrateur rendrait la plateforme iningerable.
 		if (administratorGuard.removesAdministration(request.role(), request.status())) {
 			administratorGuard.ensureAnotherActiveAdministratorRemains(user, "modifier ce compte");
@@ -150,12 +144,7 @@ public class AdminService {
 
 	@Transactional(readOnly = true)
 	public Map<String, String> readConfiguration() {
-		Map<String, String> values = configurationRepository.findAll().stream()
-				.collect(Collectors.toMap(item -> item.getCle(), item -> item.getValeur() == null ? "" : item.getValeur()));
-		values.putIfAbsent("modele_llm", "gemini-3.5-flash-lite");
-		values.putIfAbsent("taille_max_upload_mo", "50");
-		values.putIfAbsent("prix_credit_eur", "0.50");
-		return values;
+		return platformSettings.current();
 	}
 
 	@Transactional
@@ -176,6 +165,7 @@ public class AdminService {
 	}
 
 	private void updateConfigurationValue(String key, String value, UserEntity admin) {
+		platformSettings.validate(key, value);
 		ConfigurationEntity configuration = configurationRepository.findById(key)
 				.orElseGet(() -> new ConfigurationEntity(key, value, admin));
 		configuration.update(value, admin);
@@ -187,7 +177,7 @@ public class AdminService {
 			throw new ApiException(HttpStatus.BAD_REQUEST, "La cle de configuration est obligatoire.");
 		}
 		String key = value.trim();
-		if (!CONFIGURATION_KEYS.contains(key)) {
+		if (!PlatformSettings.isEditable(key)) {
 			throw new ApiException(HttpStatus.BAD_REQUEST, "La cle de configuration n'est pas autorisee.");
 		}
 		return key;

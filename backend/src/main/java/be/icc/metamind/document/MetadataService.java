@@ -10,6 +10,7 @@ import java.util.stream.Collectors;
 
 import be.icc.metamind.api.ApiException;
 import be.icc.metamind.api.ClientIpResolver;
+import be.icc.metamind.user.LibrarianActions;
 import be.icc.metamind.user.UserEntity;
 import be.icc.metamind.user.UserRole;
 import be.icc.metamind.opendata.DspacePublisher;
@@ -77,6 +78,7 @@ public class MetadataService {
 
 	@Transactional
 	public MetadataResponse validateMetadata(long documentId, MetadataValidationRequest request, UserEntity user) {
+		LibrarianActions.require(user, "valider une notice");
 		DocumentEntity document = findManageableDocument(documentId, user);
 		if (document.getStatus() == DocumentStatus.SUPPRIME) {
 			throw new ApiException(HttpStatus.BAD_REQUEST, "Un document supprime ne peut pas etre publie.");
@@ -148,6 +150,7 @@ public class MetadataService {
 
 	@Transactional
 	public MetadataResponse rejectMetadata(long documentId, MetadataRejectionRequest request, UserEntity user) {
+		LibrarianActions.require(user, "rejeter une notice");
 		DocumentEntity document = findManageableDocument(documentId, user);
 		if (document.getStatus() == DocumentStatus.SUPPRIME) {
 			throw new ApiException(HttpStatus.BAD_REQUEST, "Un document supprime ne peut pas etre rejete.");

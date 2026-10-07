@@ -10,8 +10,10 @@ import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 import be.icc.metamind.api.ApiException;
+import be.icc.metamind.config.PlatformSettings;
 import be.icc.metamind.document.DocumentEntity;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.core.io.ClassPathResource;
@@ -32,14 +34,28 @@ public class GeminiMetadataExtractionProvider implements MetadataExtractionProvi
 	private final String model;
 	private final TextPreparationService textPreparationService;
 	private final String promptTemplate;
+	private final PlatformSettings settings;
 
+	public GeminiMetadataExtractionProvider(
+			RestClient.Builder restClientBuilder,
+			ObjectMapper objectMapper,
+			String apiKey,
+			String model,
+			TextPreparationService textPreparationService
+	) {
+		this(restClientBuilder, objectMapper, apiKey, model, textPreparationService, null);
+	}
+
+	@Autowired
 	public GeminiMetadataExtractionProvider(
 			RestClient.Builder restClientBuilder,
 			ObjectMapper objectMapper,
 			@Value("${metamind.gemini.api-key:}") String apiKey,
 			@Value("${metamind.gemini.model:gemini-3.5-flash-lite}") String model,
-			TextPreparationService textPreparationService
+			TextPreparationService textPreparationService,
+			PlatformSettings settings
 	) {
+		this.settings = settings;
 		this.restClient = restClientBuilder.baseUrl("https://generativelanguage.googleapis.com").build();
 		this.objectMapper = objectMapper;
 		this.apiKey = apiKey;
@@ -63,7 +79,7 @@ public class GeminiMetadataExtractionProvider implements MetadataExtractionProvi
 		);
 
 		JsonNode response = restClient.post()
-				.uri("/v1beta/models/{model}:generateContent", model)
+				.uri("/v1beta/models/{model}:generateContent", modelName())
 				.header("x-goog-api-key", apiKey)
 				.body(request)
 				.retrieve()
@@ -116,8 +132,9 @@ public class GeminiMetadataExtractionProvider implements MetadataExtractionProvi
 	}
 
 	@Override
+	/** Modele choisi par l'administrateur (configuration A2), sinon celui du deploiement. */
 	public String modelName() {
-		return model;
+		return settings == null ? model : settings.llmModel();
 	}
 
 	@Override

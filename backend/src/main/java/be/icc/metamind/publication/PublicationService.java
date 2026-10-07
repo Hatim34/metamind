@@ -32,6 +32,7 @@ import be.icc.metamind.document.KeywordRepository;
 import be.icc.metamind.document.MetadataEntity;
 import be.icc.metamind.document.MetadataRepository;
 import be.icc.metamind.document.MetadataStatus;
+import be.icc.metamind.user.LibrarianActions;
 import be.icc.metamind.user.UserEntity;
 import be.icc.metamind.user.UserRole;
 
@@ -275,6 +276,7 @@ public class PublicationService {
 
 	@Transactional
 	public PublicationResponse createPublication(PublicationRequest request, MultipartFile image, UserEntity currentUser) {
+		LibrarianActions.require(currentUser, "ajouter une publication");
 		validate(request);
 
 		DocumentEntity document = documentRepository.save(new DocumentEntity(
@@ -312,6 +314,7 @@ public class PublicationService {
 
 	@Transactional
 	public PublicationResponse importDocument(MultipartFile file, Visibility visibility, MultipartFile image, UserEntity currentUser) {
+		LibrarianActions.require(currentUser, "importer un document");
 		ImportedDocument imported = documentUploadService.importFile(file);
 		DocumentEntity document = documentRepository.save(new DocumentEntity(
 				imported.fileName(),

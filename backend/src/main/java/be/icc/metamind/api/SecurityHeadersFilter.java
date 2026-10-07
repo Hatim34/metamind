@@ -25,13 +25,17 @@ public class SecurityHeadersFilter extends OncePerRequestFilter {
 			"default-src 'self'",
 			"script-src 'self'",
 			"style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-			"img-src 'self' data:",
+			"img-src 'self' data: blob:",
 			"font-src 'self' data: https://fonts.gstatic.com",
 			"connect-src 'self'",
+			// Le PDF et la couverture sont telecharges avec le jeton puis affiches depuis une
+			// adresse blob: creee par la page. Sans ces deux directives, Chrome affichait
+			// « Ce contenu est bloque » a la place du document.
+			"frame-src 'self' blob:",
 			"frame-ancestors 'none'",
 			"base-uri 'self'",
 			"form-action 'self'",
-			"object-src 'none'");
+			"object-src 'self' blob:");
 
 	@Override
 	protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)

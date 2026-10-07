@@ -10,6 +10,7 @@ import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 
 import be.icc.metamind.api.ApiException;
+import be.icc.metamind.config.PlatformSettings;
 import be.icc.metamind.user.UserEntity;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -23,18 +24,23 @@ public class JwtService {
 	private static final Pattern NUMBER_FIELD = Pattern.compile("\"%s\"\\s*:\\s*(\\d+)");
 
 	private final String secret;
-	private final long durationSeconds;
+	private final PlatformSettings settings;
 
 	public JwtService(
 			@Value("${metamind.jwt.secret:change-this-development-secret-for-production}") String secret,
-			@Value("${metamind.jwt.duration-seconds:3600}") long durationSeconds
+			PlatformSettings settings
 	) {
 		this.secret = secret;
-		this.durationSeconds = durationSeconds;
+		this.settings = settings;
+	}
+
+	/** Duree de session reglee par l'administrateur (configuration A2). */
+	public long sessionSeconds() {
+		return settings.sessionSeconds();
 	}
 
 	public String createToken(UserEntity user) {
-		long expiration = Instant.now().plusSeconds(durationSeconds).getEpochSecond();
+		long expiration = Instant.now().plusSeconds(sessionSeconds()).getEpochSecond();
 		String header = encode("{\"alg\":\"HS256\",\"typ\":\"JWT\"}");
 		String payload = encode("{\"sub\":" + user.getId()
 				+ ",\"role\":\"" + user.getRole().name()
