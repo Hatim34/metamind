@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -116,6 +117,16 @@ public class DocumentController {
 				.cacheControl(CacheControl.maxAge(Duration.ofDays(7)).cachePrivate())
 				.contentType(image.mediaType())
 				.body(image.content());
+	}
+
+	/** Remplace l'image de la notice, par une photo ou une figure de l'article. */
+	@PutMapping(value = "/{id}/image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+	public PublicationResponse replaceImage(
+			@PathVariable long id,
+			@RequestHeader("Authorization") String authorization,
+			@RequestParam("image") MultipartFile image
+	) {
+		return publicationService.replaceCoverImage(id, image, accountService.authenticate(authorization));
 	}
 
 	@GetMapping("/{id}/file")

@@ -111,20 +111,20 @@ class CreditServiceTests {
 
 		assertThatThrownBy(() -> creditService.startCheckout(user, new CreditCheckoutRequest(2, true, true)))
 				.isInstanceOf(ApiException.class)
-				.hasMessage("Le role gestionnaire financier est requis pour acheter des credits.");
+				.hasMessage("Le paiement Stripe n'est pas configure.");
 		assertThat(creditService.getBalance(user.getId()).balance()).isZero();
 	}
 
 	@Test
-	void financialManagerCanReachStripeConfigurationCheck() {
+	void adminDoesNotBuyCreditsButAdjustsThem() {
 		InstitutionEntity institution = institutionRepository.save(new InstitutionEntity("INST-F", "Institution F", "institution-f.example"));
-		UserEntity user = userRepository.save(new UserEntity(
-				"Finance", "Manager", "finance@institution-f.example", passwordService.hash("558435"),
-				UserRole.GESTIONNAIRE_FINANCIER, institution));
+		UserEntity admin = userRepository.save(new UserEntity(
+				"Admin", "Plateforme", "admin@institution-f.example", passwordService.hash("558435"),
+				UserRole.ADMIN, institution));
 
-		assertThatThrownBy(() -> creditService.startCheckout(user, new CreditCheckoutRequest(2, true, true)))
+		assertThatThrownBy(() -> creditService.startCheckout(admin, new CreditCheckoutRequest(2, true, true)))
 				.isInstanceOf(ApiException.class)
-				.hasMessage("Le paiement Stripe n'est pas configure.");
+				.hasMessageContaining("bibliothecaire");
 	}
 
 	private UserEntity saveUser() {

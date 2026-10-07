@@ -655,7 +655,7 @@ paths:
               type: object
               properties:
                 statut: { type: string, enum: [EN_ATTENTE, ACTIF, DESACTIVE] }
-                role: { type: string, enum: [LIBRARIAN, GESTIONNAIRE_FINANCIER, ADMIN] }
+                role: { type: string, enum: [LIBRARIAN, ADMIN] }
                 institution_id: { type: integer, nullable: true, example: 4 }
       responses:
         '200': { description: Utilisateur mis a jour }

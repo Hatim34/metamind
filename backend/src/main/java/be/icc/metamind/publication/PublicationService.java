@@ -362,6 +362,17 @@ public class PublicationService {
 	 * Remplace l'image d'un document, par exemple par la figure la plus parlante de
 	 * l'article plutot que sa premiere page. Reserve a l'administrateur.
 	 */
+	/** Le bibliothecaire choisit l'image de ses notices (photo, figure de l'article) pendant la validation. */
+	@Transactional
+	public PublicationResponse replaceCoverImage(long id, MultipartFile image, UserEntity currentUser) {
+		DocumentEntity document = documentRepository.findById(id)
+				.orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "La publication demandee est introuvable."));
+		if (!canManage(document, currentUser)) {
+			throw new ApiException(HttpStatus.FORBIDDEN, "Ce document appartient a une autre institution.");
+		}
+		return replaceCoverImage(id, image);
+	}
+
 	@Transactional
 	public PublicationResponse replaceCoverImage(long id, MultipartFile image) {
 		if (image == null || image.isEmpty()) {

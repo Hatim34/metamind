@@ -90,6 +90,9 @@ class ApiControllerTests {
 	@Autowired
 	private CreditMovementRepository creditMovementRepository;
 
+	@Autowired
+	private be.icc.metamind.publication.PublicationTranslationRepository translationRepository;
+
 	@BeforeEach
 	void setUp() {
 		if (userRepository.existsByEmailIgnoreCase("sarah@institution-a.example")) {
@@ -379,6 +382,70 @@ class ApiControllerTests {
 	}
 
 	@Test
+	void aPublicNoticeCanBeTranslatedAndIsKeptForTheNextReader() throws Exception {
+		DocumentEntity publication = documentRepository.findAll().stream()
+				.filter(item -> item.getStatus() == DocumentStatus.PUBLIE)
+				.filter(item -> item.getVisibility() == DocumentVisibility.PUBLIC)
+				.findFirst()
+				.orElseThrow();
+
+		// Deux lectures : la seconde vient du cache (la requete par document et langue doit fonctionner).
+		mockMvc.perform(get("/api/v1/publications/" + publication.getId() + "/traduction").param("langue", "nl"))
+				.andExpect(status().isOk());
+		mockMvc.perform(get("/api/v1/publications/" + publication.getId() + "/traduction").param("langue", "nl"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.langue", is("nl")));
+	}
+
+	@Test
+	void catalogueShowsTheTranslationPreparedForTheChosenLanguage() throws Exception {
+		DocumentEntity publication = documentRepository.findAll().stream()
+				.filter(item -> item.getStatus() == DocumentStatus.PUBLIE)
+				.filter(item -> item.getVisibility() == DocumentVisibility.PUBLIC)
+				.findFirst()
+				.orElseThrow();
+		translationRepository.save(new be.icc.metamind.publication.PublicationTranslationEntity(
+				publication, "nl", "empreinte", "Vertaalde titel", "Vertaalde samenvatting", "[\"trefwoord\"]", "test"));
+
+		mockMvc.perform(get("/api/v1/search").param("size", "100").param("affichage", "nl"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.contenu[?(@.id == " + publication.getId() + ")].titre").value("Vertaalde titel"))
+				.andExpect(jsonPath("$.contenu[?(@.id == " + publication.getId() + ")].resume").value("Vertaalde samenvatting"));
+		// Sans langue d'affichage, la notice d'origine reste intacte.
+		mockMvc.perform(get("/api/v1/search").param("size", "100"))
+				.andExpect(jsonPath("$.contenu[?(@.id == " + publication.getId() + ")].titre").value(org.hamcrest.Matchers.not(org.hamcrest.Matchers.hasItem("Vertaalde titel"))));
+	}
+
+	@Test
+	void adminSetsTheInstitutionPhotoShownOnTheHomePage() throws Exception {
+		InstitutionEntity institution = institutionRepository.findByCodeIgnoreCase("INST-A").orElseThrow();
+		byte[] photo = new byte[] { 7, 7, 7 };
+
+		mockMvc.perform(multipart(org.springframework.http.HttpMethod.PUT, "/api/v1/institutions/" + institution.getId() + "/photo")
+						.file(new MockMultipartFile("image", "campus.jpg", MediaType.IMAGE_JPEG_VALUE, photo))
+						.param("credit", "Photo : Auteur, CC BY 4.0, Wikimedia Commons")
+						.header("Authorization", adminBearerToken()))
+				.andExpect(status().isOk());
+
+		mockMvc.perform(get("/api/v1/institutions/photos"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$[0].credit", is("Photo : Auteur, CC BY 4.0, Wikimedia Commons")));
+		mockMvc.perform(get("/api/v1/institutions/" + institution.getId() + "/photo"))
+				.andExpect(status().isOk())
+				.andExpect(content().bytes(photo));
+	}
+
+	@Test
+	void institutionPhotoRequiresItsCredit() throws Exception {
+		InstitutionEntity institution = institutionRepository.findByCodeIgnoreCase("INST-A").orElseThrow();
+		mockMvc.perform(multipart(org.springframework.http.HttpMethod.PUT, "/api/v1/institutions/" + institution.getId() + "/photo")
+						.file(new MockMultipartFile("image", "campus.jpg", MediaType.IMAGE_JPEG_VALUE, new byte[] { 1 }))
+						.param("credit", " ")
+						.header("Authorization", adminBearerToken()))
+				.andExpect(status().isBadRequest());
+	}
+
+	@Test
 	void librarianCannotReplaceTheImageOfADocument() throws Exception {
 		mockMvc.perform(multipart(org.springframework.http.HttpMethod.PUT, "/api/v1/admin/documents/1/image")
 						.file(new MockMultipartFile("image", "figure.png", MediaType.IMAGE_PNG_VALUE, new byte[] { 1 }))
@@ -572,13 +639,21 @@ class ApiControllerTests {
 	}
 
 	@Test
-	void librarianCannotStartCreditCheckout() throws Exception {
+	void librarianBuysCreditsAndAdminDoesNot() throws Exception {
+		String body = "{\"pack_id\":2,\"cgv_acceptees\":true,\"renonciation_retractation_acceptee\":true}";
+		// Cahier des charges B9 : le bibliothecaire achete ; Stripe n'est pas configure en test.
 		mockMvc.perform(post("/api/v1/credits")
 						.header("Authorization", bearerToken())
 						.contentType(MediaType.APPLICATION_JSON)
-					.content("{\"pack_id\":2,\"cgv_acceptees\":true,\"renonciation_retractation_acceptee\":true}"))
+						.content(body))
+				.andExpect(status().isServiceUnavailable());
+		mockMvc.perform(post("/api/v1/credits")
+						.header("Authorization", adminBearerToken())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(body))
 				.andExpect(status().isForbidden());
 	}
+
 
 	@Test
 	void administratorCanAdjustInstitutionCredits() throws Exception {
@@ -734,37 +809,47 @@ class ApiControllerTests {
 	@Test
 	void administratorCanReadConfigurationAndLogs() throws Exception {
 		mockMvc.perform(get("/api/v1/admin/config")
-					.header("Authorization", adminBearerToken()))
+						.header("Authorization", adminBearerToken()))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.modele_llm", is("gemini-3.5-flash-lite")))
 				.andExpect(jsonPath("$.taille_max_upload_mo", is("50")))
 				.andExpect(jsonPath("$.tentatives_connexion_max", is("5")))
-				.andExpect(jsonPath("$.jwt_duree_secondes", is("3600")));
-
-		String body = """
-				{
-				  "modele_llm": "gemini-2.5-flash-lite",
-				  "taille_max_upload_mo": "25",
-				  "tentatives_connexion_max": "6",
-				  "jwt_duree_secondes": "1800"
-				}
-				""";
+				// Seuls les parametres reellement appliques sont exposes.
+				.andExpect(jsonPath("$.prix_credit_eur").doesNotExist());
 
 		mockMvc.perform(patch("/api/v1/admin/config")
 						.header("Authorization", adminBearerToken())
 						.contentType(MediaType.APPLICATION_JSON)
-				.content(body))
+						.content("{\"modele_llm\": \"gemini-2.5-flash-lite\", \"taille_max_upload_mo\": \"1\"}"))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.modele_llm", is("gemini-2.5-flash-lite")))
-				.andExpect(jsonPath("$.taille_max_upload_mo", is("25")))
-				.andExpect(jsonPath("$.tentatives_connexion_max", is("6")))
-				.andExpect(jsonPath("$.jwt_duree_secondes", is("1800")));
+				.andExpect(jsonPath("$.taille_max_upload_mo", is("1")));
 
 		mockMvc.perform(get("/api/v1/admin/logs")
 						.header("Authorization", adminBearerToken()))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.contenu[0].action", is("MODIFICATION_CONFIGURATION")));
+
+		// La nouvelle limite s'applique aussitot a l'import.
+		mockMvc.perform(multipart("/api/v1/documents")
+						.file(new MockMultipartFile("fichier", "gros.txt", MediaType.TEXT_PLAIN_VALUE, new byte[2 * 1024 * 1024]))
+						.header("Authorization", bearerToken()))
+				.andExpect(status().isBadRequest());
 	}
+
+	@Test
+	void configurationRefusesAParameterWithoutEffect() throws Exception {
+		mockMvc.perform(patch("/api/v1/admin/config")
+						.header("Authorization", adminBearerToken())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{\"prix_credit_eur\": \"0.60\"}"))
+				.andExpect(status().isBadRequest());
+		mockMvc.perform(patch("/api/v1/admin/config")
+						.header("Authorization", adminBearerToken())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{\"modele_llm\": \"gpt-4\"}"))
+				.andExpect(status().isBadRequest());
+	}
+
 
 	@Test
 	void administratorCanExportDocumentsAsCsv() throws Exception {

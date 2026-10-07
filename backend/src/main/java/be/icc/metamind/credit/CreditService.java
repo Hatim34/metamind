@@ -26,9 +26,9 @@ import be.icc.metamind.document.CreditPackRepository;
 import be.icc.metamind.document.CreditPackStatus;
 import be.icc.metamind.institution.InstitutionEntity;
 import be.icc.metamind.institution.InstitutionRepository;
+import be.icc.metamind.user.LibrarianActions;
 import be.icc.metamind.user.UserEntity;
 import be.icc.metamind.user.UserRepository;
-import be.icc.metamind.user.UserRole;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
@@ -108,9 +108,8 @@ public class CreditService {
 	@Transactional
 	public CreditCheckoutResponse startCheckout(UserEntity user, CreditCheckoutRequest request) {
 		CreditPackOptionResponse option = findPackOption(request.packId());
-		if (user.getRole() != UserRole.ADMIN && user.getRole() != UserRole.GESTIONNAIRE_FINANCIER) {
-			throw new ApiException(HttpStatus.FORBIDDEN, "Le role gestionnaire financier est requis pour acheter des credits.");
-		}
+		// B9 : le bibliothecaire achete pour son institution ; l'administrateur ajuste les soldes (B11).
+		LibrarianActions.require(user, "acheter des credits");
 		if (user.getInstitution().isPurchasesSuspended()) {
 			throw new ApiException(HttpStatus.FORBIDDEN, "Les achats de credits sont suspendus pour cette institution.");
 		}
