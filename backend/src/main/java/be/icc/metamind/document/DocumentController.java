@@ -69,7 +69,7 @@ public class DocumentController {
 			@PathVariable long id,
 			@RequestHeader(value = "Authorization", required = false) String authorization
 	) {
-		UserEntity currentUser = authorization == null ? null : accountService.authenticate(authorization);
+		UserEntity currentUser = accountService.authenticateOptional(authorization);
 		return publicationService.findPublication(id, currentUser);
 	}
 
@@ -108,7 +108,7 @@ public class DocumentController {
 			@PathVariable long id,
 			@RequestHeader(value = "Authorization", required = false) String authorization
 	) {
-		UserEntity currentUser = authorization == null ? null : accountService.authenticate(authorization);
+		UserEntity currentUser = accountService.authenticateOptional(authorization);
 		StoredImage image = publicationService.findCoverImage(id, currentUser);
 		// Une couverture ne change pas apres l'import : le navigateur la garde au lieu de
 		// la redemander a chaque affichage du catalogue.
@@ -123,7 +123,7 @@ public class DocumentController {
 			@PathVariable long id,
 			@RequestHeader(value = "Authorization", required = false) String authorization
 	) {
-		UserEntity currentUser = authorization == null ? null : accountService.authenticate(authorization);
+		UserEntity currentUser = accountService.authenticateOptional(authorization);
 		StoredFile file = publicationService.findDocumentFile(id, currentUser);
 		return ResponseEntity.ok()
 				.contentType(file.mediaType())

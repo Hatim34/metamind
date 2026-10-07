@@ -855,6 +855,19 @@ class ApiControllerTests {
 	}
 
 	@Test
+	void publicPublicationStaysReadableWithAnExpiredOrInvalidToken() throws Exception {
+		DocumentEntity publicPublication = documentRepository.findAll().stream()
+				.filter(publication -> publication.getStatus() == DocumentStatus.PUBLIE)
+				.filter(publication -> publication.getVisibility() == DocumentVisibility.PUBLIC)
+				.findFirst()
+				.orElseThrow();
+
+		mockMvc.perform(get("/api/v1/publications/" + publicPublication.getId())
+						.header("Authorization", "Bearer expired-token"))
+				.andExpect(status().isOk());
+	}
+
+	@Test
 	void publicationStatusCanBeUpdatedByInstitutionLibrarian() throws Exception {
 		DocumentEntity publication = documentRepository.findAll().stream()
 				.filter(item -> item.getStatus() == DocumentStatus.A_VALIDER)

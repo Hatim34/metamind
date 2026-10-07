@@ -39,7 +39,7 @@ export class TypeCoverComponent implements OnDestroy {
   constructor() {
     // Une balise img ne peut pas envoyer Authorization. Les couvertures privees sont donc
     // chargees par HttpClient avec le JWT, puis affichees depuis une URL blob locale.
-    effect(() => this.load(this.imageUrl()));
+    effect(() => this.load(this.imageUrl()), { allowSignalWrites: true });
   }
 
   ngOnDestroy(): void {

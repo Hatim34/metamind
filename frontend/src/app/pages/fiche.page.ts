@@ -148,7 +148,7 @@ export class FichePage implements OnDestroy {
 				next: (translation) => this.translation.set(translation),
 				error: () => undefined
 			});
-		});
+		}, { allowSignalWrites: true });
     const id = Number(this.route.snapshot.paramMap.get('id'));
     this.api.getPublication(id).subscribe({
       next: (p) => {

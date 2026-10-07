@@ -89,6 +89,26 @@ public class AccountService {
 		return user;
 	}
 
+	/**
+	 * Les fiches et fichiers publics restent accessibles lorsqu'un navigateur conserve
+	 * un JWT expire. Sans cela, un simple ancien jeton transforme une ressource publique
+	 * en 401. Les ressources privees restent ensuite refusees par leur controle d'acces.
+	 */
+	@Transactional(readOnly = true)
+	public UserEntity authenticateOptional(String authorizationHeader) {
+		if (authorizationHeader == null || authorizationHeader.isBlank()) {
+			return null;
+		}
+		try {
+			return authenticate(authorizationHeader);
+		} catch (ApiException exception) {
+			if (exception.getStatus() == HttpStatus.UNAUTHORIZED) {
+				return null;
+			}
+			throw exception;
+		}
+	}
+
 	@Transactional(readOnly = true)
 	public UserEntity authenticateSelfOrAdmin(long id, String authorizationHeader) {
 		UserEntity currentUser = authenticate(authorizationHeader);

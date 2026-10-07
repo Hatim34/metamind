@@ -37,13 +37,13 @@ public class PublicationController {
 
 	@GetMapping
 	public List<PublicationResponse> list(@RequestParam(required = false) String search, @RequestHeader(value = "Authorization", required = false) String authorization) {
-		UserEntity currentUser = authorization == null ? null : accountService.authenticate(authorization);
+		UserEntity currentUser = accountService.authenticateOptional(authorization);
 		return service.findPublications(search, currentUser);
 	}
 
 	@GetMapping("/{id}")
 	public PublicationResponse detail(@PathVariable long id, @RequestHeader(value = "Authorization", required = false) String authorization) {
-		UserEntity currentUser = authorization == null ? null : accountService.authenticate(authorization);
+		UserEntity currentUser = accountService.authenticateOptional(authorization);
 		return service.findPublication(id, currentUser);
 	}
 
@@ -54,7 +54,7 @@ public class PublicationController {
 			@RequestParam("langue") String language,
 			@RequestHeader(value = "Authorization", required = false) String authorization
 	) {
-		UserEntity currentUser = authorization == null ? null : accountService.authenticate(authorization);
+		UserEntity currentUser = accountService.authenticateOptional(authorization);
 		return translationService.translate(id, language, currentUser);
 	}
 
