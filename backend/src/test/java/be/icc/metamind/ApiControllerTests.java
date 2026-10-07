@@ -39,6 +39,7 @@ import be.icc.metamind.user.PasswordService;
 import be.icc.metamind.user.UserEntity;
 import be.icc.metamind.user.UserRepository;
 import be.icc.metamind.user.UserRole;
+import be.icc.metamind.user.UserStatus;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -92,6 +93,12 @@ class ApiControllerTests {
 
 	@Autowired
 	private be.icc.metamind.publication.PublicationTranslationRepository translationRepository;
+
+	@Autowired
+	private be.icc.metamind.publication.PublicationTranslationService translationService;
+
+	@Autowired
+	private be.icc.metamind.user.PasswordResetTokenRepository passwordResetTokenRepository;
 
 	@BeforeEach
 	void setUp() {
@@ -389,9 +396,13 @@ class ApiControllerTests {
 				.findFirst()
 				.orElseThrow();
 
-		// Deux lectures : la seconde vient du cache (la requete par document et langue doit fonctionner).
+		// Pas encore traduite : la fiche recoit tout de suite la notice d'origine (202).
+		// Une fois preparee, la traduction vient du cache (la requete par document et langue doit fonctionner).
+		translationRepository.deleteAll();
 		mockMvc.perform(get("/api/v1/publications/" + publication.getId() + "/traduction").param("langue", "nl"))
-				.andExpect(status().isOk());
+				.andExpect(status().isAccepted())
+				.andExpect(jsonPath("$.traduite", is(false)));
+		translationService.translate(publication.getId(), "nl", null);
 		mockMvc.perform(get("/api/v1/publications/" + publication.getId() + "/traduction").param("langue", "nl"))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.langue", is("nl")));
@@ -522,6 +533,32 @@ class ApiControllerTests {
 	}
 
 	@Test
+	void onlyOneResetLinkIsValidAndRequestsAreSpacedOut() throws Exception {
+		UserEntity sarah = userRepository.findByEmailIgnoreCase("sarah@institution-a.example").orElseThrow();
+		for (int i = 0; i < 3; i++) {
+			mockMvc.perform(post("/api/v1/auth/password-reset/request")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{\"email\":\"sarah@institution-a.example\"}"))
+					.andExpect(status().isOk());
+		}
+		assertThat(passwordResetTokenRepository.findByUser_IdAndUsedAtIsNull(sarah.getId())).hasSize(1);
+	}
+
+	@Test
+	void aPendingAccountGetsNoResetLink() throws Exception {
+		InstitutionEntity institution = institutionRepository.findByCodeIgnoreCase("INST-A").orElseThrow();
+		UserEntity pending = new UserEntity("Paul", "Martin", "paul@institution-a.example", passwordService.hash("55843500"), UserRole.LIBRARIAN, institution);
+		pending.markPendingValidation();
+		userRepository.save(pending);
+
+		mockMvc.perform(post("/api/v1/auth/password-reset/request")
+					.contentType(MediaType.APPLICATION_JSON)
+					.content("{\"email\":\"paul@institution-a.example\"}"))
+				.andExpect(status().isOk());
+		assertThat(passwordResetTokenRepository.findByUser_IdAndUsedAtIsNull(pending.getId())).isEmpty();
+	}
+
+	@Test
 	void passwordResetRejectsUnknownToken() throws Exception {
 		mockMvc.perform(post("/api/v1/auth/password-reset/confirm")
 					.contentType(MediaType.APPLICATION_JSON)
@@ -568,6 +605,79 @@ class ApiControllerTests {
 						.content(body))
 				.andExpect(status().isBadRequest())
 				.andExpect(jsonPath("$.message", is("L'email ne correspond pas au domaine de l'institution.")));
+	}
+
+	@Test
+	void anUnknownInstitutionIsRequestedThenValidatedByTheAdministrator() throws Exception {
+		String body = """
+				{
+				  "firstName": "Lea",
+				  "lastName": "Dumont",
+				  "email": "lea.dumont@nouvelle-ecole.test",
+				  "institution": "nouvelle-ecole.test",
+				  "password": "55843500"
+				}
+				""";
+		// Domaine inconnu sans nom d'institution : l'interface doit demander ce nom.
+		mockMvc.perform(post("/api/v1/auth/register").contentType(MediaType.APPLICATION_JSON).content(body))
+				.andExpect(status().isNotFound());
+
+		mockMvc.perform(post("/api/v1/auth/register").contentType(MediaType.APPLICATION_JSON)
+						.content(body.replace("\"password\"", "\"nom_institution\": \"Nouvelle Ecole\", \"password\"")))
+				.andExpect(status().isCreated());
+		InstitutionEntity requested = institutionRepository.findByEmailDomainIgnoreCase("nouvelle-ecole.test").orElseThrow();
+		assertThat(requested.isPending()).isTrue();
+		assertThat(requested.isActive()).isFalse();
+
+		// Compte en attente : le message dit pourquoi la connexion est refusee.
+		mockMvc.perform(post("/api/v1/auth/login").contentType(MediaType.APPLICATION_JSON)
+						.content("{\"email\":\"lea.dumont@nouvelle-ecole.test\",\"password\":\"55843500\"}"))
+				.andExpect(status().isForbidden());
+
+		mockMvc.perform(patch("/api/v1/admin/institutions/" + requested.getId())
+						.header("Authorization", adminBearerToken())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{\"actif\": true}"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.en_attente", is(false)))
+				.andExpect(jsonPath("$.solde_credits", is(20)));
+		assertThat(userRepository.findByEmailIgnoreCase("lea.dumont@nouvelle-ecole.test").orElseThrow().getStatus()).isEqualTo(UserStatus.ACTIF);
+	}
+
+	@Test
+	void personalAddressesCannotRequestAnInstitution() throws Exception {
+		mockMvc.perform(post("/api/v1/auth/register").contentType(MediaType.APPLICATION_JSON).content("""
+						{"firstName":"Lea","lastName":"Dumont","email":"lea@gmail.com","nom_institution":"Ecole","password":"55843500"}
+						"""))
+				.andExpect(status().isBadRequest());
+	}
+
+	@Test
+	void anAccountStaysWithTheInstitutionOfItsEmailDomain() throws Exception {
+		UserEntity sarah = userRepository.findByEmailIgnoreCase("sarah@institution-a.example").orElseThrow();
+		InstitutionEntity other = institutionRepository.findByCodeIgnoreCase("INST-B").orElseThrow();
+		mockMvc.perform(patch("/api/v1/admin/users/" + sarah.getId())
+						.header("Authorization", adminBearerToken())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{\"institution_id\": " + other.getId() + "}"))
+				.andExpect(status().isBadRequest());
+	}
+
+	@Test
+	void aLibrarianChangesTheirPasswordWithTheCurrentOne() throws Exception {
+		UserEntity sarah = userRepository.findByEmailIgnoreCase("sarah@institution-a.example").orElseThrow();
+		String token = bearerToken("sarah@institution-a.example", "558435");
+		mockMvc.perform(put("/api/v1/users/" + sarah.getId() + "/password").header("Authorization", token)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{\"mot_de_passe_actuel\":\"mauvais\",\"nouveau_mot_de_passe\":\"nouveau-secret\"}"))
+				.andExpect(status().isBadRequest());
+		mockMvc.perform(put("/api/v1/users/" + sarah.getId() + "/password").header("Authorization", token)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{\"mot_de_passe_actuel\":\"558435\",\"nouveau_mot_de_passe\":\"nouveau-secret\"}"))
+				.andExpect(status().isNoContent());
+		mockMvc.perform(post("/api/v1/auth/login").contentType(MediaType.APPLICATION_JSON)
+						.content("{\"email\":\"sarah@institution-a.example\",\"password\":\"nouveau-secret\"}"))
+				.andExpect(status().isOk());
 	}
 
 	@Test

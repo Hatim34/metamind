@@ -19,12 +19,23 @@ public record RegisterRequest(
 		@Email
 		String email,
 
-		@NotBlank
 		String institution,
 
 		@NotBlank
 		@Size(min = 8)
 		@JsonAlias("mot_de_passe")
-		String password
+		String password,
+
+		/** Nom de l'institution a ajouter, quand le domaine de l'adresse n'est pas encore inscrit. */
+		@Size(max = 255)
+		@JsonAlias("nom_institution")
+		String newInstitutionName,
+
+		/** Langue de l'interface au moment de l'inscription : celle des emails envoyes ensuite. */
+		@JsonAlias("langue")
+		String language
 ) {
+	public RegisterRequest(String firstName, String lastName, String email, String institution, String password) {
+		this(firstName, lastName, email, institution, password, null, null);
+	}
 }

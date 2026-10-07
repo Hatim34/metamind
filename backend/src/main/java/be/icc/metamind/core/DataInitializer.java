@@ -67,15 +67,16 @@ public class DataInitializer implements ApplicationRunner {
 		}
 		seedReferenceData();
 
-		InstitutionEntity institutionA = findOrCreateInstitution("INST-A", "Institution A", "institution-a.example");
-		InstitutionEntity institutionB = findOrCreateInstitution("INST-B", "Institution B", "institution-b.example");
+		// Chaque compte de demonstration a l'adresse de son institution : le rattachement suit le domaine.
+		InstitutionEntity uclouvain = findOrCreateInstitutionByDomain("UCLouvain", "uclouvain.demo-metamind.test");
+		InstitutionEntity kuleuven = findOrCreateInstitutionByDomain("KU Leuven", "kuleuven.demo-metamind.test");
 		InstitutionEntity platform = findOrCreateInstitution("META", "Metamind", "metamind.example");
-		seedCredits(institutionA);
-		seedCredits(institutionB);
+		seedCredits(uclouvain);
+		seedCredits(kuleuven);
 
 		String password = passwordService.hash(seedPassword);
-		createUserIfMissing("Sarah", "Lemaire", "sarah@institution-a.example", password, UserRole.LIBRARIAN, institutionA);
-		createUserIfMissing("Jan", "Peeters", "jan@institution-b.example", password, UserRole.LIBRARIAN, institutionB);
+		createUserIfMissing("Sarah", "Lemaire", "sarah.lemaire@uclouvain.demo-metamind.test", password, UserRole.LIBRARIAN, uclouvain);
+		createUserIfMissing("Jan", "Peeters", "jan.peeters@kuleuven.demo-metamind.test", password, UserRole.LIBRARIAN, kuleuven);
 		createUserIfMissing("Hatim", "Assal", "admin@metamind.example", password, UserRole.ADMIN, platform);
 		if (resetSeed) {
 			// Volontairement sans effet destructeur.
@@ -115,6 +116,11 @@ public class DataInitializer implements ApplicationRunner {
 	private InstitutionEntity findOrCreateInstitution(String code, String name, String emailDomain) {
 		return institutionRepository.findByCodeIgnoreCase(code)
 				.orElseGet(() -> institutionRepository.save(new InstitutionEntity(code, name, emailDomain)));
+	}
+
+	private InstitutionEntity findOrCreateInstitutionByDomain(String name, String emailDomain) {
+		return institutionRepository.findByEmailDomainIgnoreCase(emailDomain)
+				.orElseGet(() -> institutionRepository.save(new InstitutionEntity(null, name, emailDomain)));
 	}
 
 	private UserEntity createUserIfMissing(String firstName, String lastName, String email, String password, UserRole role, InstitutionEntity institution) {

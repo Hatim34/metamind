@@ -20,12 +20,15 @@ import be.icc.metamind.credit.CreditMovementEntity;
 import be.icc.metamind.credit.CreditMovementRepository;
 import be.icc.metamind.credit.CreditMovementType;
 import be.icc.metamind.institution.InstitutionRepository;
+import be.icc.metamind.notification.AccountEvent;
 import be.icc.metamind.institution.InstitutionResponse;
 import be.icc.metamind.user.UserEntity;
+import be.icc.metamind.user.UserStatus;
 import be.icc.metamind.user.AdministratorGuard;
 import be.icc.metamind.user.UserRepository;
 import be.icc.metamind.user.UserResponse;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -33,6 +36,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class AdminService {
 	private final UserRepository userRepository;
+	private final ApplicationEventPublisher events;
 	private final InstitutionRepository institutionRepository;
 	private final ConfigurationRepository configurationRepository;
 	private final AuditLogRepository auditLogRepository;
@@ -51,8 +55,10 @@ public class AdminService {
 			MetadataRepository metadataRepository,
 			CreditMovementRepository creditMovementRepository,
 			AdministratorGuard administratorGuard,
-			PlatformSettings platformSettings
+			PlatformSettings platformSettings,
+			ApplicationEventPublisher events
 	) {
+		this.events = events;
 		this.userRepository = userRepository;
 		this.institutionRepository = institutionRepository;
 		this.configurationRepository = configurationRepository;
@@ -85,10 +91,22 @@ public class AdminService {
 		if (administratorGuard.removesAdministration(request.role(), request.status())) {
 			administratorGuard.ensureAnotherActiveAdministratorRemains(user, "modifier ce compte");
 		}
+		if (request.status() == UserStatus.ACTIF && user.getInstitution().isPending()) {
+			throw new ApiException(HttpStatus.CONFLICT, "Validez d'abord la demande d'institution de ce compte.");
+		}
+		UserStatus previousStatus = user.getStatus();
 		user.updateAdministration(request.role(), request.status());
+		if (request.status() != null && request.status() != previousStatus) {
+			events.publishEvent(new AccountEvent.StatusChanged(user.getId(), previousStatus, request.status()));
+		}
 		if (request.institutionId() != null) {
-			user.assignInstitution(institutionRepository.findById(request.institutionId())
-					.orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "L'institution est introuvable.")));
+			var institution = institutionRepository.findById(request.institutionId())
+					.orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "L'institution est introuvable."));
+			// Le rattachement suit toujours l'adresse email : sinon le compte publierait au nom d'une autre institution.
+			if (!user.getEmail().toLowerCase().endsWith("@" + institution.getEmailDomain().toLowerCase())) {
+				throw new ApiException(HttpStatus.BAD_REQUEST, "L'adresse email de ce compte ne correspond pas au domaine de cette institution.");
+			}
+			user.assignInstitution(institution);
 		}
 		auditLogRepository.save(new AuditLogEntity(
 				admin,
@@ -113,10 +131,24 @@ public class AdminService {
 		var institution = institutionRepository.findById(id)
 				.orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "L'institution est introuvable."));
 		if (request.actif() != null) {
+			boolean wasRequested = institution.isPending();
 			if (request.actif()) {
 				institution.activate();
+			} else if (wasRequested) {
+				institution.refuseRequest();
 			} else {
 				institution.deactivate();
+			}
+			// Valider ou refuser une demande d'institution tranche aussi les comptes qui l'ont demandee.
+			if (wasRequested) {
+				UserStatus decision = request.actif() ? UserStatus.ACTIF : UserStatus.DESACTIVE;
+				userRepository.findAll().stream()
+						.filter(user -> user.getInstitution().getId().equals(institution.getId()))
+						.filter(user -> user.getStatus() == UserStatus.EN_ATTENTE)
+						.forEach(user -> {
+							user.updateAdministration(null, decision);
+							events.publishEvent(new AccountEvent.StatusChanged(user.getId(), UserStatus.EN_ATTENTE, decision));
+						});
 			}
 		}
 		if (request.purchasesSuspended() != null) {

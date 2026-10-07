@@ -3,6 +3,9 @@ package be.icc.metamind.institution;
 import java.util.List;
 
 import be.icc.metamind.api.ApiException;
+import be.icc.metamind.credit.CreditMovementEntity;
+import be.icc.metamind.credit.CreditMovementRepository;
+import be.icc.metamind.credit.CreditMovementType;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -10,10 +13,14 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class InstitutionService {
-	private final InstitutionRepository repository;
+	private static final int WELCOME_CREDITS = 20;
 
-	public InstitutionService(InstitutionRepository repository) {
+	private final InstitutionRepository repository;
+	private final CreditMovementRepository creditMovementRepository;
+
+	public InstitutionService(InstitutionRepository repository, CreditMovementRepository creditMovementRepository) {
 		this.repository = repository;
+		this.creditMovementRepository = creditMovementRepository;
 	}
 
 	public List<InstitutionResponse> findAll() {
@@ -33,8 +40,13 @@ public class InstitutionService {
 			throw new ApiException(HttpStatus.CONFLICT, "Une institution existe deja avec ce domaine email.");
 		}
 
-		InstitutionEntity institution = new InstitutionEntity(request.code(), request.name(), request.emailDomain().toLowerCase());
-		return InstitutionResponse.from(repository.save(institution));
+		InstitutionEntity institution = repository.save(new InstitutionEntity(request.code(), request.name(), request.emailDomain().toLowerCase()));
+		// Meme offre de bienvenue qu'une institution validee apres une demande d'inscription.
+		if (institution.grantWelcomeCredits(WELCOME_CREDITS)) {
+			creditMovementRepository.save(new CreditMovementEntity(institution, CreditMovementType.OFFRE_BIENVENUE, WELCOME_CREDITS,
+					institution.getCreditBalance(), "Offre de bienvenue accordee a la creation de l'institution"));
+		}
+		return InstitutionResponse.from(institution);
 	}
 
 	@Transactional

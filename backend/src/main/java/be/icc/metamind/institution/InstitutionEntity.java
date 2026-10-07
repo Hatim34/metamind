@@ -33,6 +33,10 @@ public class InstitutionEntity {
 	@Column(name = "actif", nullable = false)
 	private boolean active = true;
 
+	/** Demandee a l'inscription, en attente de la decision de l'administrateur. */
+	@Column(name = "en_attente", nullable = false, columnDefinition = "boolean default false")
+	private boolean pending;
+
 	@Column(name = "solde_credits", nullable = false)
 	private int creditBalance;
 
@@ -88,6 +92,24 @@ public class InstitutionEntity {
 
 	public void activate() {
 		active = true;
+		pending = false;
+	}
+
+	public boolean isPending() {
+		return pending;
+	}
+
+	/** Institution demandee par une personne a son inscription : inactive tant qu'elle n'est pas validee. */
+	public static InstitutionEntity requested(String name, String emailDomain) {
+		InstitutionEntity institution = new InstitutionEntity(null, name, emailDomain);
+		institution.active = false;
+		institution.pending = true;
+		return institution;
+	}
+
+	public void refuseRequest() {
+		active = false;
+		pending = false;
 	}
 
 	public int getCreditBalance() {
@@ -140,5 +162,6 @@ public class InstitutionEntity {
 
 	public void deactivate() {
 		active = false;
+		pending = false;
 	}
 }

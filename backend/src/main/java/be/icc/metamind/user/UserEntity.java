@@ -45,6 +45,10 @@ public class UserEntity {
 	@Column(nullable = false, length = 30)
 	private UserStatus status = UserStatus.ACTIF;
 
+	/** Langue des emails envoyes au compte (fr, nl ou en). */
+	@Column(name = "langue_preferee", nullable = false, length = 2, columnDefinition = "varchar(2) default 'fr'")
+	private String preferredLanguage = "fr";
+
 	@ManyToOne(fetch = FetchType.EAGER, optional = false)
 	@JoinColumn(name = "institution_id", nullable = false)
 	private InstitutionEntity institution;
@@ -66,6 +70,16 @@ public class UserEntity {
 
 	public Long getId() {
 		return id;
+	}
+
+	public String getPreferredLanguage() {
+		return preferredLanguage == null ? "fr" : preferredLanguage;
+	}
+
+	public void choosePreferredLanguage(String language) {
+		if ("fr".equals(language) || "nl".equals(language) || "en".equals(language)) {
+			preferredLanguage = language;
+		}
 	}
 
 	public String getFirstName() {

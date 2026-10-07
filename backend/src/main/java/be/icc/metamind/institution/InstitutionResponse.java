@@ -22,7 +22,10 @@ public record InstitutionResponse(
 		boolean purchasesSuspended,
 
 		@JsonProperty("credits_bienvenue_accordes")
-		boolean welcomeCreditsGranted
+		boolean welcomeCreditsGranted,
+
+		@JsonProperty("en_attente")
+		boolean pending
 ) {
 	public static InstitutionResponse from(InstitutionEntity institution) {
 		return new InstitutionResponse(
@@ -33,7 +36,8 @@ public record InstitutionResponse(
 				institution.isActive(),
 				institution.getCreditBalance(),
 				institution.isPurchasesSuspended(),
-				institution.isWelcomeCreditsGranted()
+				institution.isWelcomeCreditsGranted(),
+				institution.isPending()
 		);
 	}
 }

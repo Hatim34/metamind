@@ -45,6 +45,10 @@ public class PasswordResetTokenEntity {
 		return usedAt == null && expiresAt.isAfter(now);
 	}
 
+	public Instant getExpiresAt() {
+		return expiresAt;
+	}
+
 	public UserEntity getUser() {
 		return user;
 	}

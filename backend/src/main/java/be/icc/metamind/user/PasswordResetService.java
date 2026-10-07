@@ -7,58 +7,68 @@ import java.security.SecureRandom;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Base64;
+import java.util.List;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.mail.SimpleMailMessage;
-import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import be.icc.metamind.api.ApiException;
 import be.icc.metamind.auth.PasswordResetConfirmRequest;
 import be.icc.metamind.auth.PasswordResetRequest;
+import be.icc.metamind.notification.AccountEvent;
 
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
 
 @Service
 public class PasswordResetService {
-	private static final Logger log = LoggerFactory.getLogger(PasswordResetService.class);
+	/** Delai minimal entre deux liens pour le meme compte : evite d'inonder une boite mail. */
+	private static final Duration MIN_INTERVAL = Duration.ofMinutes(2);
+
 	private final UserRepository userRepository;
 	private final PasswordResetTokenRepository tokenRepository;
 	private final PasswordService passwordService;
-	private final ObjectProvider<JavaMailSender> mailSenderProvider;
-	private final String publicUrl;
-	private final String mailFrom;
+	private final ApplicationEventPublisher events;
 	private final long expirationMinutes;
 	private final SecureRandom secureRandom = new SecureRandom();
 
 	public PasswordResetService(UserRepository userRepository,
 			PasswordResetTokenRepository tokenRepository,
 			PasswordService passwordService,
-			ObjectProvider<JavaMailSender> mailSenderProvider,
-			@Value("${metamind.public-url:https://metamind-app.duckdns.org}") String publicUrl,
-			@Value("${metamind.mail.from:}") String mailFrom,
+			ApplicationEventPublisher events,
 			@Value("${metamind.password-reset.expiration-minutes:30}") long expirationMinutes) {
 		this.userRepository = userRepository;
 		this.tokenRepository = tokenRepository;
 		this.passwordService = passwordService;
-		this.mailSenderProvider = mailSenderProvider;
-		this.publicUrl = publicUrl;
-		this.mailFrom = mailFrom == null ? "" : mailFrom.trim();
+		this.events = events;
 		this.expirationMinutes = expirationMinutes;
 	}
 
+	/**
+	 * La reponse est la meme que l'adresse existe ou non, et l'email part en arriere-plan :
+	 * ni le message ni le temps de reponse ne revelent quelles adresses sont inscrites.
+	 * Seul un compte actif recoit un lien ; un compte en attente ou desactive ne peut pas
+	 * se connecter de toute facon.
+	 */
 	@Transactional
 	public void requestReset(PasswordResetRequest request) {
-		userRepository.findByEmailIgnoreCase(request.email()).ifPresent(user -> {
-			String token = createToken();
-			tokenRepository.save(new PasswordResetTokenEntity(hash(token), user,
-					Instant.now().plus(Duration.ofMinutes(expirationMinutes))));
-			sendOrLog(user.getEmail(), token);
-		});
+		userRepository.findByEmailIgnoreCase(request.email().trim())
+				.filter(user -> user.getStatus() == UserStatus.ACTIF)
+				.ifPresent(user -> {
+					Instant now = Instant.now();
+					List<PasswordResetTokenEntity> pending = tokenRepository.findByUser_IdAndUsedAtIsNull(user.getId());
+					boolean recent = pending.stream().anyMatch(token -> token.isUsable(now)
+							&& token.getExpiresAt().minus(Duration.ofMinutes(expirationMinutes)).plus(MIN_INTERVAL).isAfter(now));
+					if (recent) {
+						return;
+					}
+					// Un seul lien valable a la fois : les precedents sont annules.
+					pending.forEach(token -> token.markUsed(now));
+					String token = createToken();
+					tokenRepository.save(new PasswordResetTokenEntity(hash(token), user, now.plus(Duration.ofMinutes(expirationMinutes))));
+					events.publishEvent(new AccountEvent.PasswordResetRequested(user.getId(), token, expirationMinutes));
+				});
 	}
 
 	@Transactional
@@ -70,31 +80,9 @@ public class PasswordResetService {
 			throw new ApiException(BAD_REQUEST, "Token de reinitialisation invalide ou expire.");
 		}
 		resetToken.getUser().changePassword(passwordService.hash(request.password()));
+		tokenRepository.findByUser_IdAndUsedAtIsNull(resetToken.getUser().getId()).forEach(token -> token.markUsed(now));
 		resetToken.markUsed(now);
 		tokenRepository.save(resetToken);
-	}
-
-	private void sendOrLog(String email, String token) {
-		String resetUrl = publicUrl + "/reset-password?token=" + token;
-		JavaMailSender mailSender = mailSenderProvider.getIfAvailable();
-		if (mailSender == null) {
-			log.info("Lien de reinitialisation genere pour {} : {}", email, resetUrl);
-			return;
-		}
-		try {
-			SimpleMailMessage message = new SimpleMailMessage();
-			message.setTo(email);
-			if (!mailFrom.isBlank()) {
-				message.setFrom(mailFrom);
-			}
-			message.setSubject("Reinitialisation du mot de passe Metamind");
-			message.setText("Utilisez ce lien avant son expiration : " + resetUrl);
-			mailSender.send(message);
-		}
-		catch (RuntimeException exception) {
-			// SMTP non configure ou indisponible : la demande ne doit pas echouer, on journalise le lien.
-			log.warn("Envoi de l'email de reinitialisation impossible pour {}. Lien : {}", email, resetUrl);
-		}
 	}
 
 	private String createToken() {
