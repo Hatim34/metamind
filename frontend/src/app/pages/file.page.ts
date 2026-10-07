@@ -7,6 +7,7 @@ import { I18nService, TranslatePipe } from '../core/i18n';
 import { STATUS_LABELS, typeLabel, VISIBILITY_LABELS } from '../core/labels';
 import { SessionService } from '../core/session.service';
 import { ToastService } from '../core/toast.service';
+import { ConfirmService } from '../core/confirm.service';
 import { TypeCoverComponent } from '../ui/type-cover.component';
 
 /** Onglets de la file, dans l'ordre du cycle de vie d'un document (livrable 07). */
@@ -89,12 +90,7 @@ const TABS: { status: PublicationStatus; label: string }[] = [
                       }
                     }
                     @if (doc.status === 'PUBLIE') { <a class="m-btn m-btn--ghost m-btn--sm" [routerLink]="['/publications', doc.id]">{{ 'Voir la fiche' | t }}</a> }
-                    @if (confirming() === doc.id) {
-                      <button type="button" class="m-btn m-btn--danger m-btn--sm" (click)="remove(doc)">{{ 'Confirmer' | t }}</button>
-                      <button type="button" class="m-btn m-btn--ghost m-btn--sm" (click)="confirming.set(null)">{{ 'Annuler' | t }}</button>
-                    } @else {
-                      <button type="button" class="m-btn m-btn--ghost m-btn--sm" (click)="confirming.set(doc.id)">{{ 'Supprimer' | t }}</button>
-                    }
+                    <button type="button" class="m-btn m-btn--ghost m-btn--sm" (click)="remove(doc)">{{ 'Supprimer' | t }}</button>
                   </span>
                 </td>
               </tr>
@@ -112,6 +108,7 @@ export class FilePage implements OnDestroy {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly toasts = inject(ToastService);
+  private readonly confirm = inject(ConfirmService);
   private readonly i18n = inject(I18nService);
   readonly session = inject(SessionService);
   readonly labels = STATUS_LABELS;
@@ -125,7 +122,6 @@ export class FilePage implements OnDestroy {
   readonly docs = signal<Publication[]>([]);
   readonly busy = signal(new Set<number>());
   readonly running = signal(false);
-  readonly confirming = signal<number | null>(null);
   readonly institutions = computed(() => [...new Set(this.docs().map((d) => d.institution))].sort());
   readonly extractable = computed(() => this.docs().filter((d) => d.status === 'EN_ATTENTE' && d.textReady));
   private refresh?: ReturnType<typeof setInterval>;
@@ -206,8 +202,13 @@ export class FilePage implements OnDestroy {
     this.api.retryDocumentProcessing(doc.id).subscribe({ next: () => this.load(), error: () => this.toasts.show(this.i18n.t('Le traitement n\'a pas pu être relancé.'), 'error') });
   }
 
-  remove(doc: Publication): void {
-    this.confirming.set(null);
+  async remove(doc: Publication): Promise<void> {
+    const accepted = await this.confirm.ask({
+      title: this.i18n.t('Supprimer ce document ?'),
+      message: `« ${doc.title || this.i18n.t('Sans titre')} » ${this.i18n.t(doc.status === 'PUBLIE' ? 'sera retiré du catalogue public et de la file.' : 'sera retiré de la file.')}`,
+      action: this.i18n.t('Supprimer')
+    });
+    if (!accepted) return;
     this.api.deletePublication(doc.id).subscribe({ next: () => { this.toasts.show(this.i18n.t('Document supprimé.')); this.load(); }, error: () => this.toasts.show(this.i18n.t('La suppression a échoué.'), 'error') });
   }
 

@@ -5,6 +5,7 @@ import { ApiService, AuditLog, Institution, InstitutionPhoto, UserSession } from
 import { I18nService, TranslatePipe } from '../core/i18n';
 import { SessionService } from '../core/session.service';
 import { ToastService } from '../core/toast.service';
+import { ConfirmService } from '../core/confirm.service';
 
 type Tab = 'comptes' | 'utilisateurs' | 'institutions' | 'configuration' | 'journal';
 
@@ -137,6 +138,7 @@ export class AdminPage {
     jwt_duree_secondes: 'Durée d\'une session (secondes)'
   };
   private readonly toasts = inject(ToastService);
+  private readonly confirm = inject(ConfirmService);
   private readonly i18n = inject(I18nService);
 
   readonly tab = signal<Tab>('comptes');
@@ -201,7 +203,16 @@ export class AdminPage {
     });
   }
 
-  setStatus(user: UserSession, statut: 'ACTIF' | 'DESACTIVE'): void {
+  async setStatus(user: UserSession, statut: 'ACTIF' | 'DESACTIVE'): Promise<void> {
+    if (statut === 'DESACTIVE') {
+      const refusing = user.status === 'EN_ATTENTE';
+      const accepted = await this.confirm.ask({
+        title: this.i18n.t(refusing ? 'Refuser cette demande de compte ?' : 'Désactiver ce compte ?'),
+        message: `${user.firstName} ${user.lastName} (${user.email}) ${this.i18n.t(refusing ? 'n\'aura pas accès à l\'espace bibliothécaire. Vous pourrez encore activer ce compte plus tard.' : 'ne pourra plus se connecter. Le compte pourra être réactivé plus tard.')}`,
+        action: this.i18n.t(refusing ? 'Refuser' : 'Désactiver')
+      });
+      if (!accepted) return;
+    }
     this.api.updateAdminUser(user.id, { statut }).subscribe({
       next: () => { this.toasts.show(this.i18n.t(statut === 'ACTIF' ? 'Compte activé.' : 'Compte désactivé.')); this.loadUsers(); },
       error: () => this.toasts.show(this.i18n.t('La modification a échoué.'), 'error')
@@ -222,8 +233,13 @@ export class AdminPage {
     });
   }
 
-  deactivateInstitution(i: Institution): void {
-    if (!confirm(this.i18n.t('Désactiver cette institution ?'))) return;
+  async deactivateInstitution(i: Institution): Promise<void> {
+    const accepted = await this.confirm.ask({
+      title: this.i18n.t('Désactiver cette institution ?'),
+      message: `${i.name} ${this.i18n.t('n\'acceptera plus de nouvelles inscriptions. Ses publications restent dans le catalogue.')}`,
+      action: this.i18n.t('Désactiver')
+    });
+    if (!accepted) return;
     this.api.deactivateInstitution(i.id).subscribe({ next: () => this.loadInstitutions(), error: () => undefined });
   }
 

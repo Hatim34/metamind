@@ -4,6 +4,7 @@ import { ApiService } from '../api.service';
 import { I18nService, TranslatePipe } from '../core/i18n';
 import { SessionService } from '../core/session.service';
 import { ToastService } from '../core/toast.service';
+import { ConfirmService } from '../core/confirm.service';
 
 /** Profil et droits RGPD (accès, rectification, effacement). */
 @Component({
@@ -35,6 +36,7 @@ export class ProfilPage {
   readonly session = inject(SessionService);
   private readonly api = inject(ApiService);
   private readonly toasts = inject(ToastService);
+  private readonly confirm = inject(ConfirmService);
   private readonly i18n = inject(I18nService);
   firstName = this.session.user()?.firstName ?? '';
   lastName = this.session.user()?.lastName ?? '';
@@ -59,9 +61,15 @@ export class ProfilPage {
     });
   }
 
-  deleteAccount(): void {
+  async deleteAccount(): Promise<void> {
     const user = this.session.user();
-    if (!user || !confirm(this.i18n.t('Supprimer votre compte ? Vos données personnelles seront anonymisées.'))) return;
+    if (!user) return;
+    const accepted = await this.confirm.ask({
+      title: this.i18n.t('Supprimer votre compte ?'),
+      message: this.i18n.t('Vos données personnelles seront anonymisées et vous serez déconnecté. Les notices que vous avez validées restent publiées.'),
+      action: this.i18n.t('Supprimer mon compte')
+    });
+    if (!accepted) return;
     this.api.requestAccountDeletion(user.id).subscribe({ next: () => this.session.logout(), error: () => this.toasts.show(this.i18n.t('La demande a échoué.'), 'error') });
   }
 }

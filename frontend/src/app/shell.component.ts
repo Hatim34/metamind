@@ -5,6 +5,7 @@ import { SessionService } from './core/session.service';
 import { I18nService, Language, TranslatePipe } from './core/i18n';
 import { ApiService } from './api.service';
 import { ToastService } from './core/toast.service';
+import { ConfirmService } from './core/confirm.service';
 
 type Layout = 'public' | 'espace' | 'admin' | 'bare';
 
@@ -13,6 +14,7 @@ type Layout = 'public' | 'espace' | 'admin' | 'bare';
   selector: 'app-root',
   standalone: true,
   imports: [RouterOutlet, RouterLink, RouterLinkActive, TranslatePipe],
+  host: { '(document:keydown.escape)': 'confirm.answer(false)' },
   template: `
     <a class="m-skip" href="#contenu">{{ 'Aller au contenu' | t }}</a>
     @if (layout() !== 'bare') {
@@ -88,6 +90,19 @@ type Layout = 'public' | 'espace' | 'admin' | 'bare';
       </footer>
     }
 
+    @if (confirm.pending(); as request) {
+      <div class="m-confirm-backdrop" (click)="confirm.answer(false)">
+        <div class="m-confirm" role="alertdialog" aria-modal="true" aria-labelledby="confirm-title" (click)="$event.stopPropagation()">
+          <h2 id="confirm-title">{{ request.title }}</h2>
+          <p>{{ request.message }}</p>
+          <div class="m-confirm__actions">
+            <button type="button" class="m-btn m-btn--ghost" (click)="confirm.answer(false)" autofocus>{{ 'Annuler' | t }}</button>
+            <button type="button" class="m-btn m-btn--danger-solid" (click)="confirm.answer(true)">{{ request.action }}</button>
+          </div>
+        </div>
+      </div>
+    }
+
     <div class="m-toasts" aria-live="polite">
       @for (toast of toasts.items(); track toast.id) {
         <div class="m-toast" [class.m-toast--error]="toast.kind === 'error'" role="status">
@@ -102,6 +117,7 @@ export class ShellComponent {
   readonly session = inject(SessionService);
   readonly i18n = inject(I18nService);
   readonly toasts = inject(ToastService);
+  readonly confirm = inject(ConfirmService);
   private readonly api = inject(ApiService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
