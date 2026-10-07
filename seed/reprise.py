@@ -11,6 +11,9 @@ Etapes, a lancer dans l'ordre (chacune peut etre relancee sans risque) :
   publication  publie les documents extraits en laissant quelques documents par institution
                dans la file pour la demonstration (voir notice_publiee pour la regle suivie)
   noms         remet en « Prenom Nom » les auteurs publies sous la forme « Nom, Prenom »
+  figures      remplace la premiere page par la figure retenue de l'article (figures_retenues.txt)
+  ajout        importe, analyse et publie les documents ajoutes par « collect.py --ajout »,
+               au nom d'un bibliothecaire de leur institution (METAMIND_SEED_PASSWORD requis)
 
 Usage :
   export METAMIND_ADMIN_EMAIL=admin@metamind.example
@@ -19,6 +22,7 @@ Usage :
 """
 import argparse
 import csv
+import io
 import json
 import os
 import random
@@ -192,24 +196,25 @@ def notice_publiee(meta, gt):
     Ce qui est ecrit dans le document fait foi : titre, resume, mots-cles et langue viennent
     de l'extraction quand elle les a trouves. OpenAlex traduit parfois les titres en anglais
     et ne connait pas toujours le resume de l'auteur. Les donnees d'autorite viennent
-    d'OpenAlex : date de publication officielle, DOI, classification, et auteurs complets
-    avec ORCID quand ce sont bien les memes personnes. OpenAlex sert aussi de repli pour
-    tout champ que le document ne contient pas.
+    d'OpenAlex : date de publication officielle, DOI, classification et auteurs complets
+    avec ORCID. OpenAlex sert aussi de repli pour tout champ que le document ne contient pas.
     """
     corps = validation_body(gt, "PUBLIC")
     corps["auteurs"] = [{**auteur, "nom_complet": nom_usuel(auteur["nom_complet"])} for auteur in corps["auteurs"]]
-    if meta.get("titre"):
-        corps["titre"] = meta["titre"][:500]
+    # Pour un chapitre, le modele retient souvent le titre de l'ouvrage, souvent en capitales :
+    # le titre propre au chapitre est alors celui d'OpenAlex.
+    titre = meta.get("titre") or ""
+    if titre and not titre.isupper() and gt.get("type_document") != "book-chapter":
+        corps["titre"] = titre[:500]
     if meta.get("resume"):
         corps["resume"] = meta["resume"][:5000]
     if meta.get("mots_cles"):
         corps["mots_cles"] = meta["mots_cles"][:30]
     if meta.get("langue"):
         corps["langue"] = meta["langue"]
+    # Les auteurs d'OpenAlex font autorite (noms complets, ORCID) ; l'extraction ne sert qu'a defaut.
     extraits = [a["nom_complet"] for a in meta.get("auteurs") or []]
-    memes_personnes = set_f1([nom_de_famille(n) for n in extraits],
-                             [nom_de_famille(a["nom_complet"]) for a in gt["auteurs"]]) >= 0.5
-    if extraits and not memes_personnes:
+    if not corps["auteurs"] and extraits:
         corps["auteurs"] = [{"nom_complet": n} for n in extraits[:20]]
     if not corps.get("doi") and meta.get("doi"):
         corps["doi"] = meta["doi"]
@@ -267,6 +272,99 @@ def etape_noms(api, token, args):
         print(f"  #{doc['id']} {', '.join(a['nom_complet'] for a in corps['auteurs'])[:90]}")
 
 
+def figure_jpeg(chemin, largeur=1000):
+    """Figure reduite pour le catalogue : une vignette n'a pas besoin de 1400 pixels."""
+    from PIL import Image
+    image = Image.open(chemin).convert("RGB")
+    if image.width > largeur:
+        image = image.resize((largeur, round(image.height * largeur / image.width)))
+    tampon = io.BytesIO()
+    image.save(tampon, "JPEG", quality=82, optimize=True)
+    return tampon.getvalue()
+
+
+def etape_figures(api, token, args):
+    """La vignette devient la figure la plus parlante de l'article, choisie a la main."""
+    retenues = [ligne.strip() for ligne in (ROOT / "figures_retenues.txt").read_text(encoding="utf-8").splitlines()
+                if ligne.strip() and not ligne.startswith("#")]
+    correspondances = json.loads(CORRESPONDANCE.read_text(encoding="utf-8")) if CORRESPONDANCE.exists() else {}
+    for nom in retenues:
+        ids = correspondances.get(nom.replace(".jpg", ".pdf"), [])
+        if not ids:
+            print(f"  {nom} : aucun document en ligne")
+            continue
+        contenu = figure_jpeg(DATA / "figures" / nom)
+        for doc_id in ids:
+            api.call("PUT", f"/admin/documents/{doc_id}/image", token,
+                     files={"image": (nom, contenu, "image/jpeg")})
+            print(f"  #{doc_id} <- {nom}")
+
+
+INSTITUTION_PAR_CODE = {"ULB": "Université libre de Bruxelles", "UCL": "UCLouvain", "ULG": "Université de Liège",
+                        "KUL": "KU Leuven", "UGE": "Universiteit Gent", "VUB": "Vrije Universiteit Brussel"}
+BIBLIOTHECAIRE = "sarah@institution-a.example"
+
+
+def attendre_texte(api, token, doc_id, limite=120):
+    for _ in range(limite):
+        doc = api.call("GET", f"/publications/{doc_id}", token)
+        # Avant la migration V11, un texte lu faisait passer le document directement "a valider".
+        if doc.get("texte_pret") or doc["statut"] in ("ECHEC", "A_VALIDER"):
+            return doc
+        time.sleep(1)
+    return None
+
+
+def etape_ajout(api, token, args):
+    """
+    Le document doit appartenir a son universite : il est importe par un bibliothecaire
+    rattache temporairement a celle-ci, puis le compte retrouve son institution d'origine.
+    """
+    mot_de_passe = os.environ.get("METAMIND_SEED_PASSWORD")
+    if not mot_de_passe:
+        sys.exit("Definis METAMIND_SEED_PASSWORD (mot de passe des comptes de demonstration).")
+    charger_vocabulaires(api)
+    cles = set(json.loads((DATA / "ajout.json").read_text(encoding="utf-8")))
+    manifeste = json.loads((DATA / "manifest.json").read_text(encoding="utf-8"))
+    documents = [d for d in manifeste["documents"] if d["key"] in cles]
+    retenues = set((ROOT / "figures_retenues.txt").read_text(encoding="utf-8").split())
+    correspondances = json.loads(CORRESPONDANCE.read_text(encoding="utf-8")) if CORRESPONDANCE.exists() else {}
+    institutions = {i["nom"]: i["id"] for i in api.call("GET", "/admin/institutions", token)}
+    compte = next(u for u in api.call("GET", "/admin/users", token, params={"size": 100})["contenu"] if u["email"] == BIBLIOTHECAIRE)
+    try:
+        for code in sorted({d["institution"] for d in documents}):
+            api.call("PATCH", f"/admin/users/{compte['id']}", token, json={"institution_id": institutions[INSTITUTION_PAR_CODE[code]]})
+            jeton = api.login(BIBLIOTHECAIRE, mot_de_passe)
+            for d in [d for d in documents if d["institution"] == code]:
+                pdf = Path(d["pdf"]).name
+                if pdf in correspondances:
+                    continue
+                figure = f"{code}-{d['key']}.jpg"
+                image = figure_jpeg(DATA / "figures" / figure) if figure in retenues else (ROOT / d["cover"]).read_bytes()
+                cree = api.call("POST", "/documents", jeton, files={
+                    "fichier": (pdf, (ROOT / d["pdf"]).read_bytes(), "application/pdf"),
+                    "image": (figure, image, "image/jpeg"),
+                }, data={"visibilite": "PUBLIC"})
+                correspondances[pdf] = [cree["id"]]
+                CORRESPONDANCE.write_text(json.dumps(correspondances, indent=1), encoding="utf-8")
+                doc = attendre_texte(api, jeton, cree["id"])
+                if not doc or doc["statut"] == "ECHEC":
+                    print(f"  #{cree['id']} fichier illisible : {d['verite_terrain']['titre'][:60]}")
+                    continue
+                try:
+                    api.call("POST", f"/documents/{cree['id']}/extraction", jeton)
+                except RuntimeError as erreur:
+                    print(f"  #{cree['id']} analyse impossible ({erreur})")
+                    continue
+                meta = api.call("GET", f"/documents/{cree['id']}/metadata", jeton)
+                corps = notice_publiee(meta, d["verite_terrain"])
+                publier(api, jeton, cree["id"], corps)
+                print(f"  publie #{cree['id']} [{code}] {corps['titre'][:70]}")
+    finally:
+        api.call("PATCH", f"/admin/users/{compte['id']}", token, json={"institution_id": institutions["UCLouvain"]})
+        print(f"  {BIBLIOTHECAIRE} de retour a l'UCLouvain")
+
+
 ETAPES = {
     "fichiers": etape_fichiers,
     "nettoyage": etape_nettoyage,
@@ -274,6 +372,8 @@ ETAPES = {
     "evaluation": etape_evaluation,
     "publication": etape_publication,
     "noms": etape_noms,
+    "figures": etape_figures,
+    "ajout": etape_ajout,
 }
 
 

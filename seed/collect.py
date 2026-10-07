@@ -14,6 +14,10 @@ Sortie : data/manifest.json, data/pdf/*.pdf, data/covers/*.jpg, data/photos/*.jp
 Usage :
   pip install -r requirements.txt
   python collect.py --mailto ton.email@exemple.be --photos --figures --hero [--allow-nc] [--only ULB,KUL]
+
+Ajout au corpus existant, sans reecrire manifest.json :
+  python collect.py --mailto ... --ajout 10 --langue fr --only ULB,UCL,ULG --figures
+  Les nouveaux documents sont aussi listes dans data/ajout.json pour l'etape « ajout » de reprise.py.
 """
 import argparse
 import hashlib
@@ -181,17 +185,21 @@ def extract_figure(pdf_path, fig_path):
         return None
 
 
-def collect_for(inst_conf, args):
+def collect_for(inst_conf, args, deja=frozenset()):
     print(f"\n[{inst_conf['code']}] {inst_conf['name']}")
     inst = resolve_institution(inst_conf["openalex_search"])
-    target = args.per_institution or inst_conf.get("target", 25)
-    langs = inst_conf.get("langs", ["en"])
-    # Répartition : ~45 % dans la langue locale, le reste en anglais.
-    quotas = {}
-    local = [l for l in langs if l != "en"]
-    if local:
-        quotas[local[0]] = max(1, round(target * 0.45))
-    quotas["en"] = target - sum(quotas.values())
+    if args.ajout:
+        # Ajout : uniquement la langue demandee, en ignorant les documents deja collectes.
+        quotas = {args.langue: args.ajout}
+    else:
+        target = args.per_institution or inst_conf.get("target", 25)
+        langs = inst_conf.get("langs", ["en"])
+        # Répartition : ~45 % dans la langue locale, le reste en anglais.
+        quotas = {}
+        local = [l for l in langs if l != "en"]
+        if local:
+            quotas[local[0]] = max(1, round(target * 0.45))
+        quotas["en"] = target - sum(quotas.values())
 
     records = []
     for lang, quota in quotas.items():
@@ -222,6 +230,8 @@ def collect_for(inst_conf, args):
                 if not gt["titre"] or not gt["auteurs"]:
                     continue
                 key = hashlib.sha1(work["id"].encode()).hexdigest()[:12]
+                if key in deja:
+                    continue
                 pdf_path = DATA / "pdf" / f"{inst_conf['code']}-{key}.pdf"
                 cover_path = DATA / "covers" / f"{inst_conf['code']}-{key}.jpg"
                 if not pdf_path.exists():
@@ -296,6 +306,8 @@ def main():
     ap.add_argument("--per-institution", type=int, help="remplace 'target' de institutions.json")
     ap.add_argument("--year-from", type=int, default=2019)
     ap.add_argument("--year-to", type=int, default=2026)
+    ap.add_argument("--ajout", type=int, help="nombre de documents a ajouter par institution au manifeste existant")
+    ap.add_argument("--langue", default="fr", help="langue des documents ajoutes (avec --ajout)")
     args = ap.parse_args()
 
     session.headers["User-Agent"] = f"Metamind-demo-seed/1.0 (mailto:{args.mailto})"
@@ -307,6 +319,10 @@ def main():
     if args.only:
         wanted = {c.strip().upper() for c in args.only.split(",")}
         conf = [c for c in conf if c["code"] in wanted]
+
+    if args.ajout:
+        ajouter(conf, args)
+        return
 
     manifest = {"genere_le": time.strftime("%Y-%m-%dT%H:%M:%S"), "source": "OpenAlex (CC0) + PDF en libre accès",
                 "institutions": [], "documents": []}
@@ -331,6 +347,21 @@ def main():
     out = DATA / "manifest.json"
     out.write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
     print(f"\n{len(manifest['documents'])} documents réels collectés -> {out}")
+
+
+def ajouter(conf, args):
+    """Complete le manifeste existant : les documents deja en ligne gardent leur reference."""
+    out = DATA / "manifest.json"
+    manifest = json.loads(out.read_text(encoding="utf-8"))
+    deja = frozenset(d["key"] for d in manifest["documents"])
+    nouveaux = []
+    for inst_conf in conf:
+        _, records = collect_for(inst_conf, args, deja)
+        nouveaux.extend(records)
+    manifest["documents"].extend(nouveaux)
+    out.write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
+    (DATA / "ajout.json").write_text(json.dumps([d["key"] for d in nouveaux], indent=1), encoding="utf-8")
+    print(f"\n{len(nouveaux)} documents ajoutes -> {out} (liste : data/ajout.json)")
 
 
 if __name__ == "__main__":
