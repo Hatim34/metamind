@@ -1,4 +1,4 @@
-import { Component, OnDestroy, inject, signal } from '@angular/core';
+import { Component, OnDestroy, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -23,7 +23,9 @@ interface FieldDef { id: FieldId; label: string; dc: string; required: boolean; 
       <div class="m-vhead">
         <div class="m-wrap m-vhead__in">
           <div class="m-vhead__title">
-            <nav class="m-small m-muted"><a routerLink="/espace/file">{{ 'File de validation' | t }}</a></nav>
+            <nav class="m-small m-muted"><a routerLink="/espace/file">{{ 'File de validation' | t }}</a>
+              @if (position()) { · {{ 'Document' | t }} {{ position() }} {{ 'sur' | t }} {{ queue().length }} }
+            </nav>
             <h1 class="m-title">{{ titre || ('Sans titre' | t) }}</h1>
             <p class="m-muted m-small">
               <span class="m-badge m-badge--A_VALIDER">{{ 'À valider' | t }}</span>
@@ -32,6 +34,7 @@ interface FieldDef { id: FieldId; label: string; dc: string; required: boolean; 
             </p>
           </div>
           <div class="m-actions">
+            @if (queue().length > 1) { <button type="button" class="m-btn m-btn--ghost" [disabled]="busy()" (click)="skip()">{{ 'Passer' | t }}</button> }
             <button type="button" class="m-btn m-btn--danger" (click)="rejectOpen.set(true)">{{ 'Rejeter…' | t }}</button>
             <button type="button" class="m-btn m-btn--primary" [disabled]="!canPublish() || busy()" (click)="publish()">
               {{ missing().length ? ('Publier' | t) + ' (' + missing().length + ' ' + ('à compléter' | t) + ')' : ('Publier' | t) }}
@@ -170,7 +173,11 @@ export class ValidationPage implements OnDestroy {
     { id: 'classification', label: 'Classification', dc: 'dc:subject', required: false }
   ];
 
-  private readonly id = Number(this.route.snapshot.paramMap.get('id'));
+  /**
+   * Document affiché. Angular réutilise la page quand seul l'identifiant change dans l'URL
+   * (« Publier », « Passer ») : l'identifiant est donc suivi, pas lu une seule fois.
+   */
+  private id = 0;
   readonly meta = signal<MetadataDetails | null>(null);
   readonly pub = signal<Publication | null>(null);
   readonly failed = signal(false);
@@ -182,6 +189,12 @@ export class ValidationPage implements OnDestroy {
   readonly rejectOpen = signal(false);
   readonly authors = signal<MetadataAuthor[]>([]);
   readonly keywords = signal<string[]>([]);
+  /** Notices à valider, dans l'ordre de la file : position affichée et document suivant. */
+  readonly queue = signal<Publication[]>([]);
+  readonly position = computed(() => {
+    const index = this.queue().findIndex((d) => d.id === this.id);
+    return index < 0 ? 0 : index + 1;
+  });
   private objectUrl = '';
 
   titre = '';
@@ -201,8 +214,23 @@ export class ValidationPage implements OnDestroy {
   }
 
   constructor() {
-    this.api.getPublication(this.id).subscribe({ next: (p) => this.pub.set(p), error: () => undefined });
-    this.api.getMetadata(this.id).subscribe({
+    this.route.paramMap.subscribe((params) => this.load(Number(params.get('id'))));
+  }
+
+  private load(id: number): void {
+    this.id = id;
+    this.releasePdf();
+    this.meta.set(null);
+    this.pub.set(null);
+    this.failed.set(false);
+    this.busy.set(false);
+    this.rejectOpen.set(false);
+    this.reason = '';
+    this.selected.set('titre');
+    this.confirmed.set(new Set<FieldId>());
+    this.api.getManagedDocuments('A_VALIDER').subscribe({ next: (docs) => this.queue.set(docs), error: () => undefined });
+    this.api.getPublication(id).subscribe({ next: (p) => this.pub.set(p), error: () => undefined });
+    this.api.getMetadata(id).subscribe({
       next: (m) => {
         this.meta.set(m);
         this.titre = m.titre ?? '';
@@ -314,15 +342,26 @@ export class ValidationPage implements OnDestroy {
     });
   }
 
-  /** Ouvre le document suivant de la file, ou revient à la file. */
+  /** Laisse ce document dans la file et ouvre le suivant. */
+  skip(): void {
+    this.open(this.following(true));
+  }
+
+  /** Après publication ou rejet : le document a quitté la file, on ouvre le suivant ou on revient à la file. */
   private next(): void {
-    this.api.getManagedDocuments('A_VALIDER').subscribe({
-      next: (docs) => {
-        const nextDoc = docs.find((d) => d.id !== this.id);
-        this.router.navigateByUrl(nextDoc ? `/espace/documents/${nextDoc.id}/validation` : '/espace/file');
-      },
-      error: () => this.router.navigateByUrl('/espace/file')
-    });
+    this.open(this.following(false));
+  }
+
+  private following(wrap: boolean): Publication | undefined {
+    const list = this.queue();
+    const index = list.findIndex((d) => d.id === this.id);
+    const after = list.slice(index + 1);
+    const before = wrap ? list.slice(0, Math.max(index, 0)) : list.filter((d) => d.id !== this.id).slice(0, Math.max(index, 0));
+    return [...after, ...before].find((d) => d.id !== this.id);
+  }
+
+  private open(doc: Publication | undefined): void {
+    this.router.navigateByUrl(doc ? `/espace/documents/${doc.id}/validation` : '/espace/file');
   }
 
   private cleanDate(value: string | null): string {
@@ -339,6 +378,13 @@ export class ValidationPage implements OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.releasePdf();
+  }
+
+  private releasePdf(): void {
     if (this.objectUrl) URL.revokeObjectURL(this.objectUrl);
+    this.objectUrl = '';
+    this.pdfUrl.set(null);
+    this.view.set('pdf');
   }
 }

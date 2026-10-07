@@ -3,8 +3,10 @@ import { PublicationStatus } from '../api.service';
 /** Libellés humains : aucun code technique (A_VALIDER, PUBLIC...) n'est affiché tel quel. */
 export const STATUS_LABELS: Record<PublicationStatus, string> = {
   EN_ATTENTE: 'Non extrait',
-  EXTRACTION: 'En extraction',
+  EXTRACTION: 'En cours',
   A_VALIDER: 'À valider',
+  REJETE: 'Rejeté',
+  ECHEC: 'Fichier illisible',
   PUBLIE: 'Publié',
   SUPPRIME: 'Supprimé'
 };

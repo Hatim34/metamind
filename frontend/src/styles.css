@@ -107,12 +107,9 @@ code { font-family: var(--f-mono); font-size: 12px; color: var(--ink-soft); }
 /* ---------- en-tête ---------- */
 .m-header { position: sticky; top: 0; z-index: 30; background: var(--surface); border-bottom: 1px solid var(--line-ui); }
 .m-header__in { max-width: 1440px; margin: 0 auto; padding: 12px 32px; display: flex; flex-wrap: wrap; align-items: center; gap: 12px 32px; }
-.m-header--admin { background: var(--ink); color: #fff; border-bottom: none; }
-.m-header--admin .m-logo, .m-header--admin .m-langs button { color: #fff; }
 .m-logo { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; color: var(--ink); }
 .m-logo__mark { width: 32px; height: 32px; border-radius: 8px; background: var(--teal); display: inline-flex; align-items: center; justify-content: center; }
 .m-logo__name { font: 600 22px var(--f-display); }
-.m-logo__tag { font-size: 13px; color: #b7c5c7; border: 1px solid #3a5052; border-radius: 6px; padding: 2px 8px; }
 .m-nav { display: flex; flex-wrap: wrap; gap: 4px; flex: 1 1 auto; }
 .m-nav a { padding: 8px 12px; border-radius: var(--radius-control); text-decoration: none; color: var(--ink-soft); }
 .m-nav a:hover { color: var(--ink); background: var(--surface-2); }
@@ -196,6 +193,8 @@ textarea.m-input { line-height: 1.55; resize: vertical; }
 .m-badge--A_VALIDER { background: #f6eedc; color: var(--conf-mid-text); }
 .m-badge--PUBLIE { background: #e6f2ea; color: var(--conf-high-text); }
 .m-badge--EXTRACTION { background: var(--teal-soft); color: var(--teal-dark); }
+.m-badge--REJETE, .m-badge--ECHEC { background: #f7e3e3; color: var(--conf-low-text); }
+.m-callout { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px; margin-bottom: 16px; border-radius: var(--radius-control); background: var(--teal-row); }
 .m-tabs { display: flex; flex-wrap: wrap; gap: 4px; border-bottom: 1px solid #dde4e6; margin-bottom: 20px; }
 .m-tabs button { border: none; background: transparent; padding: 10px 14px; font-weight: 500; border-bottom: 2px solid transparent; margin-bottom: -1px; }
 .m-tabs button.is-on { color: var(--teal-dark); font-weight: 600; border-bottom-color: var(--teal); }
@@ -222,10 +221,7 @@ m-type-cover { display: block; flex: none; }
 .m-hero { background: var(--surface); border-bottom: 1px solid var(--line-ui); }
 .m-hero__in { padding-top: 56px; padding-bottom: 40px; display: flex; flex-wrap: wrap; gap: 40px; align-items: center; }
 .m-hero__copy { flex: 1 1 480px; display: flex; flex-direction: column; gap: 20px; }
-.m-hero__art { position: relative; flex: 1 1 380px; min-height: 340px; margin: 0; border-radius: var(--radius-sheet); overflow: hidden; background: var(--teal-soft); }
-.m-hero__art img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-.m-credit { position: absolute; right: 8px; bottom: 8px; max-width: calc(100% - 16px); padding: 2px 8px; border-radius: 4px; background: rgba(0, 0, 0, .55); color: #fff; font-size: 11px; }
-.m-credit a { color: inherit; }
+.m-hero__art { flex: 1 1 380px; min-height: 340px; border-radius: var(--radius-sheet); background: url("/hero-accueil.jpg") center / cover, var(--teal-soft); }
 .m-search { display: flex; gap: 8px; flex-wrap: wrap; max-width: 640px; }
 .m-search .m-input { flex: 1 1 300px; width: auto; }
 .m-search--bar { max-width: none; margin-bottom: 28px; }
@@ -298,6 +294,9 @@ m-type-cover { display: block; flex: none; }
 .m-kpi small { color: var(--ink-soft); font-size: 13px; }
 .m-barrow { display: grid; grid-template-columns: 120px minmax(0, 1fr) 44px; gap: 10px; align-items: center; font-size: 14px; margin-bottom: 10px; }
 .m-barrow__track { height: 8px; background: var(--surface-3); border-radius: 2px; overflow: hidden; }
+.m-quality { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 32px; margin-top: 16px; }
+.m-quality .m-h4 { margin: 0 0 4px; }
+.m-quality .m-barrow { grid-template-columns: 150px minmax(0, 1fr) 48px; }
 .m-barrow__fill { display: block; height: 100%; background: var(--teal); }
 .m-barrow .m-num { text-align: right; }
 
@@ -307,12 +306,16 @@ m-type-cover { display: block; flex: none; }
 .m-drop.is-over { background: var(--teal-row); border-color: var(--teal); }
 .m-progress { display: block; height: 4px; background: var(--surface-3); border-radius: 2px; overflow: hidden; }
 .m-progress__fill { display: block; height: 100%; width: 0; background: var(--teal); transition: width .3s ease; }
-.m-progress__fill.is-envoi { width: 60%; }
-.m-progress__fill.is-importe { width: 100%; }
-.m-progress__fill.is-erreur { width: 100%; background: var(--conf-mid); }
-.m-state { font-size: 13px; font-weight: 500; min-width: 170px; color: var(--ink-soft); }
-.m-state--importe { color: var(--conf-high-text); }
-.m-state--erreur { color: var(--conf-mid-text); }
+.m-progress__fill.is-envoi { width: 25%; }
+.m-progress__fill.is-lecture { width: 50%; }
+.m-progress__fill.is-analyse { width: 80%; }
+.m-progress__fill.is-a_valider, .m-progress__fill.is-non_extrait { width: 100%; }
+.m-progress__fill.is-erreur { width: 100%; background: var(--conf-low); }
+.m-state { font-size: 13px; font-weight: 500; min-width: 190px; color: var(--ink-soft); }
+.m-state--a_valider { color: var(--conf-high-text); }
+.m-state--non_extrait { color: var(--conf-mid-text); }
+.m-state--erreur { color: var(--conf-low-text); }
+.m-import-done { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 20px; background: var(--teal-row); border-top: 1px solid var(--line); }
 
 /* ---------- validation ---------- */
 .m-vhead { background: var(--surface); border-bottom: 1px solid var(--line-ui); }
@@ -392,5 +395,3 @@ m-type-cover { display: block; flex: none; }
 .m-toast { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-radius: var(--radius-control); background: var(--ink); color: #fff; box-shadow: 0 8px 30px rgba(24, 42, 43, .25); max-width: 420px; font-size: 14px; }
 .m-toast--error { background: var(--conf-low-text); }
 .m-toast button { border: none; background: transparent; color: #fff; font-size: 18px; }
-.m-header--admin .m-langs button.is-active { color: #fff; }
-.m-header--admin .m-avatar { background: #2c4142; color: #fff; }

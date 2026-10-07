@@ -16,14 +16,13 @@ type Layout = 'public' | 'espace' | 'admin' | 'bare';
   template: `
     <a class="m-skip" href="#contenu">{{ 'Aller au contenu' | t }}</a>
     @if (layout() !== 'bare') {
-      <header class="m-header" [class.m-header--admin]="layout() === 'admin'">
+      <header class="m-header">
         <div class="m-header__in" [class.m-wrap--public]="layout() === 'public'">
           <a class="m-logo" [routerLink]="session.isLoggedIn() && layout() !== 'public' ? session.homeUrl() : '/'">
             <span class="m-logo__mark" aria-hidden="true">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round"><circle cx="6" cy="6" r="2.2"/><circle cx="18" cy="6" r="2.2"/><circle cx="12" cy="18" r="2.2"/><path d="M7.6 7.6 11 16M16.4 7.6 13 16M8.2 6h7.6"/></svg>
             </span>
             <span class="m-logo__name">Metamind</span>
-            @if (layout() === 'admin') { <span class="m-logo__tag">{{ 'Administration' | t }}</span> }
           </a>
 
           @if (layout() === 'public') {
@@ -39,7 +38,7 @@ type Layout = 'public' | 'espace' | 'admin' | 'bare';
               <a routerLink="/espace/file" routerLinkActive="is-active">{{ 'File de validation' | t }}</a>
               <a routerLink="/espace/credits" routerLinkActive="is-active">{{ 'Crédits' | t }}</a>
               <a routerLink="/catalogue">{{ 'Catalogue' | t }}</a>
-              @if (session.isAdmin()) { <a routerLink="/admin">{{ 'Administration' | t }}</a> }
+              @if (session.isAdmin()) { <a routerLink="/admin" routerLinkActive="is-active">{{ 'Administration' | t }}</a> }
             </nav>
           }
 
@@ -57,7 +56,8 @@ type Layout = 'public' | 'espace' | 'admin' | 'bare';
                 <summary class="m-avatar" [attr.aria-label]="user.firstName + ' ' + user.lastName">{{ initials() }}</summary>
                 <div class="m-menu__panel">
                   <span class="m-menu__who">{{ user.firstName }} {{ user.lastName }}<br /><small>{{ user.institution }}</small></span>
-                  <a routerLink="/espace">{{ 'Espace bibliothécaire' | t }}</a>
+                  <a routerLink="/espace">{{ 'Tableau de bord' | t }}</a>
+                  @if (session.isAdmin()) { <a routerLink="/admin">{{ 'Administration' | t }}</a> }
                   <a routerLink="/espace/profil">{{ 'Profil' | t }}</a>
                   <button type="button" (click)="session.logout()">{{ 'Se déconnecter' | t }}</button>
                 </div>
@@ -121,7 +121,8 @@ export class ShellComponent {
         current = current.firstChild;
       }
       this.layout.set((current.snapshot.data['layout'] as Layout) ?? 'public');
-      if (this.session.isLoggedIn() && this.layout() === 'espace') {
+      // Même en-tête dans l'espace et dans l'administration : le solde reste affiché partout.
+      if (this.session.isLoggedIn() && (this.layout() === 'espace' || this.layout() === 'admin')) {
         this.api.getCreditAccount().subscribe({ next: (account) => this.credits.set(account.balance.balance), error: () => this.credits.set(null) });
       }
     });

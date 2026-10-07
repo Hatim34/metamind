@@ -28,9 +28,6 @@ const INSTITUTION_PHOTOS: Record<string, Photo> = {
     'https://commons.wikimedia.org/wiki/File:Elsene-Rectoraatsgebouw_VUB_(1).jpg')
 };
 
-export const HOME_PHOTO: Photo = commons('/institutions/bibliotheque.jpg', 'Wentao Jiang', 'CC BY-SA 4.0',
-  'https://commons.wikimedia.org/wiki/File:KU_Leuven_Library.jpg');
-
 export function institutionPhoto(name: string): Photo | null {
   return INSTITUTION_PHOTOS[name] ?? null;
 }

@@ -3,7 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { ApiService, Publication } from '../api.service';
 import { TranslatePipe } from '../core/i18n';
-import { HOME_PHOTO, institutionPhoto } from '../core/photos';
+import { institutionPhoto } from '../core/photos';
 import { TypeCoverComponent } from '../ui/type-cover.component';
 
 @Component({
@@ -27,10 +27,7 @@ import { TypeCoverComponent } from '../ui/type-cover.component';
             <a routerLink="/catalogue" [queryParams]="{ langue: 'nl' }">{{ 'En néerlandais' | t }}</a>
           </div>
         </div>
-        <figure class="m-hero__art">
-          <img [src]="homePhoto.src" [alt]="'Salle de lecture de la bibliothèque universitaire de la KU Leuven' | t" />
-          <figcaption class="m-credit">{{ 'Photo' | t }} : <a [href]="homePhoto.source" target="_blank" rel="noopener">{{ homePhoto.credit }}</a></figcaption>
-        </figure>
+        <div class="m-hero__art" aria-hidden="true"></div>
       </div>
       <div class="m-wrap m-wrap--public m-figures">
         <div class="m-figure"><strong>{{ publications().length }}</strong><span>{{ 'publications en libre accès' | t }}</span></div>
@@ -92,7 +89,6 @@ export class AccueilPage {
   query = '';
   readonly loading = signal(true);
   readonly publications = signal<Publication[]>([]);
-  readonly homePhoto = HOME_PHOTO;
   readonly latest = computed(() => [...this.publications()].sort((a, b) => (b.year ?? 0) - (a.year ?? 0)).slice(0, 8));
   readonly institutions = computed(() => {
     const counts = new Map<string, number>();

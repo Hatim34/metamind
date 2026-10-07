@@ -19,9 +19,11 @@ export interface Publication {
   keywords: string[];
   imageUrl?: string | null;
   fileUrl?: string | null;
+  /** Texte du fichier lu : le document peut être analysé par l'IA. */
+  textReady?: boolean;
 }
 
-export type PublicationStatus = 'EN_ATTENTE' | 'EXTRACTION' | 'A_VALIDER' | 'PUBLIE' | 'SUPPRIME';
+export type PublicationStatus = 'EN_ATTENTE' | 'EXTRACTION' | 'A_VALIDER' | 'REJETE' | 'ECHEC' | 'PUBLIE' | 'SUPPRIME';
 
 export interface UserSession {
   id: number;
@@ -472,25 +474,25 @@ export class ApiService {
    * evite ce refus : on n'appelle le LLM que lorsque le document est pret.
    */
   extractMetadataWhenReady(publicationId: number): Observable<MetadataExtraction> {
-    return this.waitUntilTextReady(publicationId).pipe(
+    return this.waitForText(publicationId).pipe(
       switchMap(() => this.extractMetadata(publicationId))
     );
   }
 
   /**
-   * Interroge le statut jusqu'a ce que le texte soit extrait.
-   * Si l'attente expire, on laisse passer : le reessai de extractMetadata prend le relais.
+   * Interroge le document jusqu'a ce que son texte soit lu, ou que le fichier soit declare illisible.
+   * Renvoie null si l'attente expire : le reessai de extractMetadata prend alors le relais.
    */
-  private waitUntilTextReady(publicationId: number): Observable<Publication | null> {
+  waitForText(publicationId: number): Observable<Publication | null> {
     return timer(0, 1500).pipe(
       take(ApiService.readinessPolls),
       switchMap(() => this.getPublication(publicationId)),
-      first((document) => document.status !== 'EN_ATTENTE' && document.status !== 'EXTRACTION', null)
+      first((document) => !!document.textReady || document.status === 'ECHEC', null)
     );
   }
 
-  /** Environ quinze secondes d'attente, largement suffisant pour un PDF courant. */
-  private static readonly readinessPolls = 10;
+  /** Une minute d'attente : un PDF de plusieurs dizaines de pages se lit en quelques secondes. */
+  private static readonly readinessPolls = 40;
 
   /** Nombre d'attentes avant de renoncer : le texte arrive en quelques secondes. */
   private static readonly extractionAttempts = 8;
@@ -599,7 +601,8 @@ export class ApiService {
       visibility: item['visibilite'] ?? item['visibility'],
       keywords: item['mots_cles'] ?? item['keywords'] ?? [],
       imageUrl: this.toResourceUrl(item['image_url'] ?? item['imageUrl']),
-      fileUrl: this.toResourceUrl(item['fichier_url'] ?? item['fileUrl'])
+      fileUrl: this.toResourceUrl(item['fichier_url'] ?? item['fileUrl']),
+      textReady: item['texte_pret'] ?? false
     };
   }
 
