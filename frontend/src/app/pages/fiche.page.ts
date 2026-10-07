@@ -1,7 +1,7 @@
-import { Component, OnDestroy, computed, inject, signal } from '@angular/core';
+import { Component, OnDestroy, computed, effect, inject, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
-import { ApiService, Publication } from '../api.service';
+import { ApiService, Publication, PublicationTranslation } from '../api.service';
 import { I18nService, TranslatePipe } from '../core/i18n';
 import { languageLabel, typeLabel } from '../core/labels';
 import { TypeCoverComponent } from '../ui/type-cover.component';
@@ -29,8 +29,11 @@ type CitationFormat = 'apa' | 'bibtex' | 'ris';
           </aside>
 
           <article class="m-fiche">
-            <h1 class="m-title">{{ p.title }}</h1>
+            <h1 class="m-title">{{ display().title }}</h1>
             @if (p.author) { <p class="m-fiche__authors">{{ p.author }}</p> }
+			@if (translation() && translation()!.translated) {
+			  <p class="m-muted m-small">{{ 'Traduction automatique de la notice. La citation reste dans la langue originale.' | t }}</p>
+			}
 
             <dl class="m-notice">
               @if (p.publicationDate || p.year) { <dt>{{ 'Date' | t }}</dt><dd>{{ displayDate(p) }}</dd> }
@@ -38,16 +41,16 @@ type CitationFormat = 'apa' | 'bibtex' | 'ris';
               @if (p.language) { <dt>{{ 'Langue' | t }}</dt><dd>{{ languageLabel(p.language) | t }}</dd> }
               <dt>{{ 'Institution' | t }}</dt><dd><a routerLink="/catalogue" [queryParams]="{ institution: p.institution }">{{ p.institution }}</a></dd>
               @if (p.classification) { <dt>{{ 'Classification' | t }}</dt><dd>{{ p.classification }}</dd> }
-              @if (p.keywords.length) {
+              @if (display().keywords.length) {
                 <dt>{{ 'Mots-clés' | t }}</dt>
-                <dd class="m-chips">@for (k of p.keywords; track k) { <a class="m-chip" routerLink="/catalogue" [queryParams]="{ q: k }">{{ k }}</a> }</dd>
+                <dd class="m-chips">@for (k of display().keywords; track k) { <a class="m-chip" routerLink="/catalogue" [queryParams]="{ q: k }">{{ k }}</a> }</dd>
               }
             </dl>
 
-            @if (p.summary) {
+            @if (display().summary) {
               <section>
                 <h2 class="m-h3">{{ 'Résumé' | t }}</h2>
-                <p class="m-prose">{{ p.summary }}</p>
+                <p class="m-prose">{{ display().summary }}</p>
               </section>
             }
 
@@ -103,6 +106,7 @@ export class FichePage implements OnDestroy {
   readonly formats: { id: CitationFormat; label: string }[] = [{ id: 'apa', label: 'APA' }, { id: 'bibtex', label: 'BibTeX' }, { id: 'ris', label: 'RIS' }];
 
   readonly pub = signal<Publication | null>(null);
+	readonly translation = signal<PublicationTranslation | null>(null);
   readonly error = signal(false);
   readonly coverUrl = signal<string | null>(null);
   readonly readerUrl = signal<SafeResourceUrl | null>(null);
@@ -124,7 +128,27 @@ export class FichePage implements OnDestroy {
     }
   });
 
+	readonly display = computed(() => {
+		const p = this.pub();
+		const translated = this.translation();
+		return {
+			title: translated?.title ?? p?.title ?? '',
+			summary: translated?.summary ?? p?.summary ?? null,
+			keywords: translated?.keywords ?? p?.keywords ?? []
+		};
+	});
+
   constructor() {
+		effect(() => {
+			const p = this.pub();
+			const language = this.i18n.lang();
+			if (!p) return;
+			this.translation.set(null);
+			this.api.getPublicationTranslation(p.id, language).subscribe({
+				next: (translation) => this.translation.set(translation),
+				error: () => undefined
+			});
+		});
     const id = Number(this.route.snapshot.paramMap.get('id'));
     this.api.getPublication(id).subscribe({
       next: (p) => {

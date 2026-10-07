@@ -69,6 +69,25 @@ describe('ApiService', () => {
     });
   });
 
+  it('demande la traduction de la fiche dans la langue choisie', () => {
+    service.getPublicationTranslation(5, 'nl').subscribe((translation) => {
+      expect(translation.title).toBe('Automatische metadata-extractie');
+      expect(translation.keywords).toEqual(['metadata', 'bibliotheken']);
+      expect(translation.translated).toBeTrue();
+    });
+
+    const request = httpMock.expectOne('/api/v1/publications/5/traduction?langue=nl');
+    expect(request.request.method).toBe('GET');
+    request.flush({
+      langue: 'nl',
+      langue_source: 'fr',
+      titre: 'Automatische metadata-extractie',
+      resume: 'Een gevalideerde samenvatting.',
+      mots_cles: ['metadata', 'bibliotheken'],
+      traduite: true
+    });
+  });
+
   it('lit toutes les pages du catalogue, pas seulement la premiere', () => {
     let count = 0;
     service.searchPublications('').subscribe((publications) => count = publications.length);

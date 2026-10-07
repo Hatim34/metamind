@@ -23,6 +23,16 @@ export interface Publication {
   textReady?: boolean;
 }
 
+/** Traduction de consultation : la notice source, les auteurs et la citation ne changent jamais. */
+export interface PublicationTranslation {
+  language: 'fr' | 'nl' | 'en';
+  sourceLanguage: string | null;
+  title: string;
+  summary: string | null;
+  keywords: string[];
+  translated: boolean;
+}
+
 export type PublicationStatus = 'EN_ATTENTE' | 'EXTRACTION' | 'A_VALIDER' | 'REJETE' | 'ECHEC' | 'PUBLIE' | 'SUPPRIME';
 
 export interface UserSession {
@@ -273,8 +283,15 @@ export class ApiService {
   }
 
   getPublication(publicationId: number): Observable<Publication> {
-    return this.http.get<unknown>(`${this.baseUrl}/publications/${publicationId}`, { headers: this.optionalAuthHeaders() })
-      .pipe(map((response) => this.toPublication(response)));
+	return this.http.get<unknown>(`${this.baseUrl}/publications/${publicationId}`, { headers: this.optionalAuthHeaders() })
+	  .pipe(map((response) => this.toPublication(response)));
+  }
+
+  getPublicationTranslation(publicationId: number, language: 'fr' | 'nl' | 'en'): Observable<PublicationTranslation> {
+    return this.http.get<unknown>(`${this.baseUrl}/publications/${publicationId}/traduction`, {
+      headers: this.optionalAuthHeaders(),
+      params: new HttpParams().set('langue', language)
+    }).pipe(map((response) => this.toPublicationTranslation(response)));
   }
 
   downloadPublicationFile(publicationId: number): Observable<Blob> {
@@ -605,6 +622,18 @@ export class ApiService {
       imageUrl: this.toResourceUrl(item['image_url'] ?? item['imageUrl']),
       fileUrl: this.toResourceUrl(item['fichier_url'] ?? item['fileUrl']),
       textReady: item['texte_pret'] ?? false
+    };
+  }
+
+  private toPublicationTranslation(value: unknown): PublicationTranslation {
+    const item = value as Record<string, any>;
+    return {
+      language: item['langue'] ?? item['language'],
+      sourceLanguage: item['langue_source'] ?? item['sourceLanguage'] ?? null,
+      title: item['titre'] ?? item['title'],
+      summary: item['resume'] ?? item['summary'] ?? null,
+      keywords: item['mots_cles'] ?? item['keywords'] ?? [],
+      translated: item['traduite'] ?? item['translated'] ?? false
     };
   }
 
