@@ -116,6 +116,15 @@ public record PublicationResponse(
 		return "/api/v1/documents/" + document.id() + "/image?v=" + Integer.toHexString(document.coverImagePath().hashCode());
 	}
 
+	/** Meme notice, avec titre, resume et mots-cles affiches dans une autre langue. */
+	public PublicationResponse withDisplayText(String translatedTitle, String translatedSummary, List<String> translatedKeywords, String translatedClassification) {
+		return new PublicationResponse(id, translatedTitle == null ? title : translatedTitle, author, institution, year,
+				translatedSummary == null ? summary : translatedSummary, publicationDate,
+				translatedClassification == null ? classification : translatedClassification, language, documentType,
+				status, visibility, translatedKeywords == null || translatedKeywords.isEmpty() ? keywords : translatedKeywords,
+				imageUrl, fileUrl, textReady);
+	}
+
 	private static PublicationStatus toPublicationStatus(DocumentStatus status) {
 		return PublicationStatus.valueOf(status.name());
 	}

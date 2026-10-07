@@ -53,6 +53,9 @@ public class PublicationTranslationEntity {
 	@Column(name = "date_creation", nullable = false)
 	private LocalDateTime createdAt = LocalDateTime.now();
 
+	@Column(name = "classification", length = 255)
+	private String classification;
+
 	protected PublicationTranslationEntity() {
 	}
 
@@ -70,6 +73,14 @@ public class PublicationTranslationEntity {
 		refresh(sourceFingerprint, title, summary, keywordsJson, model);
 	}
 
+	public void translateClassification(String classification) {
+		this.classification = classification;
+	}
+
+	public String getClassification() {
+		return classification;
+	}
+
 	public void refresh(String sourceFingerprint, String title, String summary, String keywordsJson, String model) {
 		this.sourceFingerprint = sourceFingerprint;
 		this.title = title;
@@ -77,6 +88,10 @@ public class PublicationTranslationEntity {
 		this.keywordsJson = keywordsJson;
 		this.model = model;
 		this.createdAt = LocalDateTime.now();
+	}
+
+	public DocumentEntity getDocument() {
+		return document;
 	}
 
 	public String getSourceFingerprint() {

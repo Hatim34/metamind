@@ -10,10 +10,12 @@ import be.icc.metamind.document.DocumentFileService;
 import be.icc.metamind.institution.InstitutionResponse;
 import be.icc.metamind.publication.PublicationResponse;
 import be.icc.metamind.publication.PublicationService;
+import be.icc.metamind.publication.PublicationTranslationJobs;
 import be.icc.metamind.user.AccountService;
 import be.icc.metamind.user.UserEntity;
 import be.icc.metamind.user.UserResponse;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -27,6 +29,7 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.multipart.MultipartFile;
 
 @RestController
@@ -36,8 +39,11 @@ public class AdminController {
 	private final AccountService accountService;
 	private final DocumentFileService documentFileService;
 	private final PublicationService publicationService;
+	private final PublicationTranslationJobs translationJobs;
 
-	public AdminController(AdminService service, AccountService accountService, DocumentFileService documentFileService, PublicationService publicationService) {
+	public AdminController(AdminService service, AccountService accountService, DocumentFileService documentFileService,
+			PublicationService publicationService, PublicationTranslationJobs translationJobs) {
+		this.translationJobs = translationJobs;
 		this.service = service;
 		this.accountService = accountService;
 		this.documentFileService = documentFileService;
@@ -127,6 +133,14 @@ public class AdminController {
 	) {
 		accountService.authenticateAdmin(authorization);
 		return publicationService.replaceCoverImage(id, image);
+	}
+
+	/** Lance en arriere-plan la traduction de toutes les notices publiees. */
+	@PostMapping("/traductions")
+	@ResponseStatus(HttpStatus.ACCEPTED)
+	public void translateAllPublished(@RequestHeader("Authorization") String authorization) {
+		accountService.authenticateAdmin(authorization);
+		translationJobs.translateAllPublished();
 	}
 
 	@GetMapping(value = "/reports/documents.csv", produces = "text/csv")

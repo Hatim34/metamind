@@ -4,6 +4,8 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import be.icc.metamind.api.ApiException;
 import be.icc.metamind.document.DocumentEntity;
@@ -50,13 +52,14 @@ public class PublicationTranslationService {
 			return PublicationTranslation.source(publication, targetLanguage);
 		}
 
-		TranslationSource source = new TranslationSource(publication.title(), publication.summary(), publication.keywords());
+		TranslationSource source = new TranslationSource(publication.title(), publication.summary(), publication.keywords(), publication.classification());
 		String fingerprint = fingerprint(source);
 		PublicationTranslationEntity cached = translationRepository
 				.findByDocumentIdAndTargetLanguage(documentId, targetLanguage)
 				.orElse(null);
 		if (cached != null && fingerprint.equals(cached.getSourceFingerprint())) {
-			return new PublicationTranslation(targetLanguage, sourceLanguage, cached.getTitle(), cached.getSummary(), readKeywords(cached.getKeywordsJson()), true);
+			return new PublicationTranslation(targetLanguage, sourceLanguage, cached.getTitle(), cached.getSummary(), readKeywords(cached.getKeywordsJson()), true,
+					cached.getClassification() == null ? publication.classification() : cached.getClassification());
 		}
 
 		PublicationTranslationProvider provider = provider();
@@ -69,8 +72,39 @@ public class PublicationTranslationService {
 		} else {
 			cached.refresh(fingerprint, translated.title(), translated.summary(), keywordsJson, provider.modelName());
 		}
+		cached.translateClassification(translated.classification());
 		translationRepository.save(cached);
-		return new PublicationTranslation(targetLanguage, sourceLanguage, translated.title(), translated.summary(), translated.keywords(), translated.translated());
+		return new PublicationTranslation(targetLanguage, sourceLanguage, translated.title(), translated.summary(), translated.keywords(), translated.translated(),
+				translated.classification() == null ? publication.classification() : translated.classification());
+	}
+
+	/**
+	 * Applique aux listes (catalogue, accueil) les traductions deja preparees.
+	 * Aucun appel au modele ici : une liste doit s'afficher immediatement. Une notice
+	 * pas encore traduite reste dans sa langue d'origine.
+	 */
+	@Transactional(readOnly = true)
+	public List<PublicationResponse> localized(List<PublicationResponse> publications, String requestedLanguage) {
+		String target = requestedLanguage == null ? "" : requestedLanguage.trim().toLowerCase(Locale.ROOT);
+		if (!SUPPORTED_LANGUAGES.contains(target) || publications.isEmpty()) {
+			return publications;
+		}
+		List<Long> ids = publications.stream()
+				.filter(publication -> !target.equals(normalizeSourceLanguage(publication.language())))
+				.map(PublicationResponse::id)
+				.toList();
+		if (ids.isEmpty()) {
+			return publications;
+		}
+		Map<Long, PublicationTranslationEntity> byDocument = translationRepository.findByTargetLanguageAndDocument_IdIn(target, ids).stream()
+				.collect(Collectors.toMap(translation -> translation.getDocument().getId(), translation -> translation, (first, second) -> first));
+		return publications.stream()
+				.map(publication -> {
+					PublicationTranslationEntity translation = byDocument.get(publication.id());
+					return translation == null ? publication : publication.withDisplayText(
+							translation.getTitle(), translation.getSummary(), readKeywords(translation.getKeywordsJson()), translation.getClassification());
+				})
+				.toList();
 	}
 
 	private PublicationTranslationProvider provider() {
@@ -92,7 +126,8 @@ public class PublicationTranslationService {
 
 	private String fingerprint(TranslationSource source) {
 		try {
-			String value = String.join("\u001f", source.title() == null ? "" : source.title(), source.summary() == null ? "" : source.summary(), String.join("\u001e", source.keywords()));
+			String value = String.join("\u001f", source.title() == null ? "" : source.title(), source.summary() == null ? "" : source.summary(), String.join("\u001e", source.keywords()),
+					source.classification() == null ? "" : source.classification());
 			byte[] digest = MessageDigest.getInstance("SHA-256").digest(value.getBytes(StandardCharsets.UTF_8));
 			return java.util.HexFormat.of().formatHex(digest);
 		} catch (Exception exception) {

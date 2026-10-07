@@ -54,16 +54,17 @@ public class GeminiPublicationTranslationProvider implements PublicationTranslat
 				Tu traduis les metadonnees d'une publication universitaire.
 				Traduis du %s vers le %s. Ne traduis ni les noms propres, ni les DOI, ni les noms d'auteurs.
 				N'invente aucune information. Garde les mots-cles sous forme de liste courte.
-				Reponds uniquement avec un objet JSON : {"title": string, "summary": string|null, "keywords": string[]}.
+				Reponds uniquement avec un objet JSON : {"title": string, "summary": string|null, "keywords": string[], "classification": string|null}.
 				<metadata>
-				{"title":%s,"summary":%s,"keywords":%s}
+				{"title":%s,"summary":%s,"keywords":%s,"classification":%s}
 				</metadata>
 				""".formatted(
 				languageName(sourceLanguage),
 				languageName(targetLanguage),
 				toJson(source.title()),
 				toJson(source.summary()),
-				toJson(source.keywords())
+				toJson(source.keywords()),
+				toJson(source.classification())
 		);
 		GeminiRequest request = new GeminiRequest(List.of(new GeminiContent(List.of(new GeminiPart(prompt)))), new GenerationConfig("application/json"));
 		JsonNode response = restClient.post()
@@ -94,7 +95,8 @@ public class GeminiPublicationTranslationProvider implements PublicationTranslat
 			if (title == null) {
 				throw new ApiException(HttpStatus.BAD_GATEWAY, "Gemini n'a pas renvoye de titre traduit.");
 			}
-			return new PublicationTranslation(targetLanguage, sourceLanguage, title, textOrNull(json.path("summary")), keywords(json.path("keywords")), true);
+			return new PublicationTranslation(targetLanguage, sourceLanguage, title, textOrNull(json.path("summary")), keywords(json.path("keywords")), true,
+					textOrNull(json.path("classification")));
 		} catch (ApiException exception) {
 			throw exception;
 		} catch (Exception exception) {

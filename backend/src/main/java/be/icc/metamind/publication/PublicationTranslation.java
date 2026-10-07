@@ -11,7 +11,8 @@ public record PublicationTranslation(
 		@JsonProperty("titre") String title,
 		@JsonProperty("resume") String summary,
 		@JsonProperty("mots_cles") List<String> keywords,
-		@JsonProperty("traduite") boolean translated
+		@JsonProperty("traduite") boolean translated,
+		@JsonProperty("classification") String classification
 ) {
 	public static PublicationTranslation source(PublicationResponse publication, String targetLanguage) {
 		return new PublicationTranslation(
@@ -20,7 +21,8 @@ public record PublicationTranslation(
 				publication.title(),
 				publication.summary(),
 				publication.keywords(),
-				false
+				false,
+				publication.classification()
 		);
 	}
 }

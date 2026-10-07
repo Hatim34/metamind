@@ -30,7 +30,7 @@ class GeminiPublicationTranslationProviderTests {
 						""", MediaType.APPLICATION_JSON));
 
 		PublicationTranslation result = provider.translate(
-				new TranslationSource("Gestion de l'eau", "Une etude des politiques locales.", List.of("eau", "villes")),
+				new TranslationSource("Gestion de l'eau", "Une etude des politiques locales.", List.of("eau", "villes"), "Sciences politiques"),
 				"fr", "en"
 		);
 

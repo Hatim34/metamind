@@ -14,9 +14,11 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/v1/search")
 public class SearchController {
 	private final PublicationService service;
+	private final PublicationTranslationService translationService;
 
-	public SearchController(PublicationService service) {
+	public SearchController(PublicationService service, PublicationTranslationService translationService) {
 		this.service = service;
+		this.translationService = translationService;
 	}
 
 	@GetMapping
@@ -28,8 +30,12 @@ public class SearchController {
 			@RequestParam(value = "date_debut", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
 			@RequestParam(value = "date_fin", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
 			@RequestParam(defaultValue = "0") int page,
-			@RequestParam(defaultValue = "20") int size
+			@RequestParam(defaultValue = "20") int size,
+			@RequestParam(value = "affichage", required = false) String displayLanguage
 	) {
-		return service.findPublicSearchPage(query, author, language, documentType, startDate, endDate, page, size);
+		PageResponse<PublicationResponse> result = service.findPublicSearchPage(query, author, language, documentType, startDate, endDate, page, size);
+		// Langue choisie par le visiteur : titres, resumes et mots-cles traduits s'ils sont prets.
+		return new PageResponse<>(translationService.localized(result.contenu(), displayLanguage),
+				result.page(), result.size(), result.totalElements(), result.totalPages());
 	}
 }

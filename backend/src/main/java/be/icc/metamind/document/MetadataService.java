@@ -15,6 +15,7 @@ import be.icc.metamind.user.UserEntity;
 import be.icc.metamind.user.UserRole;
 import be.icc.metamind.opendata.DspacePublisher;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,6 +33,7 @@ public class MetadataService {
 	private final ValidationDecisionRecorder validationDecisionRecorder;
 	private final LanguageRepository languageRepository;
 	private final DocumentTypeRepository documentTypeRepository;
+	private final ApplicationEventPublisher eventPublisher;
 
 	public MetadataService(
 			DocumentRepository documentRepository,
@@ -44,8 +46,10 @@ public class MetadataService {
 			DspacePublisher dspacePublisher,
 			ValidationDecisionRecorder validationDecisionRecorder,
 			LanguageRepository languageRepository,
-			DocumentTypeRepository documentTypeRepository
+			DocumentTypeRepository documentTypeRepository,
+			ApplicationEventPublisher eventPublisher
 	) {
+		this.eventPublisher = eventPublisher;
 		this.documentRepository = documentRepository;
 		this.metadataRepository = metadataRepository;
 		this.authorRepository = authorRepository;
@@ -140,6 +144,8 @@ public class MetadataService {
 		publishedValues.put("date_publication",
 				request.publicationDate() == null ? "" : request.publicationDate().toString());
 		validationDecisionRecorder.recordValidation(document, publishedValues);
+		// Les traductions d'affichage sont preparees apres la validation, en arriere-plan.
+		eventPublisher.publishEvent(new DocumentPublishedEvent(document.getId()));
 		dspacePublisher.publish(document, metadata,
 				documentAuthorRepository.findByDocument_IdOrderByAuthorOrderAsc(document.getId()),
 				documentKeywordRepository.findByDocument_Id(document.getId()).stream()

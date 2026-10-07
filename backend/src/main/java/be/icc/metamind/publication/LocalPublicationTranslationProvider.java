@@ -9,6 +9,6 @@ import org.springframework.stereotype.Component;
 public class LocalPublicationTranslationProvider implements PublicationTranslationProvider {
 	@Override
 	public PublicationTranslation translate(TranslationSource source, String sourceLanguage, String targetLanguage) {
-		return new PublicationTranslation(targetLanguage, sourceLanguage, source.title(), source.summary(), source.keywords(), false);
+		return new PublicationTranslation(targetLanguage, sourceLanguage, source.title(), source.summary(), source.keywords(), false, source.classification());
 	}
 }
