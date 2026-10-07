@@ -255,6 +255,36 @@ paths:
         '402': { description: Solde de credits insuffisant, $ref: '#/components/responses/Error' }
         '404': { $ref: '#/components/responses/Error' }
 
+  /publications/{id}/traduction:
+    get:
+      tags: [Recherche]
+      summary: Traduire les champs descriptifs d'une publication pour l'affichage
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/id'
+        - name: langue
+          in: query
+          required: true
+          schema: { type: string, enum: [fr, nl, en] }
+      responses:
+        '200':
+          description: Traduction mise en cache pour la langue demandee
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  langue: { type: string, example: nl }
+                  langue_source: { type: string, example: fr }
+                  titre: { type: string }
+                  resume: { type: string, nullable: true }
+                  mots_cles:
+                    type: array
+                    items: { type: string }
+                  traduite: { type: boolean }
+        '400': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
+
   /documents/extractions:
     post:
       tags: [Extraction]

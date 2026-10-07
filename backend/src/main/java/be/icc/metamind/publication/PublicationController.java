@@ -26,10 +26,12 @@ import be.icc.metamind.user.UserEntity;
 @RequestMapping("/api/v1/publications")
 public class PublicationController {
 	private final PublicationService service;
+	private final PublicationTranslationService translationService;
 	private final AccountService accountService;
 
-	public PublicationController(PublicationService service, AccountService accountService) {
+	public PublicationController(PublicationService service, PublicationTranslationService translationService, AccountService accountService) {
 		this.service = service;
+		this.translationService = translationService;
 		this.accountService = accountService;
 	}
 
@@ -43,6 +45,17 @@ public class PublicationController {
 	public PublicationResponse detail(@PathVariable long id, @RequestHeader(value = "Authorization", required = false) String authorization) {
 		UserEntity currentUser = authorization == null ? null : accountService.authenticate(authorization);
 		return service.findPublication(id, currentUser);
+	}
+
+	/** Traduit les champs descriptifs pour l'affichage, sans modifier la notice source. */
+	@GetMapping("/{id}/traduction")
+	public PublicationTranslation translation(
+			@PathVariable long id,
+			@RequestParam("langue") String language,
+			@RequestHeader(value = "Authorization", required = false) String authorization
+	) {
+		UserEntity currentUser = authorization == null ? null : accountService.authenticate(authorization);
+		return translationService.translate(id, language, currentUser);
 	}
 
 	@PostMapping
