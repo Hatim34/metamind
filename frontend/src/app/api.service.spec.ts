@@ -127,6 +127,14 @@ describe('ApiService', () => {
     request.flush({ institution_id: 1, institution: 'Institution A', solde_credits: 20 });
   });
 
+  it('telecharge un fichier public sans envoyer de jeton vide', () => {
+    service.downloadPublicationFile(5).subscribe();
+
+    const request = httpMock.expectOne('/api/v1/documents/5/file');
+    expect(request.request.headers.has('Authorization')).toBeFalse();
+    request.flush(new Blob(['PDF']));
+  });
+
   it('achete des credits via l API', () => {
     service.setToken('token-test');
 

@@ -279,7 +279,9 @@ export class ApiService {
 
   downloadPublicationFile(publicationId: number): Observable<Blob> {
     return this.http.get(`${this.baseUrl}/documents/${publicationId}/file`, {
-      headers: this.authHeaders(),
+      // Une fiche publique doit rester lisible sans session. Envoyer « Bearer » vide
+      // force le backend a tenter une authentification et transforme ce cas en 401.
+      headers: this.optionalAuthHeaders(),
       responseType: 'blob'
     });
   }
