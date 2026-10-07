@@ -21,6 +21,16 @@ import { ConfirmService } from '../core/confirm.service';
         <p class="m-small m-muted">{{ session.user()?.email }} · {{ session.user()?.institution }}</p>
         <div class="m-actions"><button type="submit" class="m-btn m-btn--primary">{{ 'Enregistrer' | t }}</button></div>
       </form>
+      <form class="m-sheet m-sheet--pad m-stack" (ngSubmit)="changePassword()">
+        <h2 class="m-h3">{{ 'Mot de passe' | t }}</h2>
+        <label class="m-field">{{ 'Mot de passe actuel' | t }}
+          <input class="m-input" type="password" name="currentPassword" autocomplete="current-password" [(ngModel)]="currentPassword" />
+        </label>
+        <label class="m-field">{{ 'Nouveau mot de passe' | t }} <span class="m-muted m-small">({{ '8 caractères minimum' | t }})</span>
+          <input class="m-input" type="password" name="newPassword" autocomplete="new-password" minlength="8" [(ngModel)]="newPassword" />
+        </label>
+        <div class="m-actions"><button type="submit" class="m-btn m-btn--primary" [disabled]="!currentPassword || newPassword.length < 8">{{ 'Changer le mot de passe' | t }}</button></div>
+      </form>
       <section class="m-sheet m-sheet--pad m-stack">
         <h2 class="m-h3">{{ 'Mes données' | t }}</h2>
         <p class="m-muted">{{ 'Vous pouvez télécharger toutes les données vous concernant ou demander la suppression de votre compte.' | t }}</p>
@@ -40,6 +50,17 @@ export class ProfilPage {
   private readonly i18n = inject(I18nService);
   firstName = this.session.user()?.firstName ?? '';
   lastName = this.session.user()?.lastName ?? '';
+  currentPassword = '';
+  newPassword = '';
+
+  changePassword(): void {
+    const user = this.session.user();
+    if (!user || !this.currentPassword || this.newPassword.length < 8) return;
+    this.api.changePassword(user.id, this.currentPassword, this.newPassword).subscribe({
+      next: () => { this.currentPassword = ''; this.newPassword = ''; this.toasts.show(this.i18n.t('Mot de passe modifié.')); },
+      error: (e) => this.toasts.show(this.i18n.t(e?.status === 400 ? 'Le mot de passe actuel est incorrect.' : 'La modification a échoué.'), 'error')
+    });
+  }
 
   save(): void {
     const user = this.session.user();

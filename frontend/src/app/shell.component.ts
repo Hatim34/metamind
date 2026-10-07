@@ -38,7 +38,7 @@ type Layout = 'public' | 'espace' | 'admin' | 'bare';
               <a routerLink="/espace" routerLinkActive="is-active" [routerLinkActiveOptions]="{ exact: true }">{{ 'Tableau de bord' | t }}</a>
               @if (!session.isAdmin()) { <a routerLink="/espace/import" routerLinkActive="is-active">{{ 'Importer' | t }}</a> }
               <a routerLink="/espace/file" routerLinkActive="is-active">{{ (session.isAdmin() ? 'Documents' : 'File de validation') | t }}</a>
-              <a routerLink="/espace/credits" routerLinkActive="is-active">{{ 'Crédits' | t }}</a>
+              @if (!session.isAdmin()) { <a routerLink="/espace/credits" routerLinkActive="is-active">{{ 'Crédits' | t }}</a> }
               <a routerLink="/catalogue" routerLinkActive="is-active">{{ 'Catalogue' | t }}</a>
               @if (session.isAdmin()) { <a routerLink="/admin" routerLinkActive="is-active">{{ 'Administration' | t }}</a> }
             </nav>
@@ -51,7 +51,7 @@ type Layout = 'public' | 'espace' | 'admin' | 'bare';
               }
             </span>
             @if (session.user(); as user) {
-              @if (credits() !== null) {
+              @if (credits() !== null && !session.isAdmin()) {
                 <a class="m-header__credits" routerLink="/espace/credits">{{ 'Crédits' | t }} <strong>{{ credits() }}</strong></a>
               }
               <details class="m-menu">
@@ -138,7 +138,7 @@ export class ShellComponent {
       }
       this.layout.set((current.snapshot.data['layout'] as Layout) ?? 'public');
       // Même en-tête partout une fois connecté : le solde reste affiché, catalogue compris.
-      if (this.session.isLoggedIn()) {
+      if (this.session.isLoggedIn() && !this.session.isAdmin()) {
         this.api.getCreditAccount().subscribe({ next: (account) => this.credits.set(account.balance.balance), error: () => this.credits.set(null) });
       }
     });

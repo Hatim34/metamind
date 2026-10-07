@@ -52,6 +52,9 @@ export interface Institution {
   name: string;
   emailDomain: string;
   active: boolean;
+  /** Demandée à l'inscription, en attente de la décision de l'administrateur. */
+  pending: boolean;
+  creditBalance: number;
 }
 
 export interface InstitutionPhoto {
@@ -215,6 +218,10 @@ export interface RegisterRequest {
   email: string;
   institution: string;
   password: string;
+  /** Nom de l'institution à ajouter quand le domaine de l'adresse n'est pas encore inscrit. */
+  nom_institution?: string;
+  /** Langue de l'interface : celle des emails envoyés au compte. */
+  langue?: string;
 }
 
 export interface UpdateProfileRequest {
@@ -297,11 +304,13 @@ export class ApiService {
 	  .pipe(map((response) => this.toPublication(response)));
   }
 
-  getPublicationTranslation(publicationId: number, language: 'fr' | 'nl' | 'en'): Observable<PublicationTranslation> {
+  /** `pending` : la traduction est en préparation (202), la notice d'origine est renvoyée en attendant. */
+  getPublicationTranslation(publicationId: number, language: 'fr' | 'nl' | 'en'): Observable<{ translation: PublicationTranslation; pending: boolean }> {
     return this.http.get<unknown>(`${this.baseUrl}/publications/${publicationId}/traduction`, {
       headers: this.optionalAuthHeaders(),
-      params: new HttpParams().set('langue', language)
-    }).pipe(map((response) => this.toPublicationTranslation(response)));
+      params: new HttpParams().set('langue', language),
+      observe: 'response'
+    }).pipe(map((response) => ({ translation: this.toPublicationTranslation(response.body), pending: response.status === 202 })));
   }
 
   downloadPublicationFile(publicationId: number): Observable<Blob> {
@@ -597,6 +606,21 @@ export class ApiService {
       .pipe(map((response) => this.toUserSession(response)));
   }
 
+  changePassword(userId: number, currentPassword: string, newPassword: string): Observable<void> {
+    return this.http.put<void>(`${this.baseUrl}/users/${userId}/password`,
+      { mot_de_passe_actuel: currentPassword, nouveau_mot_de_passe: newPassword }, { headers: this.authHeaders() });
+  }
+
+  /** Valide (true) ou refuse/désactive (false) une institution ; valider une demande active aussi ses comptes. */
+  setInstitutionActive(institutionId: number, active: boolean): Observable<Institution> {
+    return this.http.patch<unknown>(`${this.baseUrl}/admin/institutions/${institutionId}`, { actif: active }, { headers: this.authHeaders() })
+      .pipe(map((response) => this.toInstitution(response)));
+  }
+
+  adjustInstitutionCredits(institutionId: number, amount: number, reason: string): Observable<unknown> {
+    return this.http.post(`${this.baseUrl}/admin/institutions/${institutionId}/credits/adjustments`, { amount, reason }, { headers: this.authHeaders() });
+  }
+
   requestAccountDeletion(userId: number): Observable<UserSession> {
     return this.http.delete<unknown>(`${this.baseUrl}/users/${userId}`, { headers: this.authHeaders() })
       .pipe(map((response) => this.toUserSession(response)));
@@ -717,7 +741,9 @@ export class ApiService {
       code: item['code'],
       name: item['nom'] ?? item['name'],
       emailDomain: item['domaine_email'] ?? item['emailDomain'],
-      active: item['actif'] ?? item['active']
+      active: item['actif'] ?? item['active'],
+      pending: item['en_attente'] ?? false,
+      creditBalance: item['solde_credits'] ?? 0
     };
   }
 

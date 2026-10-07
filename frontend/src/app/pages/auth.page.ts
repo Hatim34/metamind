@@ -41,7 +41,7 @@ type Mode = 'connexion' | 'inscription' | 'oubli' | 'reinitialiser';
               @if (done()) {
                 <div class="m-stack">
                   <h1 class="m-title">{{ 'Demande envoyée' | t }}</h1>
-                  <p>{{ 'Votre compte sera actif dès qu\\'un administrateur l\\'aura validé. Vous recevrez un email.' | t }}</p>
+                  <p>{{ (institutionRequested() ? 'L\\'administrateur doit d\\'abord valider votre institution, puis votre compte. Vous recevrez un email à cette adresse dès que vous pourrez vous connecter.' : 'Un administrateur doit valider votre compte. Vous recevrez un email à cette adresse dès que vous pourrez vous connecter.') | t }}</p>
                   <a class="m-btn m-btn--ghost" routerLink="/connexion">{{ 'Retour à la connexion' | t }}</a>
                 </div>
               } @else {
@@ -53,15 +53,23 @@ type Mode = 'connexion' | 'inscription' | 'oubli' | 'reinitialiser';
                     <label class="m-field">{{ 'Nom' | t }}<input class="m-input" name="lastName" required [(ngModel)]="lastName" autocomplete="family-name" /></label>
                   </div>
                   <label class="m-field">{{ 'Adresse email institutionnelle' | t }}
-                    <input class="m-input" type="email" name="email" required [(ngModel)]="email" autocomplete="email" />
+                    <input class="m-input" type="email" name="email" required [(ngModel)]="email" (ngModelChange)="unknownDomain.set(false)" autocomplete="email" />
                   </label>
+                  @if (unknownDomain()) {
+                    <div class="m-sheet m-sheet--pad m-stack">
+                      <p class="m-small">{{ 'Aucune institution n\\'est encore inscrite pour' | t }} <code>{{ domain() }}</code>. {{ 'Indiquez son nom : l\\'administrateur validera l\\'institution et votre compte.' | t }}</p>
+                      <label class="m-field">{{ 'Nom officiel de votre institution' | t }}
+                        <input class="m-input" name="institutionName" required [(ngModel)]="institutionName" autocomplete="organization" />
+                      </label>
+                    </div>
+                  }
                   <label class="m-field">{{ 'Mot de passe' | t }} <span class="m-muted m-small">({{ '8 caractères minimum' | t }})</span>
                     <input class="m-input" type="password" name="password" minlength="8" required [(ngModel)]="password" autocomplete="new-password" />
                   </label>
                   <label class="m-check"><input type="checkbox" name="cgu" [(ngModel)]="acceptTerms" /> <span>{{ 'J\\'accepte les' | t }} <a routerLink="/legal" fragment="mentions-legales">{{ 'conditions d\\'utilisation' | t }}</a></span></label>
                   <label class="m-check"><input type="checkbox" name="privacy" [(ngModel)]="acceptPrivacy" /> <span>{{ 'J\\'ai lu la' | t }} <a routerLink="/legal" fragment="confidentialite">{{ 'politique de confidentialité' | t }}</a></span></label>
                   @if (error()) { <p class="m-alert" role="alert">{{ error() }}</p> }
-                  <button class="m-btn m-btn--primary m-btn--block" type="submit" [disabled]="busy() || !canRegister()">{{ 'Envoyer la demande' | t }}</button>
+                  <button class="m-btn m-btn--primary m-btn--block" type="submit" [disabled]="busy() || !canRegister()">{{ (unknownDomain() ? 'Demander l\\'ajout de mon institution' : 'Envoyer la demande') | t }}</button>
                   <p class="m-small m-muted m-center">{{ 'Déjà un compte ?' | t }} <a routerLink="/connexion">{{ 'Se connecter' | t }}</a></p>
                 </form>
               }
@@ -70,7 +78,7 @@ type Mode = 'connexion' | 'inscription' | 'oubli' | 'reinitialiser';
               <form (ngSubmit)="requestReset()" class="m-stack">
                 <h1 class="m-title">{{ 'Mot de passe oublié' | t }}</h1>
                 @if (done()) {
-                  <p>{{ 'Si un compte existe pour cette adresse, un lien de réinitialisation vient d\\'être envoyé.' | t }}</p>
+                  <p>{{ 'Si un compte actif existe pour cette adresse, un lien valable 30 minutes vient d\\'être envoyé. Pensez à regarder dans les courriers indésirables.' | t }}</p>
                 } @else {
                   <label class="m-field">{{ 'Adresse email professionnelle' | t }}<input class="m-input" type="email" name="email" required [(ngModel)]="email" /></label>
                   <button class="m-btn m-btn--primary m-btn--block" type="submit" [disabled]="busy()">{{ 'Envoyer le lien' | t }}</button>
@@ -129,6 +137,10 @@ export class AuthPage {
   lastName = '';
   acceptTerms = false;
   acceptPrivacy = false;
+  institutionName = '';
+  /** Le domaine de l'adresse ne correspond à aucune institution : on demande son nom. */
+  readonly unknownDomain = signal(false);
+  readonly institutionRequested = signal(false);
   readonly busy = signal(false);
   readonly done = signal(false);
   readonly error = signal('');
@@ -141,29 +153,44 @@ export class AuthPage {
       error: (e) => {
         this.busy.set(false);
         this.error.set(this.i18n.t(e?.status === 429 ? 'Trop de tentatives. Réessayez dans quelques minutes.'
-          : e?.status === 403 ? 'Votre compte n\'est pas encore actif ou a été désactivé.' : 'Email ou mot de passe incorrect.'));
+          : e?.status === 403 ? (e?.error?.message?.includes('attend') ? 'Votre compte attend la validation d\'un administrateur.' : 'Ce compte a été désactivé. Contactez l\'administrateur de la plateforme.')
+          : 'Email ou mot de passe incorrect.'));
       }
     });
   }
 
-  canRegister(): boolean {
-    return !!this.firstName.trim() && !!this.lastName.trim() && /.+@.+\..+/.test(this.email) && this.password.length >= 8 && this.acceptTerms && this.acceptPrivacy;
+  domain(): string {
+    return this.email.trim().split('@')[1]?.toLowerCase() ?? '';
   }
 
+  canRegister(): boolean {
+    return !!this.firstName.trim() && !!this.lastName.trim() && /.+@.+\..+/.test(this.email) && this.password.length >= 8 && this.acceptTerms && this.acceptPrivacy
+      && (!this.unknownDomain() || !!this.institutionName.trim());
+  }
+
+  /** B1 : l'institution est déduite du domaine de l'email ; un domaine inconnu devient une demande d'institution. */
   register(): void {
     if (!this.canRegister()) return;
     this.busy.set(true);
     this.error.set('');
-    // B1 : l'institution est déduite du domaine de l'email (le backend accepte un nom ou un domaine).
-    const domain = this.email.trim().split('@')[1]?.toLowerCase() ?? '';
-    this.api.register({ firstName: this.firstName.trim(), lastName: this.lastName.trim(), email: this.email.trim(), institution: domain, password: this.password }).subscribe({
-      next: () => { this.busy.set(false); this.done.set(true); },
+    const name = this.unknownDomain() ? this.institutionName.trim() : undefined;
+    this.api.register({ firstName: this.firstName.trim(), lastName: this.lastName.trim(), email: this.email.trim(), institution: this.domain(), password: this.password, langue: this.i18n.lang(),
+      ...(name ? { nom_institution: name } : {}) }).subscribe({
+      next: () => { this.busy.set(false); this.institutionRequested.set(!!name); this.done.set(true); },
       error: (e) => {
         this.busy.set(false);
-        this.error.set(this.i18n.t(e?.status === 409 ? 'Un compte existe déjà avec cette adresse.'
-          : 'Aucune institution active ne correspond au domaine de cette adresse email.'));
+        if (e?.status === 404) { this.unknownDomain.set(true); return; }
+        this.error.set(this.i18n.t(this.registrationError(e?.status, e?.error?.message ?? '')));
       }
     });
+  }
+
+  private registrationError(status: number, message: string): string {
+    if (status === 409) return message.includes('institution') ? 'Une institution porte déjà ce nom avec un autre domaine email. Contactez l\'administrateur.' : 'Un compte existe déjà avec cette adresse.';
+    if (message.includes('personnelle')) return 'Utilisez l\'adresse email de votre institution, pas une adresse personnelle.';
+    if (message.includes('inactive')) return 'Cette institution a été désactivée. Contactez l\'administrateur de la plateforme.';
+    if (message.includes('domaine')) return 'Cette adresse ne correspond pas au domaine de l\'institution.';
+    return 'La demande n\'a pas pu être envoyée.';
   }
 
   requestReset(): void {

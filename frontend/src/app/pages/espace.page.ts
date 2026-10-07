@@ -23,7 +23,7 @@ const FIELD_LABELS: Record<string, string> = {
         <div>
           <h1 class="m-title">{{ 'Bonjour' | t }} {{ session.user()?.firstName }}</h1>
           <p class="m-muted">
-            @if (queue().length) { {{ queue().length }} {{ 'notices attendent votre relecture.' | t }} }
+            @if (queue().length) { {{ queue().length }} {{ (session.isAdmin() ? 'notices attendent une relecture dans les institutions.' : 'notices attendent votre relecture.') | t }} }
             @else { {{ 'Aucune notice en attente de relecture.' | t }} }
           </p>
         </div>
@@ -35,11 +35,15 @@ const FIELD_LABELS: Record<string, string> = {
         }
       </div>
 
+      @if (session.isAdmin() && adminRequests()) {
+        <a class="m-banner m-banner--link" routerLink="/admin">{{ adminRequests() }} {{ 'demandes de compte ou d\'institution attendent votre décision.' | t }}</a>
+      }
+
       @if (stats(); as s) {
         <div class="m-kpis">
           <div class="m-kpi"><span>{{ 'À valider' | t }}</span><strong>{{ s.pendingValidationPublications }}</strong></div>
           <div class="m-kpi"><span>{{ 'Publiées' | t }}</span><strong>{{ s.publishedPublications }}</strong><small>{{ 'dont' | t }} {{ s.publicPublications }} {{ 'publiques' | t }}, {{ s.institutionOnlyPublications }} {{ 'réservées' | t }}</small></div>
-          <div class="m-kpi"><span>{{ (session.isAdmin() ? 'Crédits, toutes institutions' : 'Crédits restants') | t }}</span><strong>{{ s.creditBalance }}</strong><small><a routerLink="/espace/credits">{{ 'Acheter des crédits' | t }}</a></small></div>
+          <div class="m-kpi"><span>{{ (session.isAdmin() ? 'Crédits, toutes institutions' : 'Crédits restants') | t }}</span><strong>{{ s.creditBalance }}</strong><small>@if (session.isAdmin()) { <a routerLink="/admin">{{ 'Ajuster dans l\'administration' | t }}</a> } @else { <a routerLink="/espace/credits">{{ 'Acheter des crédits' | t }}</a> }</small></div>
           <div class="m-kpi"><span>{{ 'Délai moyen de relecture' | t }}</span>
             <strong>{{ s.averageProcessingHours != null ? (s.averageProcessingHours | number: '1.0-1') + ' h' : '–' }}</strong>
             <small>{{ 'entre la proposition de l\\'IA et la validation' | t }}</small>
@@ -53,7 +57,7 @@ const FIELD_LABELS: Record<string, string> = {
 
       <div class="m-split m-split--wide">
         <section class="m-sheet">
-          <div class="m-sheet__head"><h2 class="m-h3">{{ 'À valider en priorité' | t }}</h2><a routerLink="/espace/file">{{ 'Toute la file' | t }}</a></div>
+          <div class="m-sheet__head"><h2 class="m-h3">{{ (session.isAdmin() ? 'En attente de relecture' : 'À valider en priorité') | t }}</h2><a routerLink="/espace/file">{{ 'Toute la file' | t }}</a></div>
           @for (doc of queue().slice(0, 6); track doc.id) {
             <a class="m-line" [routerLink]="session.isAdmin() ? ['/espace/file'] : ['/espace/documents', doc.id, 'validation']">
               <m-type-cover [type]="doc.documentType" size="sm" [imageUrl]="doc.imageUrl" />
@@ -124,6 +128,8 @@ export class EspacePage {
   readonly stats = signal<DashboardStatistics | null>(null);
   readonly queue = signal<Publication[]>([]);
   readonly quality = signal<ExtractionQuality | null>(null);
+  /** Comptes et institutions en attente d'une décision de l'administrateur. */
+  readonly adminRequests = signal(0);
   readonly fields = computed(() => (this.quality()?.par_champ ?? [])
     .filter((row) => FIELD_LABELS[row.champ])
     .map((row) => ({ ...row, label: FIELD_LABELS[row.champ] }))
@@ -138,5 +144,8 @@ export class EspacePage {
     this.api.getStatistics().subscribe({ next: (s) => this.stats.set(s), error: () => undefined });
     this.api.getManagedDocuments('A_VALIDER').subscribe({ next: (docs) => this.queue.set(docs), error: () => undefined });
     this.api.getExtractionQuality().subscribe({ next: (q) => this.quality.set(q), error: () => undefined });
+    if (this.session.isAdmin()) {
+      this.api.getAdminUsers().subscribe({ next: (users) => this.adminRequests.set(users.filter((u) => u.status === 'EN_ATTENTE').length), error: () => undefined });
+    }
   }
 }
