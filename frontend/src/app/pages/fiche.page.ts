@@ -2,11 +2,12 @@ import { Component, OnDestroy, computed, effect, inject, signal } from '@angular
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { ApiService, Publication, PublicationTranslation } from '../api.service';
-import { I18nService, TranslatePipe } from '../core/i18n';
+import { I18nService, Language, TranslatePipe } from '../core/i18n';
 import { classificationLabel, languageLabel, typeLabel } from '../core/labels';
 import { TypeCoverComponent } from '../ui/type-cover.component';
 import { ToastService } from '../core/toast.service';
 
+const TRANSLATION_RETRY_DELAYS = [5000, 15000, 30000, 60000];
 
 /** Fiche publication (C2) : notice complète, lecture du PDF en ligne, téléchargement. */
 @Component({
@@ -32,6 +33,8 @@ import { ToastService } from '../core/toast.service';
             @if (p.author) { <p class="m-fiche__authors">{{ p.author }}</p> }
 			@if (translation() && translation()!.translated) {
 			  <p class="m-muted m-small">{{ 'Traduction automatique de la notice.' | t }}</p>
+			} @else if (translationPending()) {
+			  <p class="m-muted m-small">{{ 'Traduction en préparation, la notice s\\'affiche dans sa langue d\\'origine.' | t }}</p>
 			}
 
             <dl class="m-notice">
@@ -98,6 +101,8 @@ export class FichePage implements OnDestroy {
   readonly coverUrl = signal<string | null>(null);
   readonly readerUrl = signal<SafeResourceUrl | null>(null);
   readonly readerOpen = signal(false);
+  readonly translationPending = signal(false);
+  private translationTimer: ReturnType<typeof setTimeout> | undefined;
   private objectUrls: string[] = [];
 
 
@@ -118,10 +123,7 @@ export class FichePage implements OnDestroy {
 			const language = this.i18n.lang();
 			if (!p) return;
 			this.translation.set(null);
-			this.api.getPublicationTranslation(p.id, language).subscribe({
-				next: (translation) => this.translation.set(translation),
-				error: () => undefined
-			});
+			this.loadTranslation(p.id, language, 0);
 		}, { allowSignalWrites: true });
     const id = Number(this.route.snapshot.paramMap.get('id'));
     this.api.getPublication(id).subscribe({
@@ -132,6 +134,25 @@ export class FichePage implements OnDestroy {
         }
       },
       error: () => this.error.set(true)
+    });
+  }
+
+  /**
+   * La fiche s'affiche tout de suite dans sa langue d'origine. Si la traduction est encore
+   * en préparation, on la redemande quelques fois puis on l'affiche dès qu'elle est prête.
+   */
+  private loadTranslation(id: number, language: Language, attempt: number): void {
+    clearTimeout(this.translationTimer);
+    this.translationPending.set(false);
+    this.api.getPublicationTranslation(id, language).subscribe({
+      next: ({ translation, pending }) => {
+        if (this.i18n.lang() !== language) return;
+        if (!pending) { this.translation.set(translation); return; }
+        if (attempt >= TRANSLATION_RETRY_DELAYS.length) return;
+        this.translationPending.set(true);
+        this.translationTimer = setTimeout(() => this.loadTranslation(id, language, attempt + 1), TRANSLATION_RETRY_DELAYS[attempt]);
+      },
+      error: () => undefined
     });
   }
 
@@ -149,7 +170,7 @@ export class FichePage implements OnDestroy {
     const p = this.pub();
     if (!p) return;
     this.readerOpen.set(true);
-    setTimeout(() => document.getElementById('lecteur')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
+    this.scrollToReader(0);
     if (this.readerUrl()) return;
     this.api.downloadPublicationFile(p.id).subscribe({
       next: (blob) => this.readerUrl.set(this.sanitizer.bypassSecurityTrustResourceUrl(this.track(blob))),
@@ -158,6 +179,17 @@ export class FichePage implements OnDestroy {
         this.toasts.show(this.i18n.t('Le fichier n\'est pas disponible.'), 'error');
       }
     });
+  }
+
+  /** Le lecteur n'existe qu'après le prochain rendu : on le cherche quelques fois avant de défiler. */
+  private scrollToReader(attempt: number): void {
+    const reader = document.getElementById('lecteur');
+    if (!reader) {
+      if (attempt < 20) setTimeout(() => this.scrollToReader(attempt + 1), 50);
+      return;
+    }
+    const top = reader.getBoundingClientRect().top + window.scrollY - 88;
+    window.scrollTo({ top, behavior: 'smooth' });
   }
 
   closeReader(): void {
@@ -186,6 +218,7 @@ export class FichePage implements OnDestroy {
   }
 
   ngOnDestroy(): void {
+    clearTimeout(this.translationTimer);
     this.objectUrls.forEach((url) => URL.revokeObjectURL(url));
   }
 }

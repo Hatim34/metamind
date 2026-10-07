@@ -6,6 +6,7 @@ import { ApiService, MetadataAuthor, MetadataDetails, Publication } from '../api
 import { I18nService, TranslatePipe } from '../core/i18n';
 import { DOCUMENT_TYPES, REFERENCE_LANGUAGES, confidenceLevel, languageLabel, typeLabel } from '../core/labels';
 import { ToastService } from '../core/toast.service';
+import { ConfirmService } from '../core/confirm.service';
 import { ConfidenceComponent } from '../ui/confidence.component';
 import { TypeCoverComponent } from '../ui/type-cover.component';
 
@@ -141,19 +142,19 @@ interface FieldDef { id: FieldId; label: string; dc: string; required: boolean; 
               <p class="m-muted m-small">{{ 'Détectés automatiquement dans le texte du document. Corrigez-les si besoin.' | t }}</p></div>
             <div class="m-actions m-actions--row">
               <label class="m-field">{{ 'Langue' | t }}
-                <select class="m-input m-input--sm" name="langue" [(ngModel)]="langue">
+                <select class="m-input m-input--sm" name="langue" [(ngModel)]="langue" (ngModelChange)="edited = true">
                   <option value="">{{ 'Non précisée' | t }}</option>
                   @for (code of languages; track code) { <option [value]="code">{{ languageLabel(code) | t }}</option> }
                 </select>
               </label>
               <label class="m-field">{{ 'Type' | t }}
-                <select class="m-input m-input--sm" name="typeDocument" [(ngModel)]="typeDocument">
+                <select class="m-input m-input--sm" name="typeDocument" [(ngModel)]="typeDocument" (ngModelChange)="edited = true">
                   <option value="">{{ 'Non précisé' | t }}</option>
                   @for (code of documentTypes; track code) { <option [value]="code">{{ typeLabel(code) | t }}</option> }
                 </select>
               </label>
               <label class="m-field">DOI
-                <input class="m-input m-input--sm m-mono" name="doi" [(ngModel)]="doi" />
+                <input class="m-input m-input--sm m-mono" name="doi" [(ngModel)]="doi" (ngModelChange)="edited = true" />
               </label>
             </div>
           </div>
@@ -193,6 +194,7 @@ export class ValidationPage implements OnDestroy {
   private readonly router = inject(Router);
   private readonly sanitizer = inject(DomSanitizer);
   private readonly toasts = inject(ToastService);
+  private readonly confirm = inject(ConfirmService);
   private readonly i18n = inject(I18nService);
   readonly typeLabel = typeLabel;
   readonly languageLabel = languageLabel;
@@ -237,6 +239,8 @@ export class ValidationPage implements OnDestroy {
   classification = '';
   langue = '';
   typeDocument = '';
+  /** Une correction a été faite depuis l'ouverture de la notice. */
+  edited = false;
   doi = '';
   newKeyword = '';
   reason = '';
@@ -263,6 +267,7 @@ export class ValidationPage implements OnDestroy {
     this.busy.set(false);
     this.rejectOpen.set(false);
     this.reason = '';
+    this.edited = false;
     this.selected.set('titre');
     this.confirmed.set(new Set<FieldId>());
     this.api.getManagedDocuments('A_VALIDER').subscribe({ next: (docs) => this.queue.set(docs), error: () => undefined });
@@ -319,6 +324,7 @@ export class ValidationPage implements OnDestroy {
 
   /** Corriger un champ vaut vérification, sauf s'il a été vidé : un champ vide n'est jamais vérifié. */
   touch(id: FieldId): void {
+    this.edited = true;
     this.confirmed.update((s) => {
       const n = new Set(s);
       this.isEmpty(id) ? n.delete(id) : n.add(id);
@@ -327,6 +333,7 @@ export class ValidationPage implements OnDestroy {
   }
 
   toggleConfirm(id: FieldId): void {
+    this.edited = true;
     if (this.isEmpty(id)) return;
     this.confirmed.update((s) => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; });
   }
@@ -393,7 +400,16 @@ export class ValidationPage implements OnDestroy {
   }
 
   /** Laisse ce document dans la file et ouvre le suivant. */
-  skip(): void {
+  /** Passer ne publie rien : on prévient seulement si des corrections seraient perdues. */
+  async skip(): Promise<void> {
+    if (this.edited) {
+      const accepted = await this.confirm.ask({
+        title: this.i18n.t('Passer à la notice suivante ?'),
+        message: this.i18n.t('Vos corrections sur cette notice ne seront pas enregistrées. Elle reste dans la file, à valider plus tard.'),
+        action: this.i18n.t('Passer')
+      });
+      if (!accepted) return;
+    }
     this.open(this.following(true));
   }
 

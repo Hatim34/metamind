@@ -22,7 +22,7 @@ interface Item { file: File; state: Step; message: string; id?: number; }
       <div class="m-page__head">
         <div>
           <h1 class="m-title">{{ 'Importer des documents' | t }}</h1>
-          <p class="m-muted">{{ 'PDF, DOCX ou TXT, jusqu\\'à 50 Mo chacun. L\\'extraction coûte 1 crédit par document, rendu en cas d\\'échec.' | t }}</p>
+          <p class="m-muted">{{ 'PDF, DOCX ou TXT. L\\'extraction coûte 1 crédit par document, rendu en cas d\\'échec.' | t }}</p>
         </div>
       </div>
 
