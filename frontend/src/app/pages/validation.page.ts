@@ -4,7 +4,7 @@ import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ApiService, MetadataAuthor, MetadataDetails, Publication } from '../api.service';
 import { I18nService, TranslatePipe } from '../core/i18n';
-import { confidenceLevel, languageLabel, typeLabel } from '../core/labels';
+import { DOCUMENT_TYPES, REFERENCE_LANGUAGES, confidenceLevel, languageLabel, typeLabel } from '../core/labels';
 import { ToastService } from '../core/toast.service';
 import { ConfidenceComponent } from '../ui/confidence.component';
 import { TypeCoverComponent } from '../ui/type-cover.component';
@@ -137,6 +137,27 @@ interface FieldDef { id: FieldId; label: string; dc: string; required: boolean; 
           }
 
           <div class="m-notice-sheet__foot">
+            <div><strong>{{ 'Langue, type et DOI' | t }}</strong>
+              <p class="m-muted m-small">{{ 'Détectés automatiquement dans le texte du document. Corrigez-les si besoin.' | t }}</p></div>
+            <div class="m-actions m-actions--row">
+              <label class="m-field">{{ 'Langue' | t }}
+                <select class="m-input m-input--sm" name="langue" [(ngModel)]="langue">
+                  <option value="">{{ 'Non précisée' | t }}</option>
+                  @for (code of languages; track code) { <option [value]="code">{{ languageLabel(code) | t }}</option> }
+                </select>
+              </label>
+              <label class="m-field">{{ 'Type' | t }}
+                <select class="m-input m-input--sm" name="typeDocument" [(ngModel)]="typeDocument">
+                  <option value="">{{ 'Non précisé' | t }}</option>
+                  @for (code of documentTypes; track code) { <option [value]="code">{{ typeLabel(code) | t }}</option> }
+                </select>
+              </label>
+              <label class="m-field">DOI
+                <input class="m-input m-input--sm m-mono" name="doi" [(ngModel)]="doi" />
+              </label>
+            </div>
+          </div>
+          <div class="m-notice-sheet__foot">
             <div><strong>{{ 'Image de la notice' | t }}</strong>
               <p class="m-muted m-small">{{ 'Affichée dans le catalogue. Par défaut, la première page du document.' | t }}</p></div>
             <div class="m-actions">
@@ -175,6 +196,8 @@ export class ValidationPage implements OnDestroy {
   private readonly i18n = inject(I18nService);
   readonly typeLabel = typeLabel;
   readonly languageLabel = languageLabel;
+  readonly languages = REFERENCE_LANGUAGES;
+  readonly documentTypes = Object.keys(DOCUMENT_TYPES);
   readonly fields: FieldDef[] = [
     { id: 'titre', label: 'Titre', dc: 'dc:title', required: true },
     { id: 'auteurs', label: 'Auteurs', dc: 'dc:creator', required: true },
@@ -212,6 +235,9 @@ export class ValidationPage implements OnDestroy {
   resume = '';
   date = '';
   classification = '';
+  langue = '';
+  typeDocument = '';
+  doi = '';
   newKeyword = '';
   reason = '';
   visibility: 'PUBLIC' | 'INSTITUTION' = 'PUBLIC';
@@ -248,6 +274,9 @@ export class ValidationPage implements OnDestroy {
         this.resume = m.resume ?? '';
         this.date = this.cleanDate(m.date_publication);
         this.classification = m.classification ?? '';
+        this.langue = m.langue ?? '';
+        this.typeDocument = m.type_document ?? '';
+        this.doi = m.doi ?? '';
         this.visibility = m.visibilite ?? 'PUBLIC';
         this.authors.set((m.auteurs ?? []).map((a) => ({ ...a })));
         this.keywords.set([...(m.mots_cles ?? [])]);
@@ -335,10 +364,9 @@ export class ValidationPage implements OnDestroy {
       visibilite: this.visibility,
       auteurs: this.authors().filter((a) => a.nom_complet.trim()).map((a) => ({ nom_complet: a.nom_complet.trim(), ...(a.orcid?.trim() ? { orcid: a.orcid.trim() } : {}) })),
       mots_cles: this.keywords(),
-      // These fields are not yet editable in this screen. Preserve their current values.
-      langue: this.meta()?.langue ?? this.pub()?.language ?? null,
-      type_document: this.meta()?.type_document ?? this.pub()?.documentType ?? null,
-      doi: this.meta()?.doi ?? null
+      langue: this.langue || null,
+      type_document: this.typeDocument || null,
+      doi: this.doi.trim() || null
     }).subscribe({
       next: () => { this.toasts.show(this.i18n.t('Publié. La fiche est dans le catalogue.')); this.next(); },
       error: () => { this.busy.set(false); this.toasts.show(this.i18n.t('La publication a échoué. Vérifiez les champs.'), 'error'); }
