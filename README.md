@@ -29,7 +29,7 @@ L'authentification utilise un jeton JWT signe. Apres connexion, le frontend envo
 
 Comptes de test (mot de passe defini par la variable `METAMIND_SEED_PASSWORD`, jamais ecrit dans le depot) :
 
-- Bibliothecaire : `sarah@institution-a.example`
+- Bibliothecaire : `sarah.lemaire@uclouvain.demo-metamind.test` (UCLouvain) et `jan.peeters@kuleuven.demo-metamind.test` (KU Leuven)
 - Administrateur : `admin@metamind.example`
 
 ## Validation locale

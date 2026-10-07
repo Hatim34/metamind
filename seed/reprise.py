@@ -40,10 +40,6 @@ DATA = ROOT / "data"
 CORRESPONDANCE = DATA / "reprise_correspondance.json"
 INSTITUTIONS_FICTIVES = {"Institution A", "Institution B"}
 INSTITUTION_TESTS = "Metamind"
-RATTACHEMENTS = {
-    "sarah@institution-a.example": "UCLouvain",
-    "jan@institution-b.example": "KU Leuven",
-}
 
 
 def nom_usuel(nom):
@@ -116,12 +112,6 @@ def etape_nettoyage(api, token, args):
             print(f"  supprime #{doc['id']} [{doc['institution']}] {doc['titre'][:70]}")
 
     institutions = {i["nom"]: i["id"] for i in api.call("GET", "/admin/institutions", token)}
-    utilisateurs = api.call("GET", "/admin/users", token, params={"size": 100})["contenu"]
-    for email, cible in RATTACHEMENTS.items():
-        compte = next((u for u in utilisateurs if u.get("email") == email), None)
-        if compte and cible in institutions:
-            api.call("PATCH", f"/admin/users/{compte['id']}", token, json={"institution_id": institutions[cible]})
-            print(f"  {email} rattache a {cible}")
     for nom in INSTITUTIONS_FICTIVES:
         if nom in institutions:
             api.call("PATCH", f"/admin/institutions/{institutions[nom]}", token, json={"actif": False})
@@ -317,14 +307,12 @@ def etape_figures(api, token, args):
 
 INSTITUTION_PAR_CODE = {"ULB": "Université libre de Bruxelles", "UCL": "UCLouvain", "ULG": "Université de Liège",
                         "KUL": "KU Leuven", "UGE": "Universiteit Gent", "VUB": "Vrije Universiteit Brussel"}
-BIBLIOTHECAIRE = "sarah@institution-a.example"
-
-
 class Bibliothecaire:
     """
-    Seul un bibliothecaire importe, analyse et valide (cahier des charges B3, B5, B6) :
-    le compte de demonstration est rattache a l'institution du document le temps de l'action,
-    puis retrouve l'UCLouvain.
+    Seul un bibliothecaire importe, analyse et valide (cahier des charges B3, B5, B6).
+    Chaque institution a son compte de reprise, bibliotheque@<domaine> : un compte n'agit
+    jamais au nom d'une institution dont il n'a pas l'adresse (le serveur le refuse).
+    Le compte est demande comme le ferait une personne, puis active par l'administrateur.
     """
 
     def __init__(self, api, jeton_admin):
@@ -332,25 +320,30 @@ class Bibliothecaire:
         if not mot_de_passe:
             sys.exit("Definis METAMIND_SEED_PASSWORD (mot de passe des comptes de demonstration).")
         self.api, self.admin, self.mot_de_passe = api, jeton_admin, mot_de_passe
-        self.institutions = {i["nom"]: i["id"] for i in api.call("GET", "/admin/institutions", jeton_admin)}
-        self.compte = next(u for u in api.call("GET", "/admin/users", jeton_admin, params={"size": 100})["contenu"]
-                           if u["email"] == BIBLIOTHECAIRE)
-        self.actuelle, self.jeton = None, None
+        self.domaines = {i["nom"]: i["domaine_email"] for i in api.call("GET", "/admin/institutions", jeton_admin)}
+        self.jetons = {}
 
     def pour(self, institution):
-        if institution != self.actuelle:
-            self.api.call("PATCH", f"/admin/users/{self.compte['id']}", self.admin,
-                          json={"institution_id": self.institutions[institution]})
-            self.jeton, self.actuelle = self.api.login(BIBLIOTHECAIRE, self.mot_de_passe), institution
-        return self.jeton
+        if institution not in self.jetons:
+            self.jetons[institution] = self._connecter(f"bibliotheque@{self.domaines[institution]}", institution)
+        return self.jetons[institution]
+
+    def _connecter(self, email, institution):
+        try:
+            return self.api.login(email, self.mot_de_passe)
+        except RuntimeError:
+            self.api.call("POST", "/auth/register", json={"firstName": "Bibliotheque", "lastName": institution, "email": email,
+                                                         "password": self.mot_de_passe})
+            compte = next(u for u in self.api.call("GET", "/admin/users", self.admin, params={"size": 200})["contenu"] if u["email"] == email)
+            self.api.call("PATCH", f"/admin/users/{compte['id']}", self.admin, json={"statut": "ACTIF"})
+            print(f"  compte de reprise cree : {email}")
+            return self.api.login(email, self.mot_de_passe)
 
     def __enter__(self):
         return self
 
     def __exit__(self, *erreur):
-        self.api.call("PATCH", f"/admin/users/{self.compte['id']}", self.admin,
-                      json={"institution_id": self.institutions["UCLouvain"]})
-        print(f"  {BIBLIOTHECAIRE} de retour a l'UCLouvain")
+        return False
 
 
 def attendre_texte(api, token, doc_id, limite=120):
@@ -377,12 +370,9 @@ def etape_ajout(api, token, args):
     documents = [d for d in manifeste["documents"] if d["key"] in cles]
     retenues = set((ROOT / "figures_retenues.txt").read_text(encoding="utf-8").split())
     correspondances = json.loads(CORRESPONDANCE.read_text(encoding="utf-8")) if CORRESPONDANCE.exists() else {}
-    institutions = {i["nom"]: i["id"] for i in api.call("GET", "/admin/institutions", token)}
-    compte = next(u for u in api.call("GET", "/admin/users", token, params={"size": 100})["contenu"] if u["email"] == BIBLIOTHECAIRE)
-    try:
+    with Bibliothecaire(api, token) as bibliothecaire:
         for code in sorted({d["institution"] for d in documents}):
-            api.call("PATCH", f"/admin/users/{compte['id']}", token, json={"institution_id": institutions[INSTITUTION_PAR_CODE[code]]})
-            jeton = api.login(BIBLIOTHECAIRE, mot_de_passe)
+            jeton = bibliothecaire.pour(INSTITUTION_PAR_CODE[code])
             for d in [d for d in documents if d["institution"] == code]:
                 pdf = Path(d["pdf"]).name
                 if pdf in correspondances:
@@ -408,9 +398,6 @@ def etape_ajout(api, token, args):
                 corps = notice_publiee(meta, d["verite_terrain"])
                 publier(api, jeton, cree["id"], corps)
                 print(f"  publie #{cree['id']} [{code}] {corps['titre'][:70]}")
-    finally:
-        api.call("PATCH", f"/admin/users/{compte['id']}", token, json={"institution_id": institutions["UCLouvain"]})
-        print(f"  {BIBLIOTHECAIRE} de retour a l'UCLouvain")
 
 
 PHOTOS_INSTITUTIONS = {
