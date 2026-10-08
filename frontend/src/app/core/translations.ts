@@ -1,5 +1,6 @@
 /* Traductions NL et EN. Clé = texte français affiché. Ajoutez ici toute nouvelle chaîne. */
 export const NL: Record<string, string> = {
+  'Retirée du catalogue': 'Uit de catalogus gehaald',
   'Ce document appartient à une autre institution.': 'Dit document behoort tot een andere instelling.',
   'Ce DOI est déjà utilisé par un autre document.': 'Deze DOI wordt al door een ander document gebruikt.',
   'Modifier': 'Wijzigen',
@@ -490,6 +491,7 @@ export const NL: Record<string, string> = {
 };
 
 export const EN: Record<string, string> = {
+  'Retirée du catalogue': 'Withdrawn from the catalogue',
   'Ce document appartient à une autre institution.': 'This document belongs to another institution.',
   'Ce DOI est déjà utilisé par un autre document.': 'This DOI is already used by another document.',
   'Modifier': 'Edit',

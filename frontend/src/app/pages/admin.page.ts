@@ -263,7 +263,8 @@ export class AdminPage {
     MODIFICATION_UTILISATEUR: 'Compte modifié',
     PUBLICATION_NOTICE: 'Notice publiée',
     SUPPRESSION_DOCUMENT: 'Document supprimé',
-    SUPPRESSION_COMPTE: 'Compte supprimé'
+    SUPPRESSION_COMPTE: 'Compte supprimé',
+    RETRAIT_PUBLICATION: 'Retirée du catalogue'
   };
   readonly fieldLabels: Record<string, string> = {
     titre: 'Titre', resume: 'Résumé', auteurs: 'Auteurs', mots_cles: 'Mots-clés', classification: 'Classification',
