@@ -408,16 +408,34 @@ public class PublicationService {
 	public PublicationResponse updateStatus(long id, PublicationStatusRequest request, UserEntity currentUser) {
 		DocumentEntity document = documentRepository.findById(id)
 				.orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "La publication demandee est introuvable."));
+		LibrarianActions.require(currentUser, "changer le statut d'une publication");
 		if (!canManage(document, currentUser)) {
-			throw new ApiException(HttpStatus.FORBIDDEN, "Cette publication ne peut pas etre modifiee avec ce compte.");
+			throw new ApiException(HttpStatus.FORBIDDEN, "Ce document appartient a une autre institution.");
 		}
-		if (request.status() == PublicationStatus.EN_ATTENTE
-				|| request.status() == PublicationStatus.EXTRACTION
-				|| request.status() == PublicationStatus.REJETE
-				|| request.status() == PublicationStatus.ECHEC) {
+		// Publier passe toujours par la validation de la notice : c'est elle qui garantit la relecture humaine.
+		if (request.status() == PublicationStatus.PUBLIE) {
+			throw new ApiException(HttpStatus.BAD_REQUEST,
+					"Une notice ne peut etre publiee qu'en la validant : ouvrez-la dans la page de validation.");
+		}
+		if (request.status() == PublicationStatus.SUPPRIME) {
+			throw new ApiException(HttpStatus.BAD_REQUEST,
+					"Pour supprimer un document, utilisez la suppression (DELETE /api/v1/documents/{id}).");
+		}
+		if (request.status() != PublicationStatus.A_VALIDER) {
 			throw new ApiException(HttpStatus.BAD_REQUEST, "Ce statut est reserve au traitement interne.");
 		}
-		document.updateStatus(toDocumentStatus(request.status()));
+		if (document.getStatus() != DocumentStatus.PUBLIE) {
+			throw new ApiException(HttpStatus.BAD_REQUEST, "Seule une notice publiee peut etre retiree du catalogue.");
+		}
+		document.updateStatus(DocumentStatus.A_VALIDER);
+		auditLogRepository.save(new AuditLogEntity(
+				currentUser,
+				"RETRAIT_PUBLICATION",
+				"documents",
+				document.getId(),
+				"Retirée du catalogue, remise à valider",
+				ClientIpResolver.current()
+		));
 		return toResponse(document);
 	}
 

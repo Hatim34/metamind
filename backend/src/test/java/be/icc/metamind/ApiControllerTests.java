@@ -1070,7 +1070,7 @@ class ApiControllerTests {
 	}
 
 	@Test
-	void publicationStatusCanBeUpdatedByInstitutionLibrarian() throws Exception {
+	void publicationStatusCannotPublishWithoutValidation() throws Exception {
 		DocumentEntity publication = documentRepository.findAll().stream()
 				.filter(item -> item.getStatus() == DocumentStatus.A_VALIDER)
 				.findFirst()
@@ -1080,8 +1080,39 @@ class ApiControllerTests {
 						.header("Authorization", bearerToken())
 				.contentType(MediaType.APPLICATION_JSON)
 				.content("{\"status\":\"PUBLIE\"}"))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.message", containsString("en la validant")));
+
+		mockMvc.perform(put("/api/v1/publications/" + publication.getId() + "/status")
+						.header("Authorization", adminBearerToken())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{\"status\":\"PUBLIE\"}"))
+				.andExpect(status().isForbidden())
+				.andExpect(jsonPath("$.message", containsString("Seul un bibliothecaire")));
+	}
+
+	@Test
+	void publishedNoticeCanBeWithdrawnByInstitutionLibrarian() throws Exception {
+		DocumentEntity publication = documentRepository.findAll().stream()
+				.filter(item -> item.getStatus() == DocumentStatus.A_VALIDER)
+				.findFirst()
+				.orElseThrow();
+
+		mockMvc.perform(put("/api/v1/publications/" + publication.getId() + "/status")
+						.header("Authorization", bearerToken())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{\"status\":\"A_VALIDER\"}"))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.message", containsString("Seule une notice publiee")));
+
+		publication.updateStatus(DocumentStatus.PUBLIE);
+		documentRepository.save(publication);
+		mockMvc.perform(put("/api/v1/publications/" + publication.getId() + "/status")
+						.header("Authorization", bearerToken())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{\"status\":\"A_VALIDER\"}"))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.statut", is("PUBLIE")));
+				.andExpect(jsonPath("$.statut", is("A_VALIDER")));
 	}
 
 	@Test
@@ -1095,7 +1126,8 @@ class ApiControllerTests {
 						.header("Authorization", bearerToken("jan@institution-b.example", "558435"))
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("{\"status\":\"PUBLIE\"}"))
-				.andExpect(status().isForbidden());
+				.andExpect(status().isForbidden())
+				.andExpect(jsonPath("$.message", is("Ce document appartient a une autre institution.")));
 	}
 
 	@Test
