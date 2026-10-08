@@ -1,5 +1,8 @@
 /* Traductions NL et EN. Clé = texte français affiché. Ajoutez ici toute nouvelle chaîne. */
 export const NL: Record<string, string> = {
+  'Modifier': 'Wijzigen',
+  'Enregistrer les modifications ?': 'Wijzigingen opslaan?',
+  'Modifications enregistrées.': 'Wijzigingen opgeslagen.',
   'Filtrer par action, personne, élément ou détail': 'Filteren op actie, persoon, element of detail',
   'entrées': 'regels',
   'Par': 'Door',
@@ -485,6 +488,9 @@ export const NL: Record<string, string> = {
 };
 
 export const EN: Record<string, string> = {
+  'Modifier': 'Edit',
+  'Enregistrer les modifications ?': 'Save changes?',
+  'Modifications enregistrées.': 'Changes saved.',
   'Filtrer par action, personne, élément ou détail': 'Filter by action, person, item or detail',
   'entrées': 'entries',
   'Par': 'By',

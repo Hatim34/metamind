@@ -87,6 +87,7 @@ const TABS: { status: PublicationStatus; label: string }[] = [
                         @case ('EXTRACTION') { <span class="m-muted m-small">{{ (doc.textReady ? 'Analyse par l\\'IA…' : 'Lecture du fichier…') | t }}</span> }
                         @case ('REJETE') { <button type="button" class="m-btn m-btn--ghost m-btn--sm" [disabled]="busy().has(doc.id)" (click)="extract(doc)">{{ 'Relancer l\\'analyse (1 crédit)' | t }}</button> }
                         @case ('ECHEC') { <button type="button" class="m-btn m-btn--ghost m-btn--sm" (click)="retry(doc)">{{ 'Relancer la lecture' | t }}</button> }
+                        @case ('PUBLIE') { <a class="m-btn m-btn--ghost m-btn--sm" [routerLink]="['/espace/documents', doc.id, 'validation']">{{ 'Modifier' | t }}</a> }
                       }
                     }
                     @if (doc.status === 'PUBLIE') { <a class="m-btn m-btn--ghost m-btn--sm" [routerLink]="['/publications', doc.id]">{{ 'Voir la fiche' | t }}</a> }

@@ -25,21 +25,24 @@ interface FieldDef { id: FieldId; label: string; dc: string; required: boolean; 
       <div class="m-vhead">
         <div class="m-wrap m-vhead__in">
           <div class="m-vhead__title">
-            <nav class="m-small m-muted"><a routerLink="/espace/file">{{ 'File de validation' | t }}</a>
-              @if (position()) { · {{ 'Document' | t }} {{ position() }} {{ 'sur' | t }} {{ queue().length }} }
+            <nav class="m-small m-muted"><a routerLink="/espace/file">{{ (published() ? 'Documents' : 'File de validation') | t }}</a>
+              @if (!published() && position()) { · {{ 'Document' | t }} {{ position() }} {{ 'sur' | t }} {{ queue().length }} }
             </nav>
             <h1 class="m-title">{{ titre || ('Sans titre' | t) }}</h1>
             <p class="m-muted m-small">
-              <span class="m-badge m-badge--A_VALIDER">{{ 'À valider' | t }}</span>
+              @if (published()) { <span class="m-badge m-badge--PUBLIE">{{ 'Publié' | t }}</span> }
+              @else { <span class="m-badge m-badge--A_VALIDER">{{ 'À valider' | t }}</span> }
               @if (pub()?.documentType) { · {{ typeLabel(pub()?.documentType) | t }} }
               @if (pub()?.language) { · {{ languageLabel(pub()?.language) | t }} }
             </p>
           </div>
           <div class="m-actions">
-            @if (queue().length > 1) { <button type="button" class="m-btn m-btn--ghost" [disabled]="busy()" (click)="skip()">{{ 'Passer' | t }}</button> }
-            <button type="button" class="m-btn m-btn--danger" (click)="rejectOpen.set(true)">{{ 'Rejeter…' | t }}</button>
+            @if (!published()) {
+              @if (queue().length > 1) { <button type="button" class="m-btn m-btn--ghost" [disabled]="busy()" (click)="skip()">{{ 'Passer' | t }}</button> }
+              <button type="button" class="m-btn m-btn--danger" (click)="rejectOpen.set(true)">{{ 'Rejeter…' | t }}</button>
+            }
             <button type="button" class="m-btn m-btn--primary" [disabled]="!canPublish() || busy()" (click)="publish()">
-              {{ missing().length ? ('Publier' | t) + ' (' + missing().length + ' ' + ('à compléter' | t) + ')' : ('Publier' | t) }}
+              {{ missing().length ? (submitLabel() | t) + ' (' + missing().length + ' ' + ('à compléter' | t) + ')' : (submitLabel() | t) }}
             </button>
           </div>
           <div class="m-rail" role="group" [attr.aria-label]="'Avancement de la vérification' | t">
@@ -254,6 +257,13 @@ export class ValidationPage implements OnDestroy {
     return this.missing().length === 0;
   }
 
+  /** Notice déjà publiée, rouverte pour la corriger ou changer sa visibilité. */
+  readonly published = computed(() => this.pub()?.status === 'PUBLIE');
+
+  submitLabel(): string {
+    return this.published() ? 'Enregistrer' : 'Publier';
+  }
+
   constructor() {
     this.route.paramMap.subscribe((params) => this.load(Number(params.get('id'))));
   }
@@ -362,12 +372,13 @@ export class ValidationPage implements OnDestroy {
 
   async publish(): Promise<void> {
     if (!this.canPublish()) return;
+    const editing = this.published();
     const accepted = await this.confirm.ask({
-      title: this.i18n.t('Publier cette notice ?'),
+      title: this.i18n.t(editing ? 'Enregistrer les modifications ?' : 'Publier cette notice ?'),
       message: `« ${this.titre.trim()} » ${this.i18n.t(this.visibility === 'PUBLIC'
         ? 'sera visible par tout le monde dans le catalogue public, puis traduite automatiquement.'
         : 'sera visible uniquement par les bibliothécaires de votre institution.')}`,
-      action: this.i18n.t('Publier'),
+      action: this.i18n.t(editing ? 'Enregistrer' : 'Publier'),
       tone: 'primary'
     });
     if (!accepted) return;
@@ -384,7 +395,15 @@ export class ValidationPage implements OnDestroy {
       type_document: this.typeDocument || null,
       doi: this.doi.trim() || null
     }).subscribe({
-      next: () => { this.toasts.show(this.i18n.t('Publié. La fiche est dans le catalogue.')); this.next(); },
+      next: () => {
+        if (editing) {
+          this.toasts.show(this.i18n.t('Modifications enregistrées.'));
+          this.router.navigateByUrl(`/publications/${this.id}`);
+          return;
+        }
+        this.toasts.show(this.i18n.t('Publié. La fiche est dans le catalogue.'));
+        this.next();
+      },
       error: () => { this.busy.set(false); this.toasts.show(this.i18n.t('La publication a échoué. Vérifiez les champs.'), 'error'); }
     });
   }
