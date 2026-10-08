@@ -360,8 +360,17 @@ export class ValidationPage implements OnDestroy {
     });
   }
 
-  publish(): void {
+  async publish(): Promise<void> {
     if (!this.canPublish()) return;
+    const accepted = await this.confirm.ask({
+      title: this.i18n.t('Publier cette notice ?'),
+      message: `« ${this.titre.trim()} » ${this.i18n.t(this.visibility === 'PUBLIC'
+        ? 'sera visible par tout le monde dans le catalogue public, puis traduite automatiquement.'
+        : 'sera visible uniquement par les bibliothécaires de votre institution.')}`,
+      action: this.i18n.t('Publier'),
+      tone: 'primary'
+    });
+    if (!accepted) return;
     this.busy.set(true);
     this.api.validateMetadata(this.id, {
       titre: this.titre.trim(),
@@ -391,7 +400,13 @@ export class ValidationPage implements OnDestroy {
     });
   }
 
-  reject(): void {
+  async reject(): Promise<void> {
+    const accepted = await this.confirm.ask({
+      title: this.i18n.t('Rejeter cette proposition ?'),
+      message: `${this.i18n.t('Le document reste dans votre institution avec le statut « Rejeté » et ce motif :')} « ${this.reason.trim()} ». ${this.i18n.t('Vous pourrez relancer l\'analyse plus tard (1 crédit).')}`,
+      action: this.i18n.t('Rejeter')
+    });
+    if (!accepted) return;
     this.busy.set(true);
     this.api.rejectMetadata(this.id, this.reason.trim()).subscribe({
       next: () => { this.toasts.show(this.i18n.t('Document rejeté.')); this.next(); },

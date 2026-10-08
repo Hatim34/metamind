@@ -411,3 +411,6 @@ m-type-cover { display: block; flex: none; }
 .m-details summary { cursor: pointer; font-size: 13px; color: var(--ink-soft); }
 .m-details[open] summary { margin-bottom: 8px; }
 .m-banner--link { display: block; text-decoration: none; font-weight: 500; }
+.m-banner--warn { background: var(--warn-soft, #fbf1dc); color: #7a5410; }
+.m-back { display: inline-flex; align-items: center; gap: 4px; margin-bottom: 10px; padding: 4px 0; border: 0; background: none; color: var(--ink-soft); font: inherit; font-size: 14px; cursor: pointer; }
+.m-back:hover, .m-back:focus-visible { color: var(--ink); text-decoration: underline; }

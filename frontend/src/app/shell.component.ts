@@ -6,6 +6,7 @@ import { I18nService, Language, TranslatePipe } from './core/i18n';
 import { ApiService } from './api.service';
 import { ToastService } from './core/toast.service';
 import { ConfirmService } from './core/confirm.service';
+import { BackService } from './core/back.service';
 
 type Layout = 'public' | 'espace' | 'admin' | 'bare';
 
@@ -97,7 +98,7 @@ type Layout = 'public' | 'espace' | 'admin' | 'bare';
           <p>{{ request.message }}</p>
           <div class="m-confirm__actions">
             <button type="button" class="m-btn m-btn--ghost" (click)="confirm.answer(false)" autofocus>{{ 'Annuler' | t }}</button>
-            <button type="button" class="m-btn m-btn--danger-solid" (click)="confirm.answer(true)">{{ request.action }}</button>
+            <button type="button" class="m-btn" [class.m-btn--primary]="request.tone === 'primary'" [class.m-btn--danger-solid]="request.tone !== 'primary'" (click)="confirm.answer(true)">{{ request.action }}</button>
           </div>
         </div>
       </div>
@@ -118,6 +119,8 @@ export class ShellComponent {
   readonly i18n = inject(I18nService);
   readonly toasts = inject(ToastService);
   readonly confirm = inject(ConfirmService);
+  // Créé dès le démarrage pour compter les pages visitées depuis l'ouverture du site.
+  private readonly back = inject(BackService);
   private readonly api = inject(ApiService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);

@@ -1,6 +1,7 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { TranslatePipe } from '../core/i18n';
+import { BackService } from '../core/back.service';
 
 /** Pages légales (N5). Texte juridique en français ; titres traduits. */
 @Component({
@@ -48,11 +49,13 @@ import { TranslatePipe } from '../core/i18n';
         <p>Un modèle de langage propose les métadonnées (titre, auteurs, résumé, mots-clés, date, langue, type, classification) à partir du texte du document. Aucune notice n'est publiée sans la relecture et la validation d'un bibliothécaire de l'institution, qui peut tout corriger. Les métadonnées publiées portent la mention de cette assistance.</p>
       </section>
 
-      <a class="m-btn m-btn--ghost" routerLink="/catalogue">{{ 'Retour au catalogue' | t }}</a>
+      <button type="button" class="m-btn m-btn--ghost" (click)="back.back('/catalogue')">← {{ 'Retour' | t }}</button>
     </div>
   `
 })
-export class LegalPage {}
+export class LegalPage {
+  readonly back = inject(BackService);
+}
 
 @Component({
   standalone: true,

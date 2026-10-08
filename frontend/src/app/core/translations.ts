@@ -1,5 +1,16 @@
 /* Traductions NL et EN. Clé = texte français affiché. Ajoutez ici toute nouvelle chaîne. */
 export const NL: Record<string, string> = {
+  'des documents importés sont publiés': 'van de geïmporteerde documenten is gepubliceerd',
+  'Rejeter': 'Weigeren',
+  'Vous pourrez relancer l\'analyse plus tard (1 crédit).': 'U kunt de analyse later opnieuw starten (1 credit).',
+  'Le document reste dans votre institution avec le statut « Rejeté » et ce motif :': 'Het document blijft in uw instelling met de status « Geweigerd » en deze reden:',
+  'Rejeter cette proposition ?': 'Dit voorstel weigeren?',
+  'sera visible uniquement par les bibliothécaires de votre institution.': 'is alleen zichtbaar voor de bibliothecarissen van uw instelling.',
+  'sera visible par tout le monde dans le catalogue public, puis traduite automatiquement.': 'wordt voor iedereen zichtbaar in de openbare catalogus en daarna automatisch vertaald.',
+  'Publier cette notice ?': 'Deze beschrijving publiceren?',
+  'Stripe n\'a pas encore confirmé le paiement. Vos crédits seront ajoutés automatiquement dès sa confirmation ; rechargez la page dans quelques minutes.': 'Stripe heeft de betaling nog niet bevestigd. Uw credits worden automatisch toegevoegd zodra ze bevestigd is; herlaad de pagina over enkele minuten.',
+  'Le paiement n\'a pas abouti. Aucun crédit n\'a été ajouté ; vous pouvez réessayer.': 'De betaling is niet gelukt. Er zijn geen credits toegevoegd; u kunt het opnieuw proberen.',
+  'Retour': 'Terug',
   'Si un compte actif existe pour cette adresse, un lien valable 30 minutes vient d\'être envoyé. Pensez à regarder dans les courriers indésirables.': 'Als er een actief account bestaat voor dit adres, is er een link verstuurd die 30 minuten geldig is. Kijk ook in uw ongewenste e-mail.',
   'Un administrateur doit valider votre compte. Vous recevrez un email à cette adresse dès que vous pourrez vous connecter.': 'Een beheerder moet uw account valideren. U krijgt een e-mail op dit adres zodra u kunt inloggen.',
   'L\'administrateur doit d\'abord valider votre institution, puis votre compte. Vous recevrez un email à cette adresse dès que vous pourrez vous connecter.': 'De beheerder moet eerst uw instelling en daarna uw account valideren. U krijgt een e-mail op dit adres zodra u kunt inloggen.',
@@ -459,6 +470,17 @@ export const NL: Record<string, string> = {
 };
 
 export const EN: Record<string, string> = {
+  'des documents importés sont publiés': 'of imported documents are published',
+  'Rejeter': 'Reject',
+  'Vous pourrez relancer l\'analyse plus tard (1 crédit).': 'You can run the analysis again later (1 credit).',
+  'Le document reste dans votre institution avec le statut « Rejeté » et ce motif :': 'The document stays in your institution with the status « Rejected » and this reason:',
+  'Rejeter cette proposition ?': 'Reject this proposal?',
+  'sera visible uniquement par les bibliothécaires de votre institution.': 'will only be visible to the librarians of your institution.',
+  'sera visible par tout le monde dans le catalogue public, puis traduite automatiquement.': 'will be visible to everyone in the public catalogue, then translated automatically.',
+  'Publier cette notice ?': 'Publish this record?',
+  'Stripe n\'a pas encore confirmé le paiement. Vos crédits seront ajoutés automatiquement dès sa confirmation ; rechargez la page dans quelques minutes.': 'Stripe has not confirmed the payment yet. Your credits will be added automatically once it is confirmed; reload the page in a few minutes.',
+  'Le paiement n\'a pas abouti. Aucun crédit n\'a été ajouté ; vous pouvez réessayer.': 'The payment did not go through. No credits were added; you can try again.',
+  'Retour': 'Back',
   'Si un compte actif existe pour cette adresse, un lien valable 30 minutes vient d\'être envoyé. Pensez à regarder dans les courriers indésirables.': 'If an active account exists for this address, a link valid for 30 minutes has been sent. Check your spam folder too.',
   'Un administrateur doit valider votre compte. Vous recevrez un email à cette adresse dès que vous pourrez vous connecter.': 'An administrator must validate your account. You will receive an email at this address as soon as you can sign in.',
   'L\'administrateur doit d\'abord valider votre institution, puis votre compte. Vous recevrez un email à cette adresse dès que vous pourrez vous connecter.': 'The administrator must first validate your institution, then your account. You will receive an email at this address as soon as you can sign in.',

@@ -6,6 +6,7 @@ import { I18nService, Language, TranslatePipe } from '../core/i18n';
 import { classificationLabel, languageLabel, typeLabel } from '../core/labels';
 import { TypeCoverComponent } from '../ui/type-cover.component';
 import { ToastService } from '../core/toast.service';
+import { BackService } from '../core/back.service';
 
 const TRANSLATION_RETRY_DELAYS = [5000, 15000, 30000, 60000];
 
@@ -16,6 +17,7 @@ const TRANSLATION_RETRY_DELAYS = [5000, 15000, 30000, 60000];
   template: `
     <div class="m-wrap m-wrap--public m-page">
       @if (pub(); as p) {
+        <button type="button" class="m-back" (click)="back.back('/catalogue')">← {{ 'Retour' | t }}</button>
         <nav class="m-crumbs m-small" [attr.aria-label]="'Fil d\\'Ariane' | t">
           <a routerLink="/catalogue">{{ 'Catalogue' | t }}</a> / <span>{{ p.institution }}</span>
         </nav>
@@ -78,7 +80,7 @@ const TRANSLATION_RETRY_DELAYS = [5000, 15000, 30000, 60000];
         <div class="m-empty">
           <h1 class="m-h2">{{ 'Publication introuvable' | t }}</h1>
           <p>{{ 'Elle n\\'existe pas ou n\\'est pas publique.' | t }}</p>
-          <a class="m-btn m-btn--ghost" routerLink="/catalogue">{{ 'Retour au catalogue' | t }}</a>
+          <button type="button" class="m-btn m-btn--ghost" (click)="back.back('/catalogue')">← {{ 'Retour' | t }}</button>
         </div>
       } @else {
         <p class="m-muted">{{ 'Chargement…' | t }}</p>
@@ -92,6 +94,7 @@ export class FichePage implements OnDestroy {
   private readonly sanitizer = inject(DomSanitizer);
   private readonly toasts = inject(ToastService);
   private readonly i18n = inject(I18nService);
+  readonly back = inject(BackService);
   readonly typeLabel = typeLabel;
   readonly languageLabel = languageLabel;
 

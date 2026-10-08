@@ -4,6 +4,8 @@ export interface ConfirmRequest {
   title: string;
   message: string;
   action: string;
+  /** Une action destructrice s'affiche en rouge ; une validation, comme publier, en couleur principale. */
+  tone?: 'danger' | 'primary';
 }
 
 interface PendingConfirm extends ConfirmRequest {
