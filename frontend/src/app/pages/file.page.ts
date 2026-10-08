@@ -151,7 +151,9 @@ export class FilePage implements OnDestroy {
     const f = this.filter.trim().toLowerCase();
     return this.scoped()
       .filter((d) => d.status === this.status())
-      .filter((d) => !f || d.title.toLowerCase().includes(f) || (d.author ?? '').toLowerCase().includes(f));
+      .filter((d) => !f || d.title.toLowerCase().includes(f) || (d.author ?? '').toLowerCase().includes(f))
+      // Le plus récent en haut : les numéros de document suivent l'ordre d'import.
+      .sort((a, b) => b.id - a.id);
   }
 
   select(status: PublicationStatus): void {

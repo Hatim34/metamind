@@ -7,6 +7,7 @@ import { classificationLabel, languageLabel, typeLabel } from '../core/labels';
 import { TypeCoverComponent } from '../ui/type-cover.component';
 import { ToastService } from '../core/toast.service';
 import { BackService } from '../core/back.service';
+import { SessionService } from '../core/session.service';
 
 const TRANSLATION_RETRY_DELAYS = [5000, 15000, 30000, 60000];
 
@@ -27,6 +28,9 @@ const TRANSLATION_RETRY_DELAYS = [5000, 15000, 30000, 60000];
             @if (p.fileUrl !== null) {
               <button type="button" class="m-btn m-btn--primary m-btn--block" (click)="openReader()">{{ 'Lire en ligne' | t }}</button>
               <button type="button" class="m-btn m-btn--ghost m-btn--block" (click)="download()">{{ 'Télécharger le PDF' | t }}</button>
+            }
+            @if (canEdit()) {
+              <a class="m-btn m-btn--ghost m-btn--block" [routerLink]="['/espace/documents', p.id, 'validation']">{{ 'Modifier' | t }}</a>
             }
           </aside>
 
@@ -95,6 +99,7 @@ export class FichePage implements OnDestroy {
   private readonly toasts = inject(ToastService);
   private readonly i18n = inject(I18nService);
   readonly back = inject(BackService);
+  private readonly session = inject(SessionService);
   readonly typeLabel = typeLabel;
   readonly languageLabel = languageLabel;
 
@@ -105,6 +110,12 @@ export class FichePage implements OnDestroy {
   readonly readerUrl = signal<SafeResourceUrl | null>(null);
   readonly readerOpen = signal(false);
   readonly translationPending = signal(false);
+  /** Seul un bibliothécaire de l'institution du document peut corriger sa notice ; l'administrateur ne catalogue pas. */
+  readonly canEdit = computed(() => {
+    const user = this.session.user();
+    const p = this.pub();
+    return !!user && !!p && user.role !== 'ADMIN' && user.institution === p.institution;
+  });
   private translationTimer: ReturnType<typeof setTimeout> | undefined;
   private objectUrls: string[] = [];
 
