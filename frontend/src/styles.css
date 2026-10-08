@@ -414,3 +414,10 @@ m-type-cover { display: block; flex: none; }
 .m-banner--warn { background: var(--warn-soft, #fbf1dc); color: #7a5410; }
 .m-back { display: inline-flex; align-items: center; gap: 4px; margin-bottom: 10px; padding: 4px 0; border: 0; background: none; color: var(--ink-soft); font: inherit; font-size: 14px; cursor: pointer; }
 .m-back:hover, .m-back:focus-visible { color: var(--ink); text-decoration: underline; }
+
+/* Cartes d'institution : tout reste dans la largeur de la carte */
+.m-grid-cards .m-sheet { min-width: 0; }
+.m-grid-cards .m-details { align-self: stretch; min-width: 0; }
+.m-details .m-field, .m-details .m-input { width: 100%; max-width: 100%; min-width: 0; }
+.m-file-pick { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; min-width: 0; }
+.m-file-pick__name { font-weight: 400; color: var(--ink-soft); min-width: 0; overflow-wrap: anywhere; }

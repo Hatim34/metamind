@@ -89,9 +89,15 @@ type Tab = 'comptes' | 'utilisateurs' | 'institutions' | 'configuration' | 'jour
                     <details class="m-details">
                       <summary>{{ (photoOf(i.id) ? 'Changer la photo' : 'Ajouter une photo') | t }}</summary>
                       <div class="m-stack">
-                        <label class="m-field m-small">{{ 'Photo (JPEG, PNG ou WebP, 5 Mo au plus)' | t }}
-                          <input type="file" accept="image/jpeg,image/png,image/webp" (change)="pickPhoto(i.id, $event)" />
-                        </label>
+                        <div class="m-field m-small">
+                          <span>{{ 'Photo (JPEG, PNG ou WebP, 5 Mo au plus)' | t }}</span>
+                          <span class="m-file-pick">
+                            <label class="m-btn m-btn--ghost m-btn--sm">{{ 'Choisir une image' | t }}
+                              <input class="m-sr" type="file" accept="image/jpeg,image/png,image/webp" (change)="pickPhoto(i.id, $event)" />
+                            </label>
+                            <span class="m-file-pick__name">{{ pickedPhotos[i.id]?.name ?? ('Aucun fichier choisi' | t) }}</span>
+                          </span>
+                        </div>
                         <label class="m-field m-small">{{ 'Crédit de la photo (auteur, licence, source)' | t }}
                           <input class="m-input m-input--sm" [name]="'credit' + i.id" [(ngModel)]="credits[i.id]" />
                         </label>

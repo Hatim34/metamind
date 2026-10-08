@@ -1,5 +1,7 @@
 /* Traductions NL et EN. Clé = texte français affiché. Ajoutez ici toute nouvelle chaîne. */
 export const NL: Record<string, string> = {
+  'Aucun fichier choisi': 'Geen bestand gekozen',
+  'Choisir une image': 'Afbeelding kiezen',
   'des documents importés sont publiés': 'van de geïmporteerde documenten is gepubliceerd',
   'Rejeter': 'Weigeren',
   'Vous pourrez relancer l\'analyse plus tard (1 crédit).': 'U kunt de analyse later opnieuw starten (1 credit).',
@@ -470,6 +472,8 @@ export const NL: Record<string, string> = {
 };
 
 export const EN: Record<string, string> = {
+  'Aucun fichier choisi': 'No file chosen',
+  'Choisir une image': 'Choose an image',
   'des documents importés sont publiés': 'of imported documents are published',
   'Rejeter': 'Reject',
   'Vous pourrez relancer l\'analyse plus tard (1 crédit).': 'You can run the analysis again later (1 credit).',
