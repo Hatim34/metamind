@@ -1,7 +1,9 @@
 package be.icc.metamind.admin;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -23,6 +25,7 @@ import be.icc.metamind.institution.InstitutionRepository;
 import be.icc.metamind.notification.AccountEvent;
 import be.icc.metamind.institution.InstitutionResponse;
 import be.icc.metamind.user.UserEntity;
+import be.icc.metamind.user.UserRole;
 import be.icc.metamind.user.UserStatus;
 import be.icc.metamind.user.AdministratorGuard;
 import be.icc.metamind.user.UserRepository;
@@ -95,6 +98,8 @@ public class AdminService {
 			throw new ApiException(HttpStatus.CONFLICT, "Validez d'abord la demande d'institution de ce compte.");
 		}
 		UserStatus previousStatus = user.getStatus();
+		UserRole previousRole = user.getRole();
+		String previousInstitution = user.getInstitution().getName();
 		user.updateAdministration(request.role(), request.status());
 		if (request.status() != null && request.status() != previousStatus) {
 			events.publishEvent(new AccountEvent.StatusChanged(user.getId(), previousStatus, request.status()));
@@ -113,7 +118,7 @@ public class AdminService {
 				"MODIFICATION_UTILISATEUR",
 				"users",
 				id,
-				request.institutionId() == null ? "Role ou statut modifie" : "Role, statut ou institution modifie",
+				userChanges(user, previousRole, previousStatus, previousInstitution),
 				ClientIpResolver.current()
 		));
 		return UserResponse.from(user);
@@ -130,8 +135,14 @@ public class AdminService {
 	public InstitutionResponse updateInstitution(long id, AdminInstitutionUpdateRequest request, UserEntity admin) {
 		var institution = institutionRepository.findById(id)
 				.orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "L'institution est introuvable."));
+		List<String> changes = new ArrayList<>();
 		if (request.actif() != null) {
 			boolean wasRequested = institution.isPending();
+			if (wasRequested) {
+				changes.add(request.actif() ? "Demande d'institution validée" : "Demande d'institution refusée");
+			} else if (request.actif() != institution.isActive()) {
+				changes.add(request.actif() ? "Institution réactivée" : "Institution désactivée");
+			}
 			if (request.actif()) {
 				institution.activate();
 			} else if (wasRequested) {
@@ -151,6 +162,9 @@ public class AdminService {
 						});
 			}
 		}
+		if (request.purchasesSuspended() != null && request.purchasesSuspended() != institution.isPurchasesSuspended()) {
+			changes.add(request.purchasesSuspended() ? "Achats de crédits suspendus" : "Achats de crédits réautorisés");
+		}
 		if (request.purchasesSuspended() != null) {
 			institution.suspendPurchases(request.purchasesSuspended());
 		}
@@ -162,13 +176,14 @@ public class AdminService {
 					institution.getCreditBalance(),
 					"Offre de bienvenue accordee lors de l'activation"
 			));
+			changes.add("20 crédits de bienvenue accordés");
 		}
 		auditLogRepository.save(new AuditLogEntity(
 				admin,
 				"MODIFICATION_INSTITUTION",
 				"institutions",
 				id,
-				"Activation ou suspension des achats modifiee",
+				changes.isEmpty() ? "Aucun changement" : String.join(" ; ", changes),
 				ClientIpResolver.current()
 		));
 		return InstitutionResponse.from(institution);
@@ -184,13 +199,20 @@ public class AdminService {
 		if (values == null || values.isEmpty()) {
 			throw new ApiException(HttpStatus.BAD_REQUEST, "Aucun parametre de configuration n'a ete fourni.");
 		}
+		Map<String, String> previous = platformSettings.current();
 		values.forEach((key, value) -> updateConfigurationValue(cleanKey(key), cleanValue(value), admin));
+		Map<String, String> current = platformSettings.current();
+		List<String> changes = values.keySet().stream()
+				.map(String::trim)
+				.filter(key -> !Objects.equals(previous.get(key), current.get(key)))
+				.map(key -> key + " : " + previous.get(key) + " → " + current.get(key))
+				.toList();
 		auditLogRepository.save(new AuditLogEntity(
 				admin,
 				"MODIFICATION_CONFIGURATION",
 				"configurations",
 				null,
-				"Parametres modifies : " + String.join(", ", values.keySet()),
+				changes.isEmpty() ? "Aucun changement" : String.join(" ; ", changes),
 				ClientIpResolver.current()
 		));
 		return readConfiguration();
@@ -223,11 +245,60 @@ public class AdminService {
 	}
 
 	@Transactional(readOnly = true)
-	public PageResponse<AuditLogResponse> listLogs(int page, int size) {
+	public PageResponse<AuditLogResponse> listLogs(int page, int size, String query) {
+		Map<Long, String> users = userRepository.findAll().stream()
+				.collect(Collectors.toMap(UserEntity::getId, user -> user.getFirstName() + " " + user.getLastName()));
+		Map<Long, String> institutions = institutionRepository.findAll().stream()
+				.collect(Collectors.toMap(institution -> institution.getId(), institution -> institution.getName()));
+		Map<Long, String> titles = metadataRepository.findAll().stream()
+				.filter(metadata -> metadata.getTitre() != null)
+				.collect(Collectors.toMap(metadata -> metadata.getDocument().getId(), MetadataEntity::getTitre, (first, second) -> first));
+		String filter = query == null ? "" : query.trim().toLowerCase();
 		List<AuditLogResponse> logs = auditLogRepository.findAllByOrderByCreatedAtDesc().stream()
-				.map(AuditLogResponse::from)
+				.map(log -> AuditLogResponse.from(log, entityLabel(log, users, institutions, titles)))
+				.filter(log -> filter.isEmpty() || String.join(" ",
+						String.valueOf(log.action()), String.valueOf(log.entityLabel()), String.valueOf(log.auteur()),
+						String.valueOf(log.details()), String.valueOf(log.entityId())).toLowerCase().contains(filter))
 				.toList();
 		return PageResponse.from(logs, page, size);
+	}
+
+	private String entityLabel(AuditLogEntity log, Map<Long, String> users, Map<Long, String> institutions, Map<Long, String> titles) {
+		if (log.getEntityId() == null || log.getEntityType() == null) {
+			return null;
+		}
+		return switch (log.getEntityType()) {
+			case "users" -> users.get(log.getEntityId());
+			case "institutions" -> institutions.get(log.getEntityId());
+			case "metadonnees", "documents" -> titles.get(log.getEntityId());
+			default -> null;
+		};
+	}
+
+	private String userChanges(UserEntity user, UserRole previousRole, UserStatus previousStatus, String previousInstitution) {
+		List<String> changes = new ArrayList<>();
+		if (previousStatus != user.getStatus()) {
+			changes.add("Statut : " + statusLabel(previousStatus) + " → " + statusLabel(user.getStatus()));
+		}
+		if (previousRole != user.getRole()) {
+			changes.add("Rôle : " + roleLabel(previousRole) + " → " + roleLabel(user.getRole()));
+		}
+		if (!previousInstitution.equals(user.getInstitution().getName())) {
+			changes.add("Institution : " + previousInstitution + " → " + user.getInstitution().getName());
+		}
+		return changes.isEmpty() ? "Aucun changement" : String.join(" ; ", changes);
+	}
+
+	private String statusLabel(UserStatus status) {
+		return switch (status) {
+			case EN_ATTENTE -> "En attente";
+			case ACTIF -> "Actif";
+			case DESACTIVE -> "Désactivé";
+		};
+	}
+
+	private String roleLabel(UserRole role) {
+		return role == UserRole.ADMIN ? "Administrateur" : "Bibliothécaire";
 	}
 
 	@Transactional(readOnly = true)

@@ -4,6 +4,9 @@ import java.util.Optional;
 import java.util.Set;
 
 import be.icc.metamind.api.ApiException;
+import be.icc.metamind.api.ClientIpResolver;
+import be.icc.metamind.document.AuditLogEntity;
+import be.icc.metamind.document.AuditLogRepository;
 import be.icc.metamind.notification.AccountEvent;
 import be.icc.metamind.auth.AuthResponse;
 import be.icc.metamind.auth.JwtService;
@@ -34,9 +37,11 @@ public class AccountService {
 	private final LoginAttemptService loginAttemptService;
 	private final AdministratorGuard administratorGuard;
 	private final ApplicationEventPublisher events;
+	private final AuditLogRepository auditLogRepository;
 
-	public AccountService(UserRepository userRepository, InstitutionRepository institutionRepository, PasswordService passwordService, JwtService jwtService, LoginAttemptService loginAttemptService, AdministratorGuard administratorGuard, ApplicationEventPublisher events) {
+	public AccountService(UserRepository userRepository, InstitutionRepository institutionRepository, PasswordService passwordService, JwtService jwtService, LoginAttemptService loginAttemptService, AdministratorGuard administratorGuard, ApplicationEventPublisher events, AuditLogRepository auditLogRepository) {
 		this.events = events;
+		this.auditLogRepository = auditLogRepository;
 		this.userRepository = userRepository;
 		this.institutionRepository = institutionRepository;
 		this.passwordService = passwordService;
@@ -169,10 +174,20 @@ public class AccountService {
 	}
 
 	@Transactional
-	public UserResponse requestAccountDeletion(long id) {
+	public UserResponse requestAccountDeletion(long id, UserEntity actor) {
 		UserEntity user = findUser(id);
 		administratorGuard.ensureAnotherActiveAdministratorRemains(user, "supprimer ce compte");
+		boolean bySelf = actor.getId().equals(user.getId());
 		user.anonymizeAndDeactivate();
+		auditLogRepository.save(new AuditLogEntity(
+				actor,
+				"SUPPRESSION_COMPTE",
+				"users",
+				user.getId(),
+				(bySelf ? "Désinscription demandée par la personne" : "Suppression par l'administrateur")
+						+ " : nom, prénom, email et mot de passe effacés, compte désactivé. Documents et achats conservés.",
+				ClientIpResolver.current()
+		));
 		return UserResponse.from(user);
 	}
 

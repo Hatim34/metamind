@@ -336,7 +336,7 @@ public class CreditService {
 				"AJUSTEMENT_CREDITS",
 				"institutions",
 				institutionId,
-				normalReason(request.reason()),
+				(request.amount() > 0 ? "+" : "") + request.amount() + " crédits (solde : " + institution.getCreditBalance() + ") : " + normalReason(request.reason()),
 				ClientIpResolver.current()
 		));
 		return toResponse(institution);

@@ -8,7 +8,10 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import be.icc.metamind.api.ApiException;
+import be.icc.metamind.api.ClientIpResolver;
 import be.icc.metamind.api.PageResponse;
+import be.icc.metamind.document.AuditLogEntity;
+import be.icc.metamind.document.AuditLogRepository;
 import be.icc.metamind.document.AuthorEntity;
 import be.icc.metamind.document.AuthorRepository;
 import be.icc.metamind.document.DocumentAuthorEntity;
@@ -54,6 +57,7 @@ public class PublicationService {
 	private final DocumentCoverService documentCoverService;
 	private final DocumentFileService documentFileService;
 	private final ApplicationEventPublisher eventPublisher;
+	private final AuditLogRepository auditLogRepository;
 
 	public PublicationService(
 			DocumentRepository documentRepository,
@@ -65,7 +69,8 @@ public class PublicationService {
 			DocumentUploadService documentUploadService,
 			DocumentCoverService documentCoverService,
 			DocumentFileService documentFileService,
-			ApplicationEventPublisher eventPublisher
+			ApplicationEventPublisher eventPublisher,
+			AuditLogRepository auditLogRepository
 	) {
 		this.documentRepository = documentRepository;
 		this.metadataRepository = metadataRepository;
@@ -77,6 +82,7 @@ public class PublicationService {
 		this.documentCoverService = documentCoverService;
 		this.documentFileService = documentFileService;
 		this.eventPublisher = eventPublisher;
+		this.auditLogRepository = auditLogRepository;
 	}
 
 	@Transactional(readOnly = true)
@@ -422,7 +428,16 @@ public class PublicationService {
 		if (!canManage(document, currentUser)) {
 			throw new ApiException(HttpStatus.FORBIDDEN, "Cette publication ne peut pas etre supprimee avec ce compte.");
 		}
+		String previousStatus = document.getStatus().name();
 		document.updateStatus(DocumentStatus.SUPPRIME);
+		auditLogRepository.save(new AuditLogEntity(
+				currentUser,
+				"SUPPRESSION_DOCUMENT",
+				"documents",
+				document.getId(),
+				"Document retiré (statut précédent : " + previousStatus + "). Le fichier et la notice restent en base pour la traçabilité.",
+				ClientIpResolver.current()
+		));
 		return toResponse(document);
 	}
 

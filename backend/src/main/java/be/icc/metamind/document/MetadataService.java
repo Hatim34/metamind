@@ -131,6 +131,16 @@ public class MetadataService {
 		recordMetadataHistory(document, "langue", previousLanguage, request.language(), user);
 		recordMetadataHistory(document, "type_document", previousDocumentType, request.documentType(), user);
 		recordMetadataHistory(document, "doi", previousDoi, doi, user);
+		auditLogRepository.save(new AuditLogEntity(
+				user,
+				"PUBLICATION_NOTICE",
+				"documents",
+				document.getId(),
+				request.visibility() == DocumentVisibility.PUBLIC
+						? "Publiée dans le catalogue public"
+						: "Publiée, visible uniquement par l'institution",
+				ClientIpResolver.current()
+		));
 		// Trace l'arbitrage humain champ par champ : base de la mesure de fiabilite du LLM.
 		Map<String, String> publishedValues = new LinkedHashMap<>();
 		publishedValues.put("titre", nullSafe(title));

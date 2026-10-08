@@ -41,10 +41,10 @@ class AdministratorGuardTests {
 	void refusesToDeleteTheLastActiveAdministrator() {
 		UserEntity admin = saveAdmin("seul@metamind.example");
 
-		assertThatThrownBy(() -> accountService.requestAccountDeletion(admin.getId()))
+		assertThatThrownBy(() -> accountService.requestAccountDeletion(admin.getId(), admin))
 				.isInstanceOf(ApiException.class)
 				.hasMessageContaining("dernier administrateur");
-		assertThat(((ApiException) catchDeletion(admin.getId())).getStatus()).isEqualTo(HttpStatus.CONFLICT);
+		assertThat(((ApiException) catchDeletion(admin)).getStatus()).isEqualTo(HttpStatus.CONFLICT);
 	}
 
 	@Test
@@ -52,7 +52,7 @@ class AdministratorGuardTests {
 		UserEntity premier = saveAdmin("premier@metamind.example");
 		saveAdmin("second@metamind.example");
 
-		assertThatCode(() -> accountService.requestAccountDeletion(premier.getId()))
+		assertThatCode(() -> accountService.requestAccountDeletion(premier.getId(), premier))
 				.doesNotThrowAnyException();
 		assertThat(premier.getStatus()).isEqualTo(UserStatus.DESACTIVE);
 	}
@@ -81,9 +81,9 @@ class AdministratorGuardTests {
 		assertThat(administratorGuard.removesAdministration(null, null)).isFalse();
 	}
 
-	private Throwable catchDeletion(long id) {
+	private Throwable catchDeletion(UserEntity user) {
 		try {
-			accountService.requestAccountDeletion(id);
+			accountService.requestAccountDeletion(user.getId(), user);
 			throw new AssertionError("la suppression aurait du etre refusee");
 		}
 		catch (ApiException exception) {

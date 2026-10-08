@@ -499,6 +499,11 @@ paths:
       parameters:
         - $ref: '#/components/parameters/page'
         - $ref: '#/components/parameters/size'
+        - name: q
+          in: query
+          required: false
+          description: Filtre sur l'action, la personne, l'element concerne et le detail
+          schema: { type: string }
       responses:
         '200':
           description: Page de journaux
@@ -515,8 +520,12 @@ paths:
                           type: object
                           properties:
                             id: { type: integer }
-                            action: { type: string, example: EXTRACTION }
-                            type_entite: { type: string, example: document }
+                            action: { type: string, example: MODIFICATION_UTILISATEUR }
+                            type_entite: { type: string, example: users }
+                            entite_id: { type: integer, nullable: true, example: 22 }
+                            libelle_entite: { type: string, nullable: true, example: Thomas Lambert }
+                            auteur: { type: string, nullable: true, example: "Admin Metamind (admin@metamind.example)" }
+                            details: { type: string, example: "Statut : En attente → Actif" }
                             date_creation: { type: string, format: date-time }
 
 components:

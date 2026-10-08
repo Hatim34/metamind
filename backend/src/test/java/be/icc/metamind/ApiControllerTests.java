@@ -937,7 +937,14 @@ class ApiControllerTests {
 		mockMvc.perform(get("/api/v1/admin/logs")
 						.header("Authorization", adminBearerToken()))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.contenu[0].action", is("MODIFICATION_CONFIGURATION")));
+				.andExpect(jsonPath("$.contenu[0].action", is("MODIFICATION_CONFIGURATION")))
+				.andExpect(jsonPath("$.contenu[0].details", containsString("taille_max_upload_mo : 50 → 1")))
+				.andExpect(jsonPath("$.contenu[0].auteur", containsString("admin")));
+
+		mockMvc.perform(get("/api/v1/admin/logs").param("q", "taille_max")
+						.header("Authorization", adminBearerToken()))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.total_elements", is(1)));
 
 		// La nouvelle limite s'applique aussitot a l'import.
 		mockMvc.perform(multipart("/api/v1/documents")

@@ -105,10 +105,11 @@ public class AdminController {
 	public PageResponse<AuditLogResponse> logs(
 			@RequestHeader("Authorization") String authorization,
 			@RequestParam(defaultValue = "0") int page,
-			@RequestParam(defaultValue = "20") int size
+			@RequestParam(defaultValue = "20") int size,
+			@RequestParam(required = false) String q
 	) {
 		accountService.authenticateAdmin(authorization);
-		return service.listLogs(page, size);
+		return service.listLogs(page, size, q);
 	}
 
 	/**

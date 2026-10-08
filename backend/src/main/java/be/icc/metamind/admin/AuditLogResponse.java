@@ -16,17 +16,24 @@ public record AuditLogResponse(
 		@JsonProperty("entite_id")
 		Long entityId,
 
+		@JsonProperty("libelle_entite")
+		String entityLabel,
+
+		String auteur,
+
 		String details,
 
 		@JsonProperty("date_creation")
 		LocalDateTime createdAt
 ) {
-	public static AuditLogResponse from(AuditLogEntity log) {
+	public static AuditLogResponse from(AuditLogEntity log, String entityLabel) {
 		return new AuditLogResponse(
 				log.getId(),
 				log.getAction(),
 				log.getEntityType(),
 				log.getEntityId(),
+				entityLabel,
+				log.getUser() == null ? null : log.getUser().getFirstName() + " " + log.getUser().getLastName() + " (" + log.getUser().getEmail() + ")",
 				log.getDetails(),
 				log.getCreatedAt()
 		);

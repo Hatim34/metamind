@@ -55,7 +55,7 @@ public class ProfileController {
 
 	@DeleteMapping("/{id}")
 	public UserResponse requestDeletion(@PathVariable long id, @RequestHeader("Authorization") String authorization) {
-		service.authenticateSelfOrAdmin(id, authorization);
-		return service.requestAccountDeletion(id);
+		UserEntity actor = service.authenticateSelfOrAdmin(id, authorization);
+		return service.requestAccountDeletion(id, actor);
 	}
 }
