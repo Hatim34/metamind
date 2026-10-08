@@ -629,10 +629,11 @@ export class ApiService {
       .pipe(map((response) => this.toUserSession(response)));
   }
 
+  /** Tous les comptes, page par page : au-delà de 20, une demande récente restait invisible. */
   getAdminUsers(institutionId?: number): Observable<UserSession[]> {
-    const params = institutionId ? new HttpParams().set('institutionId', institutionId) : undefined;
-    return this.http.get<PageResponse<UserSession>>(`${this.baseUrl}/admin/users`, { params, headers: this.authHeaders() })
-      .pipe(map((response) => response.contenu.map((user) => this.toUserSession(user))));
+    const params = institutionId ? new HttpParams().set('institutionId', institutionId) : new HttpParams();
+    return this.allPages(`${this.baseUrl}/admin/users`, params, this.authHeaders())
+      .pipe(map((users) => users.map((user) => this.toUserSession(user as UserSession))));
   }
 
   updateAdminUser(userId: number, request: AdminUserUpdateRequest): Observable<UserSession> {

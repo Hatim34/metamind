@@ -332,32 +332,24 @@ describe('ApiService', () => {
     });
   });
 
-  it('lit les utilisateurs admin depuis une page', () => {
+  it('lit tous les utilisateurs admin, page par page', () => {
     service.setToken('token-test');
+    const user = (id: number, email: string) => ({ id, prenom: 'P', nom: 'N', email, role: 'LIBRARIAN', institution: 'Institution A', statut: 'ACTIF' });
 
     service.getAdminUsers().subscribe((response) => {
-      expect(response.length).toBe(1);
+      expect(response.length).toBe(2);
       expect(response[0].email).toBe('sarah@institution-a.example');
+      expect(response[1].email).toBe('lea@institution-a.example');
     });
 
-    const request = httpMock.expectOne('/api/v1/admin/users');
-    expect(request.request.method).toBe('GET');
-    expect(request.request.headers.get('Authorization')).toBe('Bearer token-test');
-    request.flush({
-      contenu: [{
-        id: 10,
-        prenom: 'Sarah',
-        nom: 'Lemaire',
-        email: 'sarah@institution-a.example',
-        role: 'LIBRARIAN',
-        institution: 'Institution A',
-        statut: 'ACTIF'
-      }],
-      page: 0,
-      size: 20,
-      total_elements: 1,
-      total_pages: 1
-    });
+    const first = httpMock.expectOne((req) => req.url === '/api/v1/admin/users' && req.params.get('page') === '0');
+    expect(first.request.method).toBe('GET');
+    expect(first.request.headers.get('Authorization')).toBe('Bearer token-test');
+    expect(first.request.params.get('size')).toBe('100');
+    first.flush({ contenu: [user(10, 'sarah@institution-a.example')], page: 0, size: 100, total_elements: 2, total_pages: 2 });
+
+    const second = httpMock.expectOne((req) => req.url === '/api/v1/admin/users' && req.params.get('page') === '1');
+    second.flush({ contenu: [user(23, 'lea@institution-a.example')], page: 1, size: 100, total_elements: 2, total_pages: 2 });
   });
 
   it('met a jour la configuration admin', () => {
