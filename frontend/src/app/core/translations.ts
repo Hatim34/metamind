@@ -1,5 +1,18 @@
 /* Traductions NL et EN. Clé = texte français affiché. Ajoutez ici toute nouvelle chaîne. */
 export const NL: Record<string, string> = {
+  'Filtrer par action, personne, élément ou détail': 'Filteren op actie, persoon, element of detail',
+  'entrées': 'regels',
+  'Par': 'Door',
+  'Élément': 'Element',
+  'Système': 'Systeem',
+  'Avant': 'Voor',
+  'Après': 'Na',
+  'Voir le texte complet': 'Volledige tekst tonen',
+  'Aucune entrée.': 'Geen regels.',
+  'Afficher les entrées plus anciennes': 'Oudere regels tonen',
+  'Notice publiée': 'Beschrijving gepubliceerd',
+  'Document supprimé': 'Document verwijderd',
+  'Compte supprimé': 'Account verwijderd',
   'Aucun fichier choisi': 'Geen bestand gekozen',
   'Choisir une image': 'Afbeelding kiezen',
   'des documents importés sont publiés': 'van de geïmporteerde documenten is gepubliceerd',
@@ -472,6 +485,19 @@ export const NL: Record<string, string> = {
 };
 
 export const EN: Record<string, string> = {
+  'Filtrer par action, personne, élément ou détail': 'Filter by action, person, item or detail',
+  'entrées': 'entries',
+  'Par': 'By',
+  'Élément': 'Item',
+  'Système': 'System',
+  'Avant': 'Before',
+  'Après': 'After',
+  'Voir le texte complet': 'Show full text',
+  'Aucune entrée.': 'No entries.',
+  'Afficher les entrées plus anciennes': 'Show older entries',
+  'Notice publiée': 'Record published',
+  'Document supprimé': 'Document deleted',
+  'Compte supprimé': 'Account deleted',
   'Aucun fichier choisi': 'No file chosen',
   'Choisir une image': 'Choose an image',
   'des documents importés sont publiés': 'of imported documents are published',

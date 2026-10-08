@@ -125,7 +125,7 @@ describe('AppComponent', () => {
     api.getAdminConfig.and.returnValue(of({ prix_credit_eur: '0.50' }));
     api.updateAdminConfig.and.returnValue(of({ prix_credit_eur: '0.60' }));
     api.exportAdminDocumentsCsv.and.returnValue(of('id,titre'));
-    api.getAdminLogs.and.returnValue(of([]));
+    api.getAdminLogs.and.returnValue(of({ contenu: [], page: 0, size: 50, total_elements: 0, total_pages: 0 }));
     api.getMetadata.and.returnValue(of({
       id: 7,
       document_id: 1,

@@ -125,17 +125,46 @@ type Tab = 'comptes' | 'utilisateurs' | 'institutions' | 'configuration' | 'jour
           }
           @case ('journal') {
             <h1 class="m-title">{{ 'Journal d\\'audit' | t }}</h1>
-            <input class="m-input m-input--search" [(ngModel)]="logFilter" name="logFilter" [placeholder]="'Filtrer par action ou entité' | t" />
+            <input class="m-input m-input--search" [(ngModel)]="logFilter" (ngModelChange)="searchLogs()" name="logFilter" [placeholder]="'Filtrer par action, personne, élément ou détail' | t" />
+            <p class="m-muted m-small">{{ logs().length }} / {{ logTotal() }} {{ 'entrées' | t }}</p>
             <section class="m-sheet m-scroll">
-              <table class="m-table">
-                <thead><tr><th>{{ 'Date' | t }}</th><th>{{ 'Action' | t }}</th><th>{{ 'Entité' | t }}</th><th>{{ 'Détails' | t }}</th></tr></thead>
+              <table class="m-table m-table--log">
+                <thead><tr><th>{{ 'Date' | t }}</th><th>{{ 'Par' | t }}</th><th>{{ 'Action' | t }}</th><th>{{ 'Élément' | t }}</th><th>{{ 'Détails' | t }}</th></tr></thead>
                 <tbody>
-                  @for (log of filteredLogs(); track log.id) {
-                    <tr><td class="m-muted">{{ log.date_creation | date: 'dd/MM/yyyy HH:mm' }}</td><td>{{ (actionLabels[log.action] ?? log.action) | t }}</td><td>{{ (entityLabels[log.type_entite] ?? log.type_entite) | t }} @if (log.entite_id) { #{{ log.entite_id }} }</td><td class="m-small">{{ log.details }}</td></tr>
-                  }
+                  @for (log of logs(); track log.id) {
+                    <tr>
+                      <td class="m-muted m-nowrap">{{ log.date_creation | date: 'dd/MM/yyyy HH:mm' }}</td>
+                      <td class="m-small">{{ log.auteur ?? ('Système' | t) }}</td>
+                      <td>{{ (actionLabels[log.action] ?? log.action) | t }}</td>
+                      <td class="m-small">
+                        {{ (entityLabels[log.type_entite] ?? log.type_entite) | t }} @if (log.entite_id) { #{{ log.entite_id }} }
+                        @if (log.libelle_entite) { <br /><span class="m-muted">{{ log.libelle_entite }}</span> }
+                      </td>
+                      <td class="m-small">
+                        @if (log.action === 'MODIFICATION_METADONNEE') {
+                          @let change = metadataChange(log.details);
+                          <strong>{{ (fieldLabels[change.field] ?? change.field) | t }}</strong>
+                          @if (change.field === 'rejet') { : {{ change.after }} }
+                          @else {
+                            <div class="m-log-change"><span class="m-muted">{{ 'Avant' | t }} :</span> {{ change.before ? shorten(change.before) : '-' }}</div>
+                            <div class="m-log-change"><span class="m-muted">{{ 'Après' | t }} :</span> {{ change.after ? shorten(change.after) : '-' }}</div>
+                            @if (change.before.length > 140 || change.after.length > 140) {
+                              <details class="m-log-full"><summary>{{ 'Voir le texte complet' | t }}</summary>
+                                <p><span class="m-muted">{{ 'Avant' | t }} :</span> {{ change.before }}</p>
+                                <p><span class="m-muted">{{ 'Après' | t }} :</span> {{ change.after }}</p>
+                              </details>
+                            }
+                          }
+                        } @else { {{ log.details }} }
+                      </td>
+                    </tr>
+                  } @empty { <tr><td colspan="5" class="m-muted">{{ 'Aucune entrée.' | t }}</td></tr> }
                 </tbody>
               </table>
             </section>
+            @if (logs().length < logTotal()) {
+              <div class="m-actions"><button type="button" class="m-btn m-btn--ghost" (click)="loadLogs(logPage() + 1)">{{ 'Afficher les entrées plus anciennes' | t }}</button></div>
+            }
           }
         }
       </section>
@@ -199,6 +228,9 @@ export class AdminPage {
   credits: Record<number, string | undefined> = {};
   pickedPhotos: Record<number, File> = {};
   readonly logs = signal<AuditLog[]>([]);
+  readonly logTotal = signal(0);
+  readonly logPage = signal(0);
+  private logSearchTimer: ReturnType<typeof setTimeout> | undefined;
   readonly configKeys = signal<string[]>([]);
   readonly requestedInstitutions = computed(() => this.institutions().filter((i) => i.pending));
   /** Comptes à valider un par un : ceux d'une institution demandée sont tranchés avec elle. */
@@ -228,16 +260,23 @@ export class AdminPage {
     MODIFICATION_CONFIGURATION: 'Configuration modifiée',
     MODIFICATION_INSTITUTION: 'Institution modifiée',
     MODIFICATION_METADONNEE: 'Notice modifiée',
-    MODIFICATION_UTILISATEUR: 'Compte modifié'
+    MODIFICATION_UTILISATEUR: 'Compte modifié',
+    PUBLICATION_NOTICE: 'Notice publiée',
+    SUPPRESSION_DOCUMENT: 'Document supprimé',
+    SUPPRESSION_COMPTE: 'Compte supprimé'
+  };
+  readonly fieldLabels: Record<string, string> = {
+    titre: 'Titre', resume: 'Résumé', auteurs: 'Auteurs', mots_cles: 'Mots-clés', classification: 'Classification',
+    date_publication: 'Date de publication', type_document: 'Type', langue: 'Langue', doi: 'DOI', visibilite: 'Visibilité', rejet: 'Motif du rejet'
   };
   readonly entityLabels: Record<string, string> = {
-    users: 'Compte', institutions: 'Institution', configuration: 'Configuration', documents: 'Document', metadonnees: 'Notice', credits: 'Crédits'
+    users: 'Compte', institutions: 'Institution', configurations: 'Configuration', documents: 'Document', metadonnees: 'Notice', credits: 'Crédits'
   };
 
   constructor() {
     this.loadUsers();
     this.loadInstitutions();
-    this.api.getAdminLogs().subscribe({ next: (l) => this.logs.set(l), error: () => undefined });
+    this.loadLogs(0);
     this.api.getAdminConfig().subscribe({ next: (c) => { this.config = { ...c }; this.configKeys.set(Object.keys(c)); }, error: () => undefined });
   }
 
@@ -309,9 +348,31 @@ export class AdminPage {
     });
   }
 
-  filteredLogs(): AuditLog[] {
-    const f = this.logFilter.trim().toLowerCase();
-    return f ? this.logs().filter((l) => (l.action + ' ' + l.type_entite + ' ' + l.details).toLowerCase().includes(f)) : this.logs();
+  /** Le journal est paginé et filtré par le serveur : le filtre porte sur toutes les entrées, pas seulement celles affichées. */
+  loadLogs(page: number): void {
+    this.api.getAdminLogs(page, this.logFilter.trim()).subscribe({
+      next: (r) => {
+        this.logs.set(page === 0 ? r.contenu : [...this.logs(), ...r.contenu]);
+        this.logTotal.set(r.total_elements);
+        this.logPage.set(page);
+      },
+      error: () => undefined
+    });
+  }
+
+  searchLogs(): void {
+    clearTimeout(this.logSearchTimer);
+    this.logSearchTimer = setTimeout(() => this.loadLogs(0), 300);
+  }
+
+  /** Une modification de notice est enregistrée en trois lignes : champ, ancienne valeur, nouvelle valeur. */
+  metadataChange(details: string): { field: string; before: string; after: string } {
+    const [field = '', before = '', after = ''] = (details ?? '').split('\n');
+    return { field, before, after };
+  }
+
+  shorten(value: string): string {
+    return value.length > 140 ? value.slice(0, 140) + '…' : value;
   }
 
   loadUsers(): void { this.api.getAdminUsers().subscribe({ next: (u) => this.users.set(u), error: () => undefined }); }

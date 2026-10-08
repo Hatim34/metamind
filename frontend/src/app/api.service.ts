@@ -271,6 +271,8 @@ export interface AuditLog {
   action: string;
   type_entite: string;
   entite_id: number | null;
+  libelle_entite: string | null;
+  auteur: string | null;
   details: string;
   date_creation: string;
 }
@@ -653,9 +655,9 @@ export class ApiService {
     });
   }
 
-  getAdminLogs(): Observable<AuditLog[]> {
-    return this.http.get<PageResponse<AuditLog>>(`${this.baseUrl}/admin/logs`, { headers: this.authHeaders() })
-      .pipe(map((response) => response.contenu));
+  getAdminLogs(page: number, query: string): Observable<PageResponse<AuditLog>> {
+    const params = new HttpParams().set('page', page).set('size', 50).set('q', query);
+    return this.http.get<PageResponse<AuditLog>>(`${this.baseUrl}/admin/logs`, { headers: this.authHeaders(), params });
   }
 
   private authHeaders(): HttpHeaders {

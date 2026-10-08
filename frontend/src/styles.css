@@ -421,3 +421,10 @@ m-type-cover { display: block; flex: none; }
 .m-details .m-field, .m-details .m-input { width: 100%; max-width: 100%; min-width: 0; }
 .m-file-pick { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; min-width: 0; }
 .m-file-pick__name { font-weight: 400; color: var(--ink-soft); min-width: 0; overflow-wrap: anywhere; }
+.m-nowrap { white-space: nowrap; }
+.m-table--log td { vertical-align: top; }
+.m-table--log td:last-child { max-width: 520px; overflow-wrap: anywhere; }
+.m-log-change { margin-top: 2px; }
+.m-log-full { margin-top: 6px; }
+.m-log-full summary { cursor: pointer; color: var(--ink-soft); }
+.m-log-full p { margin: 6px 0 0; }

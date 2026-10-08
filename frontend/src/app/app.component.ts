@@ -1972,9 +1972,9 @@ export class AppComponent implements OnInit {
         this.adminConfigForm = {};
       }
     });
-    this.api.getAdminLogs().subscribe({
-      next: (logs) => {
-        this.auditLogs = logs;
+    this.api.getAdminLogs(0, '').subscribe({
+      next: (page) => {
+        this.auditLogs = page.contenu;
       },
       error: () => {
         this.auditLogs = [];
