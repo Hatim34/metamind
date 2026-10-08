@@ -7,6 +7,8 @@ import { I18nService, TranslatePipe } from '../core/i18n';
 import { SessionService } from '../core/session.service';
 import { ToastService } from '../core/toast.service';
 
+const PAYMENT_REFERENCE_KEY = 'metamind.paiement.reference';
+
 /** Crédits (B9, B10) : solde, achat via Stripe Checkout avec CGV et renonciation à la rétractation, historique. */
 @Component({
   standalone: true,
@@ -14,12 +16,15 @@ import { ToastService } from '../core/toast.service';
   template: `
     <div class="m-wrap m-page">
       @if (returning()) {
-        <div class="m-banner" role="status">
-          @if (confirmedAfterReturn()) { {{ 'Paiement confirmé, vos crédits ont été ajoutés.' | t }} }
-          @else { {{ 'Paiement en cours de confirmation…' | t }} }
+        <div class="m-banner" [class.m-banner--warn]="paymentState() !== 'confirme'" role="status">
+          @switch (paymentState()) {
+            @case ('confirme') { {{ 'Paiement confirmé, vos crédits ont été ajoutés.' | t }} }
+            @case ('echec') { {{ 'Le paiement n\\'a pas abouti. Aucun crédit n\\'a été ajouté ; vous pouvez réessayer.' | t }} }
+            @case ('long') { {{ 'Stripe n\\'a pas encore confirmé le paiement. Vos crédits seront ajoutés automatiquement dès sa confirmation ; rechargez la page dans quelques minutes.' | t }} }
+            @default { {{ 'Paiement en cours de confirmation…' | t }} }
+          }
         </div>
       }
-
       <div class="m-credits-top">
         <div class="m-balance">
           <span>{{ 'Solde de' | t }} {{ account()?.balance?.institution }}</span>
@@ -89,7 +94,7 @@ export class CreditsPage implements OnDestroy {
   readonly chosen = signal<CreditPackOption | null>(null);
   readonly busy = signal(false);
   readonly returning = signal(this.route.snapshot.data['retourPaiement'] === true);
-  readonly confirmedAfterReturn = signal(false);
+  readonly paymentState = signal<'attente' | 'confirme' | 'echec' | 'long'>('attente');
   cgv = false;
   waiver = false;
   private timer?: ReturnType<typeof setInterval>;
@@ -99,18 +104,43 @@ export class CreditsPage implements OnDestroy {
     // Les packs gratuits ne sont pas proposés : seuls les achats payés via Stripe ajoutent des crédits (prompt 1).
     this.api.getCreditPacks().subscribe({ next: (packs) => this.packs.set(packs.filter((p) => p.amount > 0)), error: () => undefined });
     if (this.returning()) {
-      const start = this.account()?.balance.balance;
-      let tries = 0;
-      this.timer = setInterval(() => {
-        tries++;
-        this.api.getCreditAccount().subscribe((account) => {
-          const before = start ?? this.account()?.balance.balance;
-          this.account.set(account);
-          if (before !== undefined && account.balance.balance > before) { this.confirmedAfterReturn.set(true); clearInterval(this.timer); }
-        });
-        if (tries >= 15) clearInterval(this.timer);
-      }, 2000);
+      this.followPayment();
     }
+  }
+
+  /**
+   * Suit la commande par sa référence, pas par le solde : Stripe confirme souvent avant
+   * le retour sur le site, et le solde a alors déjà augmenté quand la page s'ouvre.
+   */
+  private followPayment(): void {
+    const reference = this.route.snapshot.queryParamMap.get('ref') ?? this.storedReference();
+    if (!reference) {
+      this.paymentState.set('long');
+      return;
+    }
+    let tries = 0;
+    const check = () => {
+      tries++;
+      this.api.getCreditCheckoutStatus(reference).subscribe({
+        next: (status) => {
+          if (status.status === 'PAYE') { this.paymentState.set('confirme'); this.loadAccount(); this.stopFollowing(); }
+          else if (status.status === 'ECHEC') { this.paymentState.set('echec'); this.stopFollowing(); }
+          else if (tries >= 30) { this.paymentState.set('long'); this.stopFollowing(); }
+        },
+        error: () => { if (tries >= 30) { this.paymentState.set('long'); this.stopFollowing(); } }
+      });
+    };
+    check();
+    this.timer = setInterval(check, 2000);
+  }
+
+  private stopFollowing(): void {
+    clearInterval(this.timer);
+    try { sessionStorage.removeItem(PAYMENT_REFERENCE_KEY); } catch { /* stockage indisponible */ }
+  }
+
+  private storedReference(): string | null {
+    try { return sessionStorage.getItem(PAYMENT_REFERENCE_KEY); } catch { return null; }
   }
 
   loadAccount(): void {
@@ -127,7 +157,10 @@ export class CreditsPage implements OnDestroy {
     if (!this.cgv || !this.waiver) return;
     this.busy.set(true);
     this.api.startCreditCheckout(pack.id, this.cgv, this.waiver).subscribe({
-      next: (checkout) => window.location.assign(checkout.checkout_url),
+      next: (checkout) => {
+        try { sessionStorage.setItem(PAYMENT_REFERENCE_KEY, checkout.reference); } catch { /* stockage indisponible */ }
+        window.location.assign(checkout.checkout_url);
+      },
       error: (e) => {
         this.busy.set(false);
         this.toasts.show(this.i18n.t(this.paymentErrorMessage(e)), 'error');

@@ -203,7 +203,7 @@ public class CreditService {
 					.putMetadata("institutionId", user.getInstitution().getId().toString())
 					.putMetadata("packId", Long.toString(packId))
 					.putMetadata("paymentReference", reference)
-					.setSuccessUrl(publicUrl + "/paiement/succes?session_id={CHECKOUT_SESSION_ID}")
+					.setSuccessUrl(publicUrl + "/paiement/succes?ref=" + reference + "&session_id={CHECKOUT_SESSION_ID}")
 					.setCancelUrl(publicUrl + "/credits")
 					.addLineItem(SessionCreateParams.LineItem.builder()
 							.setQuantity(1L)
