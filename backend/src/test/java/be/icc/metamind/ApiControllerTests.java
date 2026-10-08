@@ -185,7 +185,8 @@ class ApiControllerTests {
 	void spaRoutesAreForwardedToIndex() throws Exception {
 		mockMvc.perform(get("/dashboard"))
 				.andExpect(status().isOk())
-				.andExpect(forwardedUrl("/index.html"));
+				.andExpect(forwardedUrl("/index.html"))
+				.andExpect(header().string("Cache-Control", "no-cache"));
 	}
 
 	@Test

@@ -16,10 +16,27 @@ public class SpaFallbackFilter extends OncePerRequestFilter {
 	protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
 			throws ServletException, IOException {
 		if (shouldForward(request)) {
+			noCache(response);
 			request.getRequestDispatcher("/index.html").forward(request, response);
 			return;
 		}
+		if (isIndex(request)) {
+			noCache(response);
+		}
 		filterChain.doFilter(request, response);
+	}
+
+	/**
+	 * La page d'entree doit toujours etre redemandee : apres un deploiement, une ancienne copie
+	 * gardee par le navigateur reclame des fichiers qui n'existent plus et l'application ne s'ouvre pas.
+	 */
+	private void noCache(HttpServletResponse response) {
+		response.setHeader("Cache-Control", "no-cache");
+	}
+
+	private boolean isIndex(HttpServletRequest request) {
+		String path = request.getRequestURI();
+		return "GET".equalsIgnoreCase(request.getMethod()) && (path.equals("/") || path.equals("/index.html"));
 	}
 
 	private boolean shouldForward(HttpServletRequest request) {
