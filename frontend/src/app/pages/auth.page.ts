@@ -8,6 +8,19 @@ import { SessionService } from '../core/session.service';
 type Mode = 'connexion' | 'inscription' | 'oubli' | 'reinitialiser';
 
 /** Connexion (B2), inscription (B1), mot de passe oublié et réinitialisation. */
+/** Distance d'édition avec transposition : gmai.com et gmial.com sont à 1 de gmail.com. */
+function editDistance(a: string, b: string): number {
+  const d = Array.from({ length: a.length + 1 }, (_, i) => Array.from({ length: b.length + 1 }, (_, j) => (i === 0 ? j : j === 0 ? i : 0)));
+  for (let i = 1; i <= a.length; i++) {
+    for (let j = 1; j <= b.length; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + cost);
+      if (i > 1 && j > 1 && a[i - 1] === b[j - 2] && a[i - 2] === b[j - 1]) d[i][j] = Math.min(d[i][j], d[i - 2][j - 2] + 1);
+    }
+  }
+  return d[a.length][b.length];
+}
+
 const PERSONAL_EMAIL_DOMAINS = ['gmail.com', 'googlemail.com', 'outlook.com', 'outlook.be', 'hotmail.com', 'hotmail.be', 'hotmail.fr',
   'live.com', 'live.be', 'yahoo.com', 'yahoo.fr', 'icloud.com', 'me.com', 'proton.me', 'protonmail.com', 'gmx.com', 'gmx.net',
   'skynet.be', 'telenet.be', 'proximus.be'];
@@ -169,7 +182,8 @@ export class AuthPage {
 
   /** Une adresse personnelle ne rattache à aucune institution : refusée avant l'envoi, comme le fait le serveur. */
   personalDomain(): boolean {
-    return PERSONAL_EMAIL_DOMAINS.includes(this.domain());
+    const domain = this.domain();
+    return !!domain && PERSONAL_EMAIL_DOMAINS.some((p) => p === domain || (p.length >= 8 && editDistance(p, domain) <= 1));
   }
 
   domain(): string {
