@@ -650,6 +650,13 @@ class ApiControllerTests {
 						{"firstName":"Lea","lastName":"Dumont","email":"lea@gmail.com","nom_institution":"Ecole","password":"55843500"}
 						"""))
 				.andExpect(status().isBadRequest());
+		// Une faute de frappe sur un fournisseur personnel est refusee de la meme facon.
+		for (String typo : new String[] {"gmai.com", "gmial.com", "hotmial.com", "outlok.com"}) {
+			mockMvc.perform(post("/api/v1/auth/register").contentType(MediaType.APPLICATION_JSON).content(
+							"{\"firstName\":\"Lea\",\"lastName\":\"Dumont\",\"email\":\"lea@" + typo + "\",\"nom_institution\":\"Ecole\",\"password\":\"55843500\"}"))
+					.andExpect(status().isBadRequest())
+					.andExpect(jsonPath("$.message", containsString("personnelle")));
+		}
 	}
 
 	@Test

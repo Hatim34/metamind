@@ -220,13 +220,44 @@ public class AccountService {
 		if (name.isEmpty()) {
 			throw new ApiException(HttpStatus.NOT_FOUND, "Aucune institution n'est inscrite pour le domaine " + domain + ".");
 		}
-		if (PERSONAL_EMAIL_DOMAINS.contains(domain)) {
+		if (isPersonalDomain(domain)) {
 			throw new ApiException(HttpStatus.BAD_REQUEST, "Utilisez l'adresse email de votre institution, pas une adresse personnelle.");
 		}
 		if (institutionRepository.findByNameIgnoreCase(name).isPresent()) {
 			throw new ApiException(HttpStatus.CONFLICT, "Une institution porte deja ce nom avec un autre domaine email. Contactez l'administrateur.");
 		}
 		return institutionRepository.save(InstitutionEntity.requested(name, domain));
+	}
+
+	/**
+	 * Adresse personnelle, ou faute de frappe sur l'une d'elles (gmai.com, gmial.com) : une telle adresse
+	 * ne doit pas devenir une demande d'institution. Les domaines courts ne sont compares qu'a l'identique.
+	 */
+	static boolean isPersonalDomain(String domain) {
+		String value = domain.toLowerCase();
+		return PERSONAL_EMAIL_DOMAINS.stream()
+				.anyMatch(personal -> personal.equals(value) || (personal.length() >= 8 && editDistance(personal, value) <= 1));
+	}
+
+	/** Distance d'edition avec transposition : une lettre ajoutee, retiree, remplacee ou deux lettres inversees. */
+	private static int editDistance(String a, String b) {
+		int[][] d = new int[a.length() + 1][b.length() + 1];
+		for (int i = 0; i <= a.length(); i++) {
+			d[i][0] = i;
+		}
+		for (int j = 0; j <= b.length(); j++) {
+			d[0][j] = j;
+		}
+		for (int i = 1; i <= a.length(); i++) {
+			for (int j = 1; j <= b.length(); j++) {
+				int cost = a.charAt(i - 1) == b.charAt(j - 1) ? 0 : 1;
+				d[i][j] = Math.min(Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1), d[i - 1][j - 1] + cost);
+				if (i > 1 && j > 1 && a.charAt(i - 1) == b.charAt(j - 2) && a.charAt(i - 2) == b.charAt(j - 1)) {
+					d[i][j] = Math.min(d[i][j], d[i - 2][j - 2] + 1);
+				}
+			}
+		}
+		return d[a.length()][b.length()];
 	}
 
 	@Transactional
