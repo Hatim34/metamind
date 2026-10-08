@@ -36,21 +36,21 @@ const FIELD_LABELS: Record<string, string> = {
       </div>
 
       @if (session.isAdmin() && adminRequests()) {
-        <a class="m-banner m-banner--link" routerLink="/admin">{{ adminRequests() }} {{ 'demandes de compte ou d\'institution attendent votre décision.' | t }}</a>
+        <a class="m-banner m-banner--link" routerLink="/admin">{{ adminRequests() }} {{ 'demandes de compte ou d\\'institution attendent votre décision.' | t }}</a>
       }
 
       @if (stats(); as s) {
         <div class="m-kpis">
           <div class="m-kpi"><span>{{ 'À valider' | t }}</span><strong>{{ s.pendingValidationPublications }}</strong></div>
           <div class="m-kpi"><span>{{ 'Publiées' | t }}</span><strong>{{ s.publishedPublications }}</strong><small>{{ 'dont' | t }} {{ s.publicPublications }} {{ 'publiques' | t }}, {{ s.institutionOnlyPublications }} {{ 'réservées' | t }}</small></div>
-          <div class="m-kpi"><span>{{ (session.isAdmin() ? 'Crédits, toutes institutions' : 'Crédits restants') | t }}</span><strong>{{ s.creditBalance }}</strong><small>@if (session.isAdmin()) { <a routerLink="/admin">{{ 'Ajuster dans l\'administration' | t }}</a> } @else { <a routerLink="/espace/credits">{{ 'Acheter des crédits' | t }}</a> }</small></div>
+          <div class="m-kpi"><span>{{ (session.isAdmin() ? 'Crédits, toutes institutions' : 'Crédits restants') | t }}</span><strong>{{ s.creditBalance }}</strong><small>@if (session.isAdmin()) { <a routerLink="/admin">{{ 'Ajuster dans l\\'administration' | t }}</a> } @else { <a routerLink="/espace/credits">{{ 'Acheter des crédits' | t }}</a> }</small></div>
           <div class="m-kpi"><span>{{ 'Délai moyen de relecture' | t }}</span>
-            <strong>{{ s.averageProcessingHours != null ? (s.averageProcessingHours | number: '1.0-1') + ' h' : '–' }}</strong>
+            <strong>{{ duration(s.averageProcessingMinutes) }}</strong>
             <small>{{ 'entre la proposition de l\\'IA et la validation' | t }}</small>
           </div>
           <div class="m-kpi"><span>{{ 'Taux de validation' | t }}</span>
             <strong>{{ (s.validationRate ?? 0) | number: '1.0-0' }} %</strong>
-            <small>{{ 'des documents publiés' | t }} · {{ 'rejet' | t }} {{ (s.rejectionRate ?? 0) | number: '1.0-0' }} %</small>
+            <small>{{ 'des documents importés sont publiés' | t }} · {{ 'rejet' | t }} {{ (s.rejectionRate ?? 0) | number: '1.0-0' }} %</small>
           </div>
         </div>
       }
@@ -139,6 +139,14 @@ export class EspacePage {
     const total = Object.values(dist).reduce((a, b) => a + b, 0) || 1;
     return Object.entries(dist).sort((a, b) => b[1] - a[1]).map(([label, count]) => ({ label: typeLabel(label), count, pct: Math.round((count / total) * 100) }));
   });
+
+  /** 42 → « 42 min » ; 85 → « 1 h 25 min ». */
+  duration(minutes?: number | null): string {
+    if (minutes == null) return '–';
+    if (minutes < 60) return `${minutes} min`;
+    const rest = minutes % 60;
+    return `${Math.floor(minutes / 60)} h${rest ? ` ${rest} min` : ''}`;
+  }
 
   constructor() {
     this.api.getStatistics().subscribe({ next: (s) => this.stats.set(s), error: () => undefined });

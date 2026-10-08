@@ -33,6 +33,9 @@ public record StatisticsResponse(
 
 		@JsonProperty("temps_moyen_traitement_heures")
 		double averageProcessingHours,
+		/** Le meme delai en minutes, sans arrondi a l'heure : c'est lui qu'affiche le tableau de bord. */
+		@JsonProperty("temps_moyen_traitement_minutes")
+		long averageProcessingMinutes,
 
 		@JsonProperty("distribution_types_documents")
 		Map<String, Long> documentTypeDistribution,

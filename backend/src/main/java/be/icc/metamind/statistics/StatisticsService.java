@@ -67,7 +67,8 @@ public class StatisticsService {
 				creditBalance,
 				rate(published, total),
 				rate(rejected, total),
-				averageProcessingHours(documents, metadataByDocument),
+				Math.round(averageProcessingMinutes(documents, metadataByDocument) / 60.0 * 100.0) / 100.0,
+				Math.round(averageProcessingMinutes(documents, metadataByDocument)),
 				distributionByDocumentType(documents, metadataByDocument),
 				distributionByClassification(documents, metadataByDocument)
 		);
@@ -149,16 +150,13 @@ public class StatisticsService {
 		return Math.round((count * 10000.0) / total) / 100.0;
 	}
 
-	private double averageProcessingHours(List<DocumentSummary> documents, Map<Long, MetadataEntity> metadataByDocument) {
-		List<Long> durations = metadataOf(documents, metadataByDocument)
+	/** Temps moyen entre la proposition de l'IA (generation de la notice) et sa validation, en minutes. */
+	private double averageProcessingMinutes(List<DocumentSummary> documents, Map<Long, MetadataEntity> metadataByDocument) {
+		return metadataOf(documents, metadataByDocument)
 				.filter(metadata -> metadata.getGeneratedAt() != null && metadata.getValidatedAt() != null)
-				.map(metadata -> Duration.between(metadata.getGeneratedAt(), metadata.getValidatedAt()).toMinutes())
-				.toList();
-		if (durations.isEmpty()) {
-			return 0.0;
-		}
-		double averageMinutes = durations.stream().mapToLong(Long::longValue).average().orElse(0.0);
-		return Math.round((averageMinutes / 60.0) * 100.0) / 100.0;
+				.mapToLong(metadata -> Duration.between(metadata.getGeneratedAt(), metadata.getValidatedAt()).toMinutes())
+				.average()
+				.orElse(0.0);
 	}
 
 	private Map<String, Long> distributionByDocumentType(List<DocumentSummary> documents, Map<Long, MetadataEntity> metadataByDocument) {

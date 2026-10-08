@@ -115,6 +115,7 @@ export interface DashboardStatistics {
   validationRate?: number;
   rejectionRate?: number;
   averageProcessingHours?: number;
+  averageProcessingMinutes?: number;
   documentTypeDistribution?: Record<string, number>;
   classificationDistribution?: Record<string, number>;
 }
@@ -801,6 +802,7 @@ export class ApiService {
       validationRate: item['taux_validation'] ?? item['validationRate'],
       rejectionRate: item['taux_rejet'] ?? item['rejectionRate'],
       averageProcessingHours: item['temps_moyen_traitement_heures'] ?? item['averageProcessingHours'],
+      averageProcessingMinutes: item['temps_moyen_traitement_minutes'] ?? (item['temps_moyen_traitement_heures'] != null ? Math.round(item['temps_moyen_traitement_heures'] * 60) : undefined),
       documentTypeDistribution: item['distribution_types_documents'] ?? item['documentTypeDistribution'],
       classificationDistribution: item['distribution_classifications'] ?? item['classificationDistribution']
     };
