@@ -115,6 +115,7 @@ public class MetadataService {
 			throw new ApiException(HttpStatus.CONFLICT,
 					"Le DOI " + doi + " est deja utilise par un autre document.");
 		}
+		boolean wasPublished = document.getStatus() == DocumentStatus.PUBLIE;
 		LanguageEntity language = resolveLanguage(request.language());
 		DocumentTypeEntity documentType = resolveDocumentType(request.documentType());
 		metadata.validate(title, summary, request.publicationDate(), classification, language, documentType, doi, user);
@@ -136,9 +137,10 @@ public class MetadataService {
 				"PUBLICATION_NOTICE",
 				"documents",
 				document.getId(),
-				request.visibility() == DocumentVisibility.PUBLIC
-						? "Publiée dans le catalogue public"
-						: "Publiée, visible uniquement par l'institution",
+				(wasPublished ? "Modifiée après publication, " : "Publiée, ")
+						+ (request.visibility() == DocumentVisibility.PUBLIC
+								? "visible dans le catalogue public"
+								: "visible uniquement par l'institution"),
 				ClientIpResolver.current()
 		));
 		// Trace l'arbitrage humain champ par champ : base de la mesure de fiabilite du LLM.

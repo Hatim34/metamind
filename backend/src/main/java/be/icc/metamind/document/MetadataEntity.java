@@ -170,9 +170,12 @@ public class MetadataEntity {
 		this.resume = resume;
 		this.publicationDate = publicationDate;
 		this.classification = classification;
+		// Une notice modifiee apres publication garde sa premiere validation : le delai de relecture reste juste.
+		if (this.status != MetadataStatus.VALIDE || this.validatedAt == null) {
+			this.validatedBy = validatedBy;
+			this.validatedAt = LocalDateTime.now();
+		}
 		this.status = MetadataStatus.VALIDE;
-		this.validatedBy = validatedBy;
-		this.validatedAt = LocalDateTime.now();
 	}
 
 	/** Validation complete : les references bibliographiques sont arbitrees comme les autres champs. */
