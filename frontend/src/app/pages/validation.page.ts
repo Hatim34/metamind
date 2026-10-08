@@ -183,7 +183,7 @@ interface FieldDef { id: FieldId; label: string; dc: string; required: boolean; 
       </div>
     } @else if (failed()) {
       <div class="m-wrap m-page m-empty">
-        <p>{{ 'Les métadonnées de ce document ne sont pas encore disponibles. Lancez l\\'extraction depuis la file.' | t }}</p>
+        <p>{{ (forbidden() ? 'Ce document appartient à une autre institution.' : 'Les métadonnées de ce document ne sont pas encore disponibles. Lancez l\\'extraction depuis la file.') | t }}</p>
         <a class="m-btn m-btn--ghost" routerLink="/espace/file">{{ 'Retour à la file' | t }}</a>
       </div>
     } @else {
@@ -258,6 +258,8 @@ export class ValidationPage implements OnDestroy {
   }
 
   /** Notice déjà publiée, rouverte pour la corriger ou changer sa visibilité. */
+  /** Le serveur a refusé l'accès : le document est celui d'une autre institution. */
+  readonly forbidden = signal(false);
   readonly published = computed(() => this.pub()?.status === 'PUBLIE');
 
   submitLabel(): string {
@@ -274,6 +276,7 @@ export class ValidationPage implements OnDestroy {
     this.meta.set(null);
     this.pub.set(null);
     this.failed.set(false);
+    this.forbidden.set(false);
     this.busy.set(false);
     this.rejectOpen.set(false);
     this.reason = '';
@@ -297,7 +300,7 @@ export class ValidationPage implements OnDestroy {
         this.keywords.set([...(m.mots_cles ?? [])]);
         this.showPdf();
       },
-      error: () => this.failed.set(true)
+      error: (e) => { this.forbidden.set(e?.status === 403); this.failed.set(true); }
     });
   }
 
@@ -404,7 +407,12 @@ export class ValidationPage implements OnDestroy {
         this.toasts.show(this.i18n.t('Publié. La fiche est dans le catalogue.'));
         this.next();
       },
-      error: () => { this.busy.set(false); this.toasts.show(this.i18n.t('La publication a échoué. Vérifiez les champs.'), 'error'); }
+      error: (e) => {
+        this.busy.set(false);
+        this.toasts.show(this.i18n.t(e?.status === 409 ? 'Ce DOI est déjà utilisé par un autre document.'
+          : e?.status === 403 ? 'Ce document appartient à une autre institution.'
+          : 'La publication a échoué. Vérifiez les champs.'), 'error');
+      }
     });
   }
 
