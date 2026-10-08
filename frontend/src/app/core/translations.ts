@@ -1,5 +1,7 @@
 /* Traductions NL et EN. Clé = texte français affiché. Ajoutez ici toute nouvelle chaîne. */
 export const NL: Record<string, string> = {
+  'Cette adresse ne correspond à aucune institution inscrite sur Metamind': 'Dit adres hoort bij geen enkele instelling die op Metamind is ingeschreven',
+  'Vérifiez votre adresse email. Si votre institution n\'est pas encore inscrite, indiquez son nom officiel : l\'administrateur validera l\'institution, puis votre compte.': 'Controleer uw e-mailadres. Is uw instelling nog niet ingeschreven, geef dan haar officiële naam op: de beheerder valideert eerst de instelling en daarna uw account.',
   'Retirée du catalogue': 'Uit de catalogus gehaald',
   'Ce document appartient à une autre institution.': 'Dit document behoort tot een andere instelling.',
   'Ce DOI est déjà utilisé par un autre document.': 'Deze DOI wordt al door een ander document gebruikt.',
@@ -491,6 +493,8 @@ export const NL: Record<string, string> = {
 };
 
 export const EN: Record<string, string> = {
+  'Cette adresse ne correspond à aucune institution inscrite sur Metamind': 'This address does not belong to any institution registered on Metamind',
+  'Vérifiez votre adresse email. Si votre institution n\'est pas encore inscrite, indiquez son nom officiel : l\'administrateur validera l\'institution, puis votre compte.': 'Check your email address. If your institution is not registered yet, enter its official name: the administrator will approve the institution, then your account.',
   'Retirée du catalogue': 'Withdrawn from the catalogue',
   'Ce document appartient à une autre institution.': 'This document belongs to another institution.',
   'Ce DOI est déjà utilisé par un autre document.': 'This DOI is already used by another document.',

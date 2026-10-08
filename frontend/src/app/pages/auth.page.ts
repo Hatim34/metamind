@@ -8,6 +8,10 @@ import { SessionService } from '../core/session.service';
 type Mode = 'connexion' | 'inscription' | 'oubli' | 'reinitialiser';
 
 /** Connexion (B2), inscription (B1), mot de passe oublié et réinitialisation. */
+const PERSONAL_EMAIL_DOMAINS = ['gmail.com', 'googlemail.com', 'outlook.com', 'outlook.be', 'hotmail.com', 'hotmail.be', 'hotmail.fr',
+  'live.com', 'live.be', 'yahoo.com', 'yahoo.fr', 'icloud.com', 'me.com', 'proton.me', 'protonmail.com', 'gmx.com', 'gmx.net',
+  'skynet.be', 'telenet.be', 'proximus.be'];
+
 @Component({
   standalone: true,
   imports: [FormsModule, RouterLink, TranslatePipe],
@@ -55,9 +59,13 @@ type Mode = 'connexion' | 'inscription' | 'oubli' | 'reinitialiser';
                   <label class="m-field">{{ 'Adresse email institutionnelle' | t }}
                     <input class="m-input" type="email" name="email" required [(ngModel)]="email" (ngModelChange)="unknownDomain.set(false)" autocomplete="email" />
                   </label>
+                  @if (personalDomain()) {
+                    <p class="m-alert" role="alert">{{ 'Utilisez l\\'adresse email de votre institution, pas une adresse personnelle.' | t }}</p>
+                  }
                   @if (unknownDomain()) {
-                    <div class="m-sheet m-sheet--pad m-stack">
-                      <p class="m-small">{{ 'Aucune institution n\\'est encore inscrite pour' | t }} <code>{{ domain() }}</code>. {{ 'Indiquez son nom : l\\'administrateur validera l\\'institution et votre compte.' | t }}</p>
+                    <div class="m-sheet m-sheet--pad m-stack" role="alert">
+                      <p class="m-small"><strong>{{ 'Cette adresse ne correspond à aucune institution inscrite sur Metamind' | t }} (<code>{{ domain() }}</code>).</strong></p>
+                      <p class="m-small">{{ 'Vérifiez votre adresse email. Si votre institution n\\'est pas encore inscrite, indiquez son nom officiel : l\\'administrateur validera l\\'institution, puis votre compte.' | t }}</p>
                       <label class="m-field">{{ 'Nom officiel de votre institution' | t }}
                         <input class="m-input" name="institutionName" required [(ngModel)]="institutionName" autocomplete="organization" />
                       </label>
@@ -159,12 +167,17 @@ export class AuthPage {
     });
   }
 
+  /** Une adresse personnelle ne rattache à aucune institution : refusée avant l'envoi, comme le fait le serveur. */
+  personalDomain(): boolean {
+    return PERSONAL_EMAIL_DOMAINS.includes(this.domain());
+  }
+
   domain(): string {
     return this.email.trim().split('@')[1]?.toLowerCase() ?? '';
   }
 
   canRegister(): boolean {
-    return !!this.firstName.trim() && !!this.lastName.trim() && /.+@.+\..+/.test(this.email) && this.password.length >= 8 && this.acceptTerms && this.acceptPrivacy
+    return !!this.firstName.trim() && !!this.lastName.trim() && /.+@.+\..+/.test(this.email) && !this.personalDomain() && this.password.length >= 8 && this.acceptTerms && this.acceptPrivacy
       && (!this.unknownDomain() || !!this.institutionName.trim());
   }
 
