@@ -59,7 +59,7 @@ const FIELD_LABELS: Record<string, string> = {
         <section class="m-sheet">
           <div class="m-sheet__head"><h2 class="m-h3">{{ (session.isAdmin() ? 'En attente de relecture' : 'À valider en priorité') | t }}</h2><a routerLink="/espace/file">{{ 'Toute la file' | t }}</a></div>
           @for (doc of queue().slice(0, 6); track doc.id) {
-            <a class="m-line" [routerLink]="session.isAdmin() ? ['/espace/file'] : ['/espace/documents', doc.id, 'validation']">
+            <a class="m-line" [routerLink]="session.isAdmin() ? ['/publications', doc.id] : ['/espace/documents', doc.id, 'validation']">
               <m-type-cover [type]="doc.documentType" size="sm" [imageUrl]="doc.imageUrl" />
               <span class="m-line__main"><strong class="m-ellipsis">{{ doc.title }}</strong><span class="m-muted m-small">{{ typeLabel(doc.documentType) | t }}@if (doc.year) {, {{ doc.year }}}@if (session.isAdmin()) { · {{ doc.institution }}}</span></span>
               @if (!session.isAdmin()) { <span class="m-btn m-btn--primary m-btn--sm">{{ 'Valider' | t }}</span> }
