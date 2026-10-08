@@ -409,6 +409,29 @@ class ApiControllerTests {
 	}
 
 	@Test
+	void anEnglishTitleIsTranslatedEvenWhenTheSummaryIsAlreadyFrench() throws Exception {
+		DocumentEntity publication = documentRepository.findAll().stream()
+				.filter(item -> item.getStatus() == DocumentStatus.PUBLIE)
+				.filter(item -> item.getVisibility() == DocumentVisibility.PUBLIC)
+				.findFirst()
+				.orElseThrow();
+		var metadata = metadataRepository.findByDocumentId(publication.getId()).orElseThrow();
+		metadata.validate("Mapping and dynamics of woody cover in the thickets of the south: contributions from the district",
+				"Les ecosystemes arides du district sont domines par les fourres et restent difficiles a cartographier dans cette region pour les chercheurs.",
+				metadata.getPublicationDate(), metadata.getClassification(), null);
+		metadataRepository.save(metadata);
+		translationRepository.deleteAll();
+
+		// Le resume est francais mais le titre anglais : en francais, la notice doit quand meme etre traduite.
+		mockMvc.perform(get("/api/v1/publications/" + publication.getId() + "/traduction").param("langue", "fr"))
+				.andExpect(status().isAccepted());
+		translationService.translate(publication.getId(), "fr", null);
+		mockMvc.perform(get("/api/v1/publications/" + publication.getId() + "/traduction").param("langue", "fr"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.langue_source", is("en")));
+	}
+
+	@Test
 	void catalogueShowsTheTranslationPreparedForTheChosenLanguage() throws Exception {
 		DocumentEntity publication = documentRepository.findAll().stream()
 				.filter(item -> item.getStatus() == DocumentStatus.PUBLIE)

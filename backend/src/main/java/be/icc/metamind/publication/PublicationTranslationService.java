@@ -73,7 +73,7 @@ public class PublicationTranslationService {
 			return available.get();
 		}
 
-		String sourceLanguage = sourceLanguage(publication);
+		String sourceLanguage = translationSourceLanguage(publication, targetLanguage);
 		TranslationSource source = new TranslationSource(publication.title(), publication.summary(), publication.keywords(), publication.classification());
 		String fingerprint = fingerprint(source);
 		PublicationTranslationProvider provider = provider();
@@ -96,7 +96,7 @@ public class PublicationTranslationService {
 	}
 
 	private Optional<PublicationTranslation> ready(PublicationResponse publication, String targetLanguage) {
-		String sourceLanguage = sourceLanguage(publication);
+		String sourceLanguage = translationSourceLanguage(publication, targetLanguage);
 		if (sourceLanguage.equals(targetLanguage)) {
 			return Optional.of(PublicationTranslation.source(publication, targetLanguage));
 		}
@@ -119,7 +119,7 @@ public class PublicationTranslationService {
 			return publications;
 		}
 		List<Long> ids = publications.stream()
-				.filter(publication -> !target.equals(sourceLanguage(publication)))
+				.filter(publication -> !target.equals(translationSourceLanguage(publication, target)))
 				.map(PublicationResponse::id)
 				.toList();
 		if (ids.isEmpty()) {
@@ -156,6 +156,25 @@ public class PublicationTranslationService {
 	private String sourceLanguage(PublicationResponse publication) {
 		String guessed = TextLanguage.guess(publication.title() + " " + (publication.summary() == null ? "" : publication.summary()));
 		return guessed != null ? guessed : normalizeSourceLanguage(publication.language());
+	}
+
+	/**
+	 * Langue a partir de laquelle traduire vers la langue cible, ou la langue cible elle-meme s'il n'y a
+	 * rien a traduire. Une notice peut etre mixte (titre anglais, resume francais) : le titre et le resume
+	 * sont donc aussi regardes un par un, pour qu'en changeant de langue le titre change lui aussi.
+	 */
+	private String translationSourceLanguage(PublicationResponse publication, String targetLanguage) {
+		String whole = sourceLanguage(publication);
+		if (!whole.equals(targetLanguage)) {
+			return whole;
+		}
+		for (String part : new String[] {publication.title(), publication.summary()}) {
+			String language = TextLanguage.guess(part);
+			if (language != null && !language.equals(targetLanguage)) {
+				return language;
+			}
+		}
+		return targetLanguage;
 	}
 
 	private String normalizeSourceLanguage(String language) {
