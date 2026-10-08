@@ -63,6 +63,10 @@ public class GeminiPublicationTranslationProvider implements PublicationTranslat
 		String prompt = """
 				Tu traduis les metadonnees d'une publication universitaire.
 				Traduis du %s vers le %s. Ne traduis ni les noms propres, ni les DOI, ni les noms d'auteurs.
+				Traduis toujours le titre : un titre n'est pas un nom propre. Seuls restent tels quels les noms propres, les sigles
+				et le nom d'un outil ou d'une methode (par exemple PRISM) ; tout le reste du titre est traduit, y compris
+				la partie apres un deux-points et les jeux de mots.
+				Si un champ est deja dans la langue cible, recopie-le sans le modifier.
 				N'invente aucune information. Garde les mots-cles sous forme de liste courte.
 				Reponds uniquement avec un objet JSON : {"title": string, "summary": string|null, "keywords": string[], "classification": string|null}.
 				<metadata>

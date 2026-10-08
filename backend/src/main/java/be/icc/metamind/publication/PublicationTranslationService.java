@@ -23,6 +23,8 @@ import tools.jackson.databind.ObjectMapper;
 @Service
 public class PublicationTranslationService {
 	private static final List<String> SUPPORTED_LANGUAGES = List.of("fr", "nl", "en");
+	/** A changer quand les consignes de traduction changent : toutes les notices sont alors retraduites. */
+	static final String TRANSLATION_PROMPT_VERSION = "traduction-v2";
 
 	private final PublicationService publicationService;
 	private final DocumentRepository documentRepository;
@@ -163,7 +165,8 @@ public class PublicationTranslationService {
 
 	private String fingerprint(TranslationSource source) {
 		try {
-			String value = String.join("\u001f", source.title() == null ? "" : source.title(), source.summary() == null ? "" : source.summary(), String.join("\u001e", source.keywords()),
+			// La version des consignes fait partie de l'empreinte : quand elles changent, les traductions sont refaites.
+			String value = String.join("\u001f", TRANSLATION_PROMPT_VERSION, source.title() == null ? "" : source.title(), source.summary() == null ? "" : source.summary(), String.join("\u001e", source.keywords()),
 					source.classification() == null ? "" : source.classification());
 			byte[] digest = MessageDigest.getInstance("SHA-256").digest(value.getBytes(StandardCharsets.UTF_8));
 			return java.util.HexFormat.of().formatHex(digest);
