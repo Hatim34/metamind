@@ -71,7 +71,9 @@ public class GeminiMetadataExtractionProvider implements MetadataExtractionProvi
 		}
 
 		PreparedDocument preparedDocument = textPreparationService.prepare(document.getExtractedText());
-		String prompt = promptTemplate + "\n<document>\n" + preparedDocument.segmentedExcerpt() + "\n</document>";
+		// Les donnees personnelles inutiles a l'extraction (email, telephone, IBAN, registre national) ne quittent pas Metamind.
+		PersonalDataRedactor.Redaction redaction = PersonalDataRedactor.redact(preparedDocument.segmentedExcerpt());
+		String prompt = promptTemplate + "\n<document>\n" + redaction.text() + "\n</document>";
 
 		GeminiRequest request = new GeminiRequest(
 				List.of(new GeminiContent(List.of(new GeminiPart(prompt)))),
@@ -85,7 +87,7 @@ public class GeminiMetadataExtractionProvider implements MetadataExtractionProvi
 				.retrieve()
 				.body(JsonNode.class);
 
-		return parseResponse(document, response);
+		return parseResponse(document, response).withMaskedData(redaction.masked());
 	}
 
 	private String loadPromptTemplate() {

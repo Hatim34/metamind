@@ -56,6 +56,10 @@ public class EnrichmentEntity {
 	@Column(name = "date_fin")
 	private LocalDateTime finishedAt;
 
+	/** Donnees personnelles masquees avant l'envoi au modele, par categorie (jamais les valeurs). */
+	@Column(name = "donnees_masquees", length = 255)
+	private String maskedData;
+
 	protected EnrichmentEntity() {
 	}
 
@@ -90,6 +94,14 @@ public class EnrichmentEntity {
 
 	public String getPromptVersion() {
 		return promptVersion;
+	}
+
+	public void recordMaskedData(String summary) {
+		this.maskedData = summary;
+	}
+
+	public String getMaskedData() {
+		return maskedData;
 	}
 
 	public String getRawResponse() {

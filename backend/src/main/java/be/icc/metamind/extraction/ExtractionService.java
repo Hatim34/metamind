@@ -8,6 +8,7 @@ import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.regex.Matcher;
@@ -151,6 +152,7 @@ public class ExtractionService {
 				publicationDate
 		);
 		enrichment.markCompleted(rawResponse(metadata));
+		enrichment.recordMaskedData(maskedSummary(metadata.maskedData()));
 		saveSuggestions(enrichment, metadata, preparedDocument);
 		saveSuggestion(enrichment, "langue", preparedDocument.language(), preparedDocument);
 		saveSuggestion(enrichment, "type_document", preparedDocument.documentType(), preparedDocument);
@@ -354,5 +356,10 @@ public class ExtractionService {
 
 	private String escape(String value) {
 		return value == null ? "" : value.replace("\\", "\\\\").replace("\"", "\\\"");
+	}
+
+	/** « EMAIL:2, TELEPHONE:1 », ou null si rien n'a ete masque. */
+	private String maskedSummary(Map<String, Integer> masked) {
+		return masked == null || masked.isEmpty() ? null : new PersonalDataRedactor.Redaction(null, masked).summary();
 	}
 }

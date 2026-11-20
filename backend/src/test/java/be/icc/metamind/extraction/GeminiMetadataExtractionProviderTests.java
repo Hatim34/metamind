@@ -2,6 +2,9 @@ package be.icc.metamind.extraction;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
+import static org.springframework.test.web.client.match.MockRestRequestMatchers.content;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.header;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
@@ -58,6 +61,30 @@ class GeminiMetadataExtractionProviderTests {
 		assertThat(metadata.summary()).isEqualTo("Resume structure");
 		assertThat(metadata.classification()).isEqualTo("Sciences de l'information");
 		assertThat(metadata.keywords()).containsExactly("Dublin Core", "catalogage");
+		server.verify();
+	}
+
+	@Test
+	void personalDataNeverLeavesMetamind() {
+		RestClient.Builder restClientBuilder = RestClient.builder();
+		MockRestServiceServer server = MockRestServiceServer.bindTo(restClientBuilder).build();
+		GeminiMetadataExtractionProvider provider = new GeminiMetadataExtractionProvider(
+				restClientBuilder, new ObjectMapper(), "secret", "gemini-test", new TextPreparationService(15_000));
+		String response = """
+				{"candidates":[{"content":{"parts":[{"text":"{\\"title\\":\\"Titre\\",\\"authors\\":[\\"Marie Dubois\\"]}"}]}}]}
+				""";
+		server.expect(requestTo("https://generativelanguage.googleapis.com/v1beta/models/gemini-test:generateContent"))
+				.andExpect(content().string(not(containsString("marie.dubois@ulb.be"))))
+				.andExpect(content().string(containsString("[EMAIL]")))
+				.andExpect(content().string(containsString("Marie Dubois")))
+				.andRespond(withSuccess(response, MediaType.APPLICATION_JSON));
+		DocumentEntity document = new DocumentEntity("etude.txt", null, 0L, "TXT",
+				"Etude urbaine\nMarie Dubois\nContact : marie.dubois@ulb.be\nResume de l'etude.",
+				DocumentStatus.EN_ATTENTE, DocumentVisibility.PUBLIC, institution, null);
+
+		MetadataExtractionData metadata = provider.extract(document);
+
+		assertThat(metadata.maskedData()).containsEntry(PersonalDataRedactor.EMAIL, 1);
 		server.verify();
 	}
 
