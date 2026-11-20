@@ -13,7 +13,7 @@ interface Facet { key: string; label: string; count: number; on: boolean; }
 /**
  * Catalogue public (C1) : recherche, filtres auteur / date / type / langue (+ institution), tri, pagination.
  * L'API actuelle renvoie une liste sans facettes ni pagination : on les calcule ici en attendant
- * l'endpoint /search paginé avec facettes (prompt 7).
+ * l'endpoint /search paginé avec facettes.
  */
 @Component({
   standalone: true,

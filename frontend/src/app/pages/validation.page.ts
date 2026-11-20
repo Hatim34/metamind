@@ -15,7 +15,7 @@ interface FieldDef { id: FieldId; label: string; dc: string; required: boolean; 
 
 /**
  * Validation des métadonnées (B6) : document à gauche, notice à droite.
- * Les scores de confiance s'affichent dès que l'API les fournit (prompt 2) ; en attendant « Confiance non calculée ».
+ * Les scores de confiance s'affichent dès que l'API les fournit ; sinon « Confiance non calculée ».
  */
 @Component({
   standalone: true,
@@ -477,7 +477,7 @@ export class ValidationPage implements OnDestroy {
     return value.endsWith('-01-01') ? value.slice(0, 4) : value;
   }
 
-  /** L'API actuelle attend une date complète : une année seule est envoyée au 1er janvier (à corriger côté backend, prompt 2). */
+  /** L'API attend une date complète : une année seule est envoyée au 1er janvier. */
   private toApiDate(value: string): string | null {
     const v = value.trim();
     if (/^\d{4}$/.test(v)) return `${v}-01-01`;

@@ -101,7 +101,7 @@ export class CreditsPage implements OnDestroy {
 
   constructor() {
     this.loadAccount();
-    // Les packs gratuits ne sont pas proposés : seuls les achats payés via Stripe ajoutent des crédits (prompt 1).
+    // Les packs gratuits ne sont pas proposés : seuls les achats payés via Stripe ajoutent des crédits.
     this.api.getCreditPacks().subscribe({ next: (packs) => this.packs.set(packs.filter((p) => p.amount > 0)), error: () => undefined });
     if (this.returning()) {
       this.followPayment();
