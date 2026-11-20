@@ -73,6 +73,21 @@ type Tab = 'comptes' | 'utilisateurs' | 'institutions' | 'configuration' | 'jour
                   @if (photoOf(i.id); as photo) { <img class="m-inst-photo" [src]="photo.photoUrl" alt="" /> }
                   <div class="m-row-between"><strong>{{ i.name }}</strong><span [class]="i.active ? 'm-ok' : 'm-ko'">{{ (i.active ? 'Active' : 'Désactivée') | t }}</span></div>
                   <span class="m-small"><code>{{ i.emailDomain }}</code> · {{ usersOf(i) }} {{ 'comptes' | t }} · {{ i.creditBalance }} {{ 'crédits' | t }}</span>
+                  @if (i.purchasesSuspended) { <span class="m-small m-ko">{{ 'Achats de crédits suspendus' | t }}</span> }
+                  <details class="m-details">
+                    <summary>{{ 'Modifier l\\'institution' | t }}</summary>
+                    <div class="m-stack">
+                      <label class="m-field m-small">{{ 'Nom' | t }}
+                        <input class="m-input m-input--sm" [name]="'nom' + i.id" [(ngModel)]="editNames[i.id]" maxlength="255" />
+                      </label>
+                      @if (usersOf(i) === 0) {
+                        <label class="m-field m-small">{{ 'Domaine email' | t }}
+                          <input class="m-input m-input--sm" [name]="'domaine' + i.id" [(ngModel)]="editDomains[i.id]" maxlength="255" />
+                        </label>
+                      }
+                      <button type="button" class="m-btn m-btn--sm" (click)="saveInstitution(i)">{{ 'Enregistrer' | t }}</button>
+                    </div>
+                  </details>
                   @if (i.active) {
                     <details class="m-details">
                       <summary>{{ 'Ajuster les crédits' | t }}</summary>
@@ -104,7 +119,10 @@ type Tab = 'comptes' | 'utilisateurs' | 'institutions' | 'configuration' | 'jour
                         <button type="button" class="m-btn m-btn--sm" [disabled]="!pickedPhotos[i.id] || !credits[i.id]?.trim()" (click)="savePhoto(i.id)">{{ 'Enregistrer la photo' | t }}</button>
                       </div>
                     </details>
-                    @if (i.id !== ownInstitutionId()) { <button type="button" class="m-btn m-btn--ghost m-btn--sm" (click)="deactivateInstitution(i)">{{ 'Désactiver' | t }}</button> }
+                    @if (i.id !== ownInstitutionId()) {
+                      <button type="button" class="m-btn m-btn--ghost m-btn--sm" (click)="togglePurchases(i)">{{ (i.purchasesSuspended ? 'Réautoriser les achats' : 'Suspendre les achats') | t }}</button>
+                      <button type="button" class="m-btn m-btn--ghost m-btn--sm" (click)="deactivateInstitution(i)">{{ 'Désactiver' | t }}</button>
+                    }
                   } @else {
                     <button type="button" class="m-btn m-btn--ghost m-btn--sm" (click)="reactivateInstitution(i)">{{ 'Réactiver' | t }}</button>
                   }
@@ -125,7 +143,11 @@ type Tab = 'comptes' | 'utilisateurs' | 'institutions' | 'configuration' | 'jour
           }
           @case ('journal') {
             <h1 class="m-title">{{ 'Journal d\\'audit' | t }}</h1>
-            <input class="m-input m-input--search" [(ngModel)]="logFilter" (ngModelChange)="searchLogs()" name="logFilter" [placeholder]="'Filtrer par action, personne, élément ou détail' | t" />
+            <div class="m-inline-form">
+              <input class="m-input m-input--search" [(ngModel)]="logFilter" (ngModelChange)="searchLogs()" name="logFilter" [placeholder]="'Filtrer par action, personne, élément ou détail' | t" />
+              <label class="m-field m-small">{{ 'Du' | t }}<input class="m-input m-input--sm" type="date" [(ngModel)]="logFrom" (ngModelChange)="loadLogs(0)" name="logFrom" /></label>
+              <label class="m-field m-small">{{ 'Au' | t }}<input class="m-input m-input--sm" type="date" [(ngModel)]="logTo" (ngModelChange)="loadLogs(0)" name="logTo" /></label>
+            </div>
             <p class="m-muted m-small">{{ logs().length }} / {{ logTotal() }} {{ 'entrées' | t }}</p>
             <section class="m-sheet m-scroll">
               <table class="m-table m-table--log">
@@ -250,6 +272,10 @@ export class AdminPage {
   config: Record<string, string> = {};
   inst = { name: '', emailDomain: '' };
   logFilter = '';
+  logFrom = '';
+  logTo = '';
+  editNames: Record<number, string> = {};
+  editDomains: Record<number, string> = {};
   userFilter = '';
   userInstitution = '';
   adjustAmounts: Record<number, number | undefined> = {};
@@ -351,7 +377,7 @@ export class AdminPage {
 
   /** Le journal est paginé et filtré par le serveur : le filtre porte sur toutes les entrées, pas seulement celles affichées. */
   loadLogs(page: number): void {
-    this.api.getAdminLogs(page, this.logFilter.trim()).subscribe({
+    this.api.getAdminLogs(page, this.logFilter.trim(), this.logFrom, this.logTo).subscribe({
       next: (r) => {
         this.logs.set(page === 0 ? r.contenu : [...this.logs(), ...r.contenu]);
         this.logTotal.set(r.total_elements);
@@ -378,7 +404,13 @@ export class AdminPage {
 
   loadUsers(): void { this.api.getAdminUsers().subscribe({ next: (u) => this.users.set(u), error: () => undefined }); }
   loadInstitutions(): void {
-    this.api.getInstitutions().subscribe({ next: (i) => this.institutions.set(i), error: () => undefined });
+    this.api.getInstitutions().subscribe({
+      next: (list) => {
+        this.institutions.set(list);
+        list.forEach((i) => { this.editNames[i.id] = i.name; this.editDomains[i.id] = i.emailDomain; });
+      },
+      error: () => undefined
+    });
     this.api.getInstitutionPhotos().subscribe({
       next: (photos) => {
         this.photos.set(photos);
@@ -442,6 +474,36 @@ export class AdminPage {
     this.api.createInstitution({ code: emailDomain.split('.')[0].toUpperCase(), name: this.inst.name.trim(), emailDomain }).subscribe({
       next: () => { this.inst = { name: '', emailDomain: '' }; this.toasts.show(this.i18n.t('Institution ajoutée.')); this.loadInstitutions(); },
       error: (e) => this.toasts.show(this.i18n.t(e?.status === 409 ? 'Une institution existe déjà avec ce nom ou ce domaine.' : 'La création a échoué.'), 'error')
+    });
+  }
+
+  /** Seuls les champs modifiés sont envoyés ; le serveur refuse un domaine si des comptes y sont rattachés. */
+  saveInstitution(i: Institution): void {
+    const name = (this.editNames[i.id] ?? i.name).trim();
+    const domain = (this.editDomains[i.id] ?? i.emailDomain).trim().toLowerCase();
+    const changes: { nom?: string; domaineEmail?: string } = {};
+    if (name !== i.name) changes.nom = name;
+    if (domain !== i.emailDomain) changes.domaineEmail = domain;
+    if (!changes.nom && !changes.domaineEmail) return;
+    this.api.updateInstitution(i.id, changes).subscribe({
+      next: () => { this.toasts.show(this.i18n.t('Institution modifiée.')); this.loadInstitutions(); },
+      error: (e) => this.toasts.show(e?.error?.message ?? this.i18n.t('La modification a échoué.'), 'error')
+    });
+  }
+
+  async togglePurchases(i: Institution): Promise<void> {
+    const suspend = !i.purchasesSuspended;
+    const accepted = await this.confirm.ask({
+      title: this.i18n.t(suspend ? 'Suspendre les achats de crédits ?' : 'Réautoriser les achats de crédits ?'),
+      message: `${i.name} ${this.i18n.t(suspend
+        ? 'ne pourra plus acheter de crédits. Son solde actuel reste utilisable.'
+        : 'pourra de nouveau acheter des crédits.')}`,
+      action: this.i18n.t(suspend ? 'Suspendre' : 'Réautoriser')
+    });
+    if (!accepted) return;
+    this.api.updateInstitution(i.id, { achatsSuspendus: suspend }).subscribe({
+      next: () => { this.toasts.show(this.i18n.t(suspend ? 'Achats suspendus.' : 'Achats réautorisés.')); this.loadInstitutions(); },
+      error: (e) => this.toasts.show(e?.error?.message ?? this.i18n.t('La modification a échoué.'), 'error')
     });
   }
 

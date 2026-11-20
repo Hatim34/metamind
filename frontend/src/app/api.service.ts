@@ -55,6 +55,8 @@ export interface Institution {
   /** Demandée à l'inscription, en attente de la décision de l'administrateur. */
   pending: boolean;
   creditBalance: number;
+  /** L'administrateur a suspendu l'achat de crédits (B11). */
+  purchasesSuspended: boolean;
 }
 
 export interface InstitutionPhoto {
@@ -620,6 +622,12 @@ export class ApiService {
       .pipe(map((response) => this.toInstitution(response)));
   }
 
+  /** Renommer, changer le domaine (sans compte rattaché) ou suspendre les achats d'une institution. */
+  updateInstitution(institutionId: number, changes: { nom?: string; domaineEmail?: string; achatsSuspendus?: boolean }): Observable<Institution> {
+    return this.http.patch<unknown>(`${this.baseUrl}/admin/institutions/${institutionId}`, changes, { headers: this.authHeaders() })
+      .pipe(map((response) => this.toInstitution(response)));
+  }
+
   adjustInstitutionCredits(institutionId: number, amount: number, reason: string): Observable<unknown> {
     return this.http.post(`${this.baseUrl}/admin/institutions/${institutionId}/credits/adjustments`, { amount, reason }, { headers: this.authHeaders() });
   }
@@ -656,8 +664,10 @@ export class ApiService {
     });
   }
 
-  getAdminLogs(page: number, query: string): Observable<PageResponse<AuditLog>> {
-    const params = new HttpParams().set('page', page).set('size', 50).set('q', query);
+  getAdminLogs(page: number, query: string, from = '', to = ''): Observable<PageResponse<AuditLog>> {
+    let params = new HttpParams().set('page', page).set('size', 50).set('q', query);
+    if (from) params = params.set('du', from);
+    if (to) params = params.set('au', to);
     return this.http.get<PageResponse<AuditLog>>(`${this.baseUrl}/admin/logs`, { headers: this.authHeaders(), params });
   }
 
@@ -747,7 +757,8 @@ export class ApiService {
       emailDomain: item['domaine_email'] ?? item['emailDomain'],
       active: item['actif'] ?? item['active'],
       pending: item['en_attente'] ?? false,
-      creditBalance: item['solde_credits'] ?? 0
+      creditBalance: item['solde_credits'] ?? 0,
+      purchasesSuspended: item['achats_suspendus'] ?? false
     };
   }
 
