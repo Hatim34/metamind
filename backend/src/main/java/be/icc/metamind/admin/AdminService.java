@@ -1,5 +1,6 @@
 package be.icc.metamind.admin;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -21,6 +22,7 @@ import be.icc.metamind.document.MetadataRepository;
 import be.icc.metamind.credit.CreditMovementEntity;
 import be.icc.metamind.credit.CreditMovementRepository;
 import be.icc.metamind.credit.CreditMovementType;
+import be.icc.metamind.institution.InstitutionEntity;
 import be.icc.metamind.institution.InstitutionRepository;
 import be.icc.metamind.notification.AccountEvent;
 import be.icc.metamind.institution.InstitutionResponse;
@@ -136,6 +138,8 @@ public class AdminService {
 		var institution = institutionRepository.findById(id)
 				.orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "L'institution est introuvable."));
 		List<String> changes = new ArrayList<>();
+		rename(institution, request.nom(), changes);
+		changeEmailDomain(institution, request.domaineEmail(), changes);
 		if (request.actif() != null) {
 			boolean wasRequested = institution.isPending();
 			if (wasRequested) {
@@ -187,6 +191,53 @@ public class AdminService {
 				ClientIpResolver.current()
 		));
 		return InstitutionResponse.from(institution);
+	}
+
+	private void rename(InstitutionEntity institution, String requestedName, List<String> changes) {
+		if (requestedName == null) {
+			return;
+		}
+		String name = requestedName.trim();
+		if (name.isBlank()) {
+			throw new ApiException(HttpStatus.BAD_REQUEST, "Le nom de l'institution est obligatoire.");
+		}
+		if (name.equals(institution.getName())) {
+			return;
+		}
+		institutionRepository.findByNameIgnoreCase(name)
+				.filter(other -> !other.getId().equals(institution.getId()))
+				.ifPresent(other -> {
+					throw new ApiException(HttpStatus.CONFLICT, "Une autre institution porte deja ce nom.");
+				});
+		changes.add("Nom : " + institution.getName() + " → " + name);
+		institution.rename(name);
+	}
+
+	/**
+	 * Le domaine rattache les comptes a l'institution : il ne change que tant qu'aucun compte n'y est rattache,
+	 * sinon des adresses existantes ne correspondraient plus au domaine de leur institution.
+	 */
+	private void changeEmailDomain(InstitutionEntity institution, String requestedDomain, List<String> changes) {
+		if (requestedDomain == null) {
+			return;
+		}
+		String domain = requestedDomain.trim().toLowerCase();
+		if (!domain.matches("[a-z0-9-]+(\\.[a-z0-9-]+)+")) {
+			throw new ApiException(HttpStatus.BAD_REQUEST, "Le domaine email n'est pas valide (exemple : ulb.be).");
+		}
+		if (domain.equalsIgnoreCase(institution.getEmailDomain())) {
+			return;
+		}
+		if (userRepository.countByInstitution_Id(institution.getId()) > 0) {
+			throw new ApiException(HttpStatus.CONFLICT, "Le domaine ne peut pas changer : des comptes sont rattaches a cette institution.");
+		}
+		institutionRepository.findByEmailDomainIgnoreCase(domain)
+				.filter(other -> !other.getId().equals(institution.getId()))
+				.ifPresent(other -> {
+					throw new ApiException(HttpStatus.CONFLICT, "Ce domaine est deja utilise par une autre institution.");
+				});
+		changes.add("Domaine : " + institution.getEmailDomain() + " → " + domain);
+		institution.changeEmailDomain(domain);
 	}
 
 	@Transactional(readOnly = true)
@@ -245,7 +296,7 @@ public class AdminService {
 	}
 
 	@Transactional(readOnly = true)
-	public PageResponse<AuditLogResponse> listLogs(int page, int size, String query) {
+	public PageResponse<AuditLogResponse> listLogs(int page, int size, String query, LocalDate from, LocalDate to) {
 		Map<Long, String> users = userRepository.findAll().stream()
 				.collect(Collectors.toMap(UserEntity::getId, user -> user.getFirstName() + " " + user.getLastName()));
 		Map<Long, String> institutions = institutionRepository.findAll().stream()
@@ -255,6 +306,9 @@ public class AdminService {
 				.collect(Collectors.toMap(metadata -> metadata.getDocument().getId(), MetadataEntity::getTitre, (first, second) -> first));
 		String filter = query == null ? "" : query.trim().toLowerCase();
 		List<AuditLogResponse> logs = auditLogRepository.findAllByOrderByCreatedAtDesc().stream()
+				// Periode inclusive : du premier jour a 0 h jusqu'a la fin du dernier jour.
+				.filter(log -> from == null || !log.getCreatedAt().toLocalDate().isBefore(from))
+				.filter(log -> to == null || !log.getCreatedAt().toLocalDate().isAfter(to))
 				.map(log -> AuditLogResponse.from(log, entityLabel(log, users, institutions, titles)))
 				.filter(log -> filter.isEmpty() || String.join(" ",
 						String.valueOf(log.action()), String.valueOf(log.entityLabel()), String.valueOf(log.auteur()),

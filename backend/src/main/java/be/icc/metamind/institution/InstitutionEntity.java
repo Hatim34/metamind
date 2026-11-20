@@ -82,6 +82,14 @@ public class InstitutionEntity {
 		return name;
 	}
 
+	public void rename(String name) {
+		this.name = name;
+	}
+
+	public void changeEmailDomain(String emailDomain) {
+		this.emailDomain = emailDomain;
+	}
+
 	public String getEmailDomain() {
 		return emailDomain;
 	}

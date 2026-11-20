@@ -14,4 +14,6 @@ public interface UserRepository extends JpaRepository<UserEntity, Long> {
 	 * Sert a garantir qu'il reste toujours quelqu'un pour administrer la plateforme.
 	 */
 	long countByRoleAndStatusAndIdNot(UserRole role, UserStatus status, Long id);
+
+	long countByInstitution_Id(Long institutionId);
 }

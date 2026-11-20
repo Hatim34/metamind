@@ -948,6 +948,52 @@ class ApiControllerTests {
 	}
 
 	@Test
+	void administratorRenamesAnInstitutionButKeepsTheDomainOfItsAccounts() throws Exception {
+		InstitutionEntity institution = institutionRepository.findByCodeIgnoreCase("INST-B").orElseThrow();
+
+		mockMvc.perform(patch("/api/v1/admin/institutions/" + institution.getId())
+						.header("Authorization", adminBearerToken())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{\"nom\": \"Universite de demonstration B\"}"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.nom", is("Universite de demonstration B")));
+
+		// Des comptes utilisent ce domaine : le changer casserait leur rattachement.
+		mockMvc.perform(patch("/api/v1/admin/institutions/" + institution.getId())
+						.header("Authorization", adminBearerToken())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{\"domaineEmail\": \"autre-domaine.example\"}"))
+				.andExpect(status().isConflict())
+				.andExpect(jsonPath("$.message", containsString("des comptes sont rattaches")));
+
+		mockMvc.perform(patch("/api/v1/admin/institutions/" + institution.getId())
+						.header("Authorization", adminBearerToken())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{\"domaineEmail\": \"pas un domaine\"}"))
+				.andExpect(status().isBadRequest());
+	}
+
+	@Test
+	void auditLogCanBeFilteredByDate() throws Exception {
+		mockMvc.perform(patch("/api/v1/admin/config")
+						.header("Authorization", adminBearerToken())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{\"taille_max_upload_mo\": \"20\"}"))
+				.andExpect(status().isOk());
+		String today = java.time.LocalDate.now().toString();
+		String tomorrow = java.time.LocalDate.now().plusDays(1).toString();
+
+		mockMvc.perform(get("/api/v1/admin/logs").param("du", today).param("au", today)
+						.header("Authorization", adminBearerToken()))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.contenu[0].action", is("MODIFICATION_CONFIGURATION")));
+		mockMvc.perform(get("/api/v1/admin/logs").param("du", tomorrow)
+						.header("Authorization", adminBearerToken()))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.total_elements", is(0)));
+	}
+
+	@Test
 	void administratorCanReadConfigurationAndLogs() throws Exception {
 		mockMvc.perform(get("/api/v1/admin/config")
 						.header("Authorization", adminBearerToken()))

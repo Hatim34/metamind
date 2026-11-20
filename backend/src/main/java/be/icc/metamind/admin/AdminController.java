@@ -1,5 +1,6 @@
 package be.icc.metamind.admin;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 
@@ -77,7 +78,7 @@ public class AdminController {
 	public InstitutionResponse updateInstitution(
 			@PathVariable long id,
 			@RequestHeader("Authorization") String authorization,
-			@RequestBody AdminInstitutionUpdateRequest request
+			@Valid @RequestBody AdminInstitutionUpdateRequest request
 	) {
 		UserEntity admin = accountService.authenticateAdmin(authorization);
 		return service.updateInstitution(id, request, admin);
@@ -106,10 +107,12 @@ public class AdminController {
 			@RequestHeader("Authorization") String authorization,
 			@RequestParam(defaultValue = "0") int page,
 			@RequestParam(defaultValue = "20") int size,
-			@RequestParam(required = false) String q
+			@RequestParam(required = false) String q,
+			@RequestParam(value = "du", required = false) LocalDate from,
+			@RequestParam(value = "au", required = false) LocalDate to
 	) {
 		accountService.authenticateAdmin(authorization);
-		return service.listLogs(page, size, q);
+		return service.listLogs(page, size, q, from, to);
 	}
 
 	/**
