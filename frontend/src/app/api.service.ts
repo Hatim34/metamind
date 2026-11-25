@@ -44,6 +44,8 @@ export interface UserSession {
   role: string;
   institution: string;
   status: 'EN_ATTENTE' | 'ACTIF' | 'DESACTIVE';
+  /** Supprimé (RGPD) : identité effacée, le compte ne peut plus être réactivé. */
+  deleted?: boolean;
 }
 
 export interface Institution {
@@ -784,7 +786,8 @@ export class ApiService {
       email: item['email'],
       role: item['role'],
       institution: item['institution'],
-      status: item['statut'] ?? item['status']
+      status: item['statut'] ?? item['status'],
+      deleted: item['supprime'] ?? item['deleted'] ?? false
     };
   }
 

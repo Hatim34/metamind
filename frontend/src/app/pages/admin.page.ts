@@ -236,12 +236,13 @@ type Tab = 'comptes' | 'utilisateurs' | 'institutions' | 'configuration' | 'jour
                   </select>
                   }
                 </td>
-                <td><span [class]="u.status === 'ACTIF' ? 'm-ok' : u.status === 'EN_ATTENTE' ? 'm-warn' : 'm-ko'">{{ statusLabel(u.status) | t }}</span></td>
+                <td><span [class]="u.status === 'ACTIF' ? 'm-ok' : u.status === 'EN_ATTENTE' ? 'm-warn' : 'm-ko'">{{ (u.deleted ? 'Supprimé' : statusLabel(u.status)) | t }}</span></td>
                 <td class="m-right">
-                  @if (u.id === session.user()?.id) { <span class="m-muted m-small">{{ 'Votre compte' | t }}</span> } @else {
+                  @if (u.id === session.user()?.id) { <span class="m-muted m-small">{{ 'Votre compte' | t }}</span> } @else if (u.deleted) { <span class="m-muted m-small">{{ 'Identité effacée' | t }}</span> } @else {
                   <span class="m-actions m-actions--row">
                     @if (u.status !== 'ACTIF') { <button type="button" class="m-btn m-btn--primary m-btn--sm" (click)="setStatus(u, 'ACTIF')">{{ 'Activer' | t }}</button> }
                     @if (u.status !== 'DESACTIVE') { <button type="button" class="m-btn m-btn--ghost m-btn--sm" (click)="setStatus(u, 'DESACTIVE')">{{ (u.status === 'EN_ATTENTE' ? 'Refuser' : 'Désactiver') | t }}</button> }
+                    <button type="button" class="m-btn m-btn--danger m-btn--sm" (click)="deleteUser(u)">{{ 'Supprimer' | t }}</button>
                   </span>
                   }
                 </td>
@@ -479,6 +480,20 @@ export class AdminPage {
     this.api.updateAdminUser(user.id, { statut }).subscribe({
       next: () => { this.toasts.show(this.i18n.t(statut === 'ACTIF' ? 'Compte activé.' : 'Compte désactivé.')); this.loadUsers(); },
       error: (e) => this.toasts.show(e?.error?.status === 409 || e?.status === 409 ? this.i18n.t('Validez d\'abord la demande d\'institution de ce compte.') : this.i18n.t('La modification a échoué.'), 'error')
+    });
+  }
+
+  /** Suppression RGPD : l'identité est effacée, les documents et les achats de l'institution restent. */
+  async deleteUser(user: UserSession): Promise<void> {
+    const accepted = await this.confirm.ask({
+      title: this.i18n.t('Supprimer ce compte ?'),
+      message: `${user.firstName} ${user.lastName} (${user.email}) ${this.i18n.t('sera anonymisé : nom, prénom, email et mot de passe effacés. Ses documents et les achats de son institution sont conservés. Cette action est définitive.')}`,
+      action: this.i18n.t('Supprimer')
+    });
+    if (!accepted) return;
+    this.api.requestAccountDeletion(user.id).subscribe({
+      next: () => { this.toasts.show(this.i18n.t('Compte supprimé.')); this.loadUsers(); },
+      error: (e) => this.toasts.show(e?.error?.message ?? this.i18n.t('La suppression a échoué.'), 'error')
     });
   }
 
