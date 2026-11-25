@@ -95,8 +95,22 @@ export class AccueilPage {
   readonly institutions = computed(() => {
     const counts = new Map<string, number>();
     this.publications().forEach((p) => counts.set(p.institution, (counts.get(p.institution) ?? 0) + 1));
-    return [...counts.entries()]
-      .map(([name, count]) => ({ name, count, photo: this.photos().find((p) => p.name === name) ?? null }))
+
+    // Les photos sont la source de vérité pour cette galerie. Auparavant, une institution
+    // n'apparaissait que si elle avait déjà une publication publique avec exactement le même
+    // nom : ses photos en base devenaient alors invisibles sur l'accueil.
+    const institutions = new Map<string, { name: string; count: number; photo: InstitutionPhoto | null }>(this.photos().map((photo) => [photo.name, {
+      name: photo.name,
+      count: counts.get(photo.name) ?? 0,
+      photo
+    }]));
+    counts.forEach((count, name) => {
+      if (!institutions.has(name)) {
+        institutions.set(name, { name, count, photo: null });
+      }
+    });
+
+    return [...institutions.values()]
       .sort((a, b) => b.count - a.count)
       .slice(0, 8);
   });
