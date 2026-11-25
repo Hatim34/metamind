@@ -162,9 +162,7 @@ class InvoiceServiceTests {
 			text = new PDFTextStripper().getText(document);
 		}
 
-		java.nio.file.Files.write(java.nio.file.Path.of("/private/tmp/claude-502/-Users-assalhatim/10df42c0-a10a-458f-a53f-73bdce906408/scratchpad/facture.pdf"), invoiceService.pdf(invoice.id(), librarian));
-		java.nio.file.Files.writeString(java.nio.file.Path.of("/private/tmp/claude-502/-Users-assalhatim/10df42c0-a10a-458f-a53f-73bdce906408/scratchpad/facture.xml"), invoiceService.xml(invoice.id(), librarian));
-		assertThat(text).contains("Facture " + invoice.numero(), "41,32 EUR", "8,68 EUR", "50,00 EUR", "0987.654.394", "sans valeur legale");
+		assertThat(text).contains("Facture " + invoice.numero(), "41,32 EUR", "8,68 EUR", "50,00 EUR", "0987.654.394", "sans valeur légale", "Déjà payé");
 	}
 
 	private ValidationResultList validatePeppol(String xml) throws Exception {

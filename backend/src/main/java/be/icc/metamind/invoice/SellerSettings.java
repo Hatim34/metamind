@@ -20,7 +20,7 @@ public class SellerSettings {
 	private final boolean demonstration;
 
 	public SellerSettings(
-			@Value("${metamind.vendeur.nom:Metamind (projet academique ICC, donnees de demonstration)}") String name,
+			@Value("${metamind.vendeur.nom:Metamind (projet académique ICC)}") String name,
 			@Value("${metamind.vendeur.numero-entreprise:0123456749}") String enterpriseNumber,
 			@Value("${metamind.vendeur.rue:Rue de la Demonstration 1}") String street,
 			@Value("${metamind.vendeur.code-postal:1000}") String postalCode,

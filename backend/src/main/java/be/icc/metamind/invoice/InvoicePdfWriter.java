@@ -36,10 +36,10 @@ public class InvoicePdfWriter {
 			float top = page.getMediaBox().getHeight() - 60;
 			try (PDPageContentStream text = new PDPageContentStream(document, page)) {
 				line(text, bold, 20, LEFT, top, "Facture " + invoice.getNumber());
-				line(text, regular, 10, LEFT, top - 18, "Date d'emission : " + invoice.getIssueDate().format(DATE)
-						+ "    Reference du paiement : " + invoice.getPack().getPaymentReference());
+				line(text, regular, 10, LEFT, top - 18, "Date d'émission : " + invoice.getIssueDate().format(DATE)
+						+ "    Référence du paiement : " + invoice.getPack().getPaymentReference());
 				if (seller.demonstration()) {
-					line(text, bold, 10, LEFT, top - 34, "Facture de demonstration, sans valeur legale (projet academique).");
+					line(text, bold, 10, LEFT, top - 34, "Facture de démonstration, sans valeur légale (projet académique).");
 				}
 
 				float y = top - 70;
@@ -58,7 +58,7 @@ public class InvoicePdfWriter {
 
 				y -= 120;
 				line(text, bold, 10, LEFT, y, "Description");
-				line(text, bold, 10, 330, y, "Qte");
+				line(text, bold, 10, 330, y, "Qté");
 				line(text, bold, 10, 380, y, "Prix HT");
 				line(text, bold, 10, 460, y, "Total HT");
 				line(text, regular, 10, LEFT, y - 18, clip(invoice.getDescription(), 52));
@@ -73,13 +73,13 @@ public class InvoicePdfWriter {
 				line(text, regular, 10, 460, y - 16, euros(invoice.getVatAmount()));
 				line(text, bold, 11, 330, y - 34, "Total TTC");
 				line(text, bold, 11, 460, y - 34, euros(invoice.getGrossAmount()));
-				line(text, regular, 10, 330, y - 52, "Deja paye (carte, Stripe)");
+				line(text, regular, 10, 330, y - 52, "Déjà payé (carte, Stripe)");
 				line(text, regular, 10, 460, y - 52, euros(invoice.getGrossAmount()));
-				line(text, bold, 10, 330, y - 70, "Reste a payer");
+				line(text, bold, 10, 330, y - 70, "Reste à payer");
 				line(text, bold, 10, 460, y - 70, euros(BigDecimal.ZERO));
 
-				line(text, regular, 8, LEFT, 70, "Facture electronique au format Peppol BIS Billing 3.0 (EN 16931). "
-						+ "Le fichier XML structure fait foi entre entreprises.");
+				line(text, regular, 8, LEFT, 70, "Facture électronique au format Peppol BIS Billing 3.0 (EN 16931). "
+						+ "Le fichier XML structuré fait foi entre entreprises.");
 			}
 			document.save(output);
 			return output.toByteArray();

@@ -38,8 +38,8 @@ public class UblInvoiceWriter {
 		element(xml, 1, "cbc:IssueDate", invoice.getIssueDate().toString());
 		element(xml, 1, "cbc:InvoiceTypeCode", "380");
 		element(xml, 1, "cbc:Note", seller.demonstration()
-				? "Facture de demonstration, sans valeur legale. Payee par carte via Stripe."
-				: "Payee par carte via Stripe.");
+				? "Facture de démonstration, sans valeur légale. Payée par carte via Stripe."
+				: "Payée par carte via Stripe.");
 		element(xml, 1, "cbc:DocumentCurrencyCode", currency);
 		element(xml, 1, "cbc:BuyerReference", invoice.getPack().getPaymentReference());
 

@@ -52,7 +52,7 @@ public class InvoiceService {
 			BigDecimal gross = pack.getPaidAmount().setScale(2, RoundingMode.HALF_UP);
 			BigDecimal net = netAmountFor(gross);
 			InvoiceEntity invoice = invoiceRepository.save(new InvoiceEntity(pack, LocalDate.now(),
-					"Pack de " + pack.getQuantite() + " credits d'analyse Metamind", net, VAT_RATE, gross.subtract(net), gross, "EUR"));
+					"Pack de " + pack.getQuantite() + " crédits d'analyse Metamind", net, VAT_RATE, gross.subtract(net), gross, "EUR"));
 			if (pack.getInstitution().hasCompleteBilling()) {
 				issue(invoice);
 			}
