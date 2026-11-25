@@ -46,6 +46,28 @@ public class InstitutionEntity {
 	@Column(name = "achats_suspendus", nullable = false, columnDefinition = "boolean default false")
 	private boolean purchasesSuspended;
 
+	@Column(name = "raison_sociale", length = 255)
+	private String legalName;
+
+	/** Numero d'entreprise belge (BCE), dix chiffres : sert aussi d'identifiant Peppol (schema 0208). */
+	@Column(name = "numero_entreprise", length = 20)
+	private String enterpriseNumber;
+
+	@Column(name = "adresse_rue", length = 255)
+	private String street;
+
+	@Column(name = "code_postal", length = 20)
+	private String postalCode;
+
+	@Column(name = "ville", length = 120)
+	private String city;
+
+	@Column(name = "pays", length = 2)
+	private String country;
+
+	@Column(name = "email_facturation", length = 255)
+	private String billingEmail;
+
 	@Version
 	private long version;
 
@@ -80,6 +102,53 @@ public class InstitutionEntity {
 
 	public String getName() {
 		return name;
+	}
+
+	public void updateBilling(String legalName, String enterpriseNumber, String street, String postalCode, String city, String country, String billingEmail) {
+		this.legalName = legalName;
+		this.enterpriseNumber = enterpriseNumber;
+		this.street = street;
+		this.postalCode = postalCode;
+		this.city = city;
+		this.country = country;
+		this.billingEmail = billingEmail;
+	}
+
+	/** Tout ce qu'une facture Peppol exige de l'acheteur est renseigne. */
+	public boolean hasCompleteBilling() {
+		return notBlank(legalName) && notBlank(enterpriseNumber) && notBlank(street) && notBlank(postalCode) && notBlank(city) && notBlank(country);
+	}
+
+	private static boolean notBlank(String value) {
+		return value != null && !value.isBlank();
+	}
+
+	public String getLegalName() {
+		return legalName;
+	}
+
+	public String getEnterpriseNumber() {
+		return enterpriseNumber;
+	}
+
+	public String getStreet() {
+		return street;
+	}
+
+	public String getPostalCode() {
+		return postalCode;
+	}
+
+	public String getCity() {
+		return city;
+	}
+
+	public String getCountry() {
+		return country;
+	}
+
+	public String getBillingEmail() {
+		return billingEmail;
 	}
 
 	public void rename(String name) {

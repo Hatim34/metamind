@@ -25,8 +25,24 @@ public record InstitutionResponse(
 		boolean welcomeCreditsGranted,
 
 		@JsonProperty("en_attente")
-		boolean pending
+		boolean pending,
+
+		@JsonProperty("facturation")
+		Billing billing
 ) {
+	/** Donnees de facturation de l'institution (Peppol). */
+	public record Billing(
+			@JsonProperty("raison_sociale") String legalName,
+			@JsonProperty("numero_entreprise") String enterpriseNumber,
+			@JsonProperty("adresse_rue") String street,
+			@JsonProperty("code_postal") String postalCode,
+			@JsonProperty("ville") String city,
+			@JsonProperty("pays") String country,
+			@JsonProperty("email_facturation") String email,
+			@JsonProperty("complete") boolean complete
+	) {
+	}
+
 	public static InstitutionResponse from(InstitutionEntity institution) {
 		return new InstitutionResponse(
 				institution.getId(),
@@ -37,7 +53,10 @@ public record InstitutionResponse(
 				institution.getCreditBalance(),
 				institution.isPurchasesSuspended(),
 				institution.isWelcomeCreditsGranted(),
-				institution.isPending()
+				institution.isPending(),
+				new Billing(institution.getLegalName(), institution.getEnterpriseNumber(), institution.getStreet(),
+						institution.getPostalCode(), institution.getCity(), institution.getCountry(), institution.getBillingEmail(),
+						institution.hasCompleteBilling())
 		);
 	}
 }
