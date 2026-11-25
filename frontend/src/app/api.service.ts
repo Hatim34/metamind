@@ -57,6 +57,33 @@ export interface Institution {
   creditBalance: number;
   /** L'administrateur a suspendu l'achat de crédits (B11). */
   purchasesSuspended: boolean;
+  billing: InstitutionBilling;
+}
+
+/** Données de l'acheteur exigées par une facture Peppol. */
+export interface InstitutionBilling {
+  legalName: string;
+  enterpriseNumber: string;
+  street: string;
+  postalCode: string;
+  city: string;
+  country: string;
+  email: string;
+  complete: boolean;
+}
+
+export interface Invoice {
+  id: number;
+  number: string | null;
+  status: 'A_COMPLETER' | 'EMISE';
+  issueDate: string;
+  description: string;
+  netAmount: number;
+  vatRate: number;
+  vatAmount: number;
+  grossAmount: number;
+  currency: string;
+  institution: string;
 }
 
 export interface InstitutionPhoto {
@@ -628,6 +655,27 @@ export class ApiService {
       .pipe(map((response) => this.toInstitution(response)));
   }
 
+  updateInstitutionBilling(institutionId: number, billing: InstitutionBilling): Observable<Institution> {
+    return this.http.put<unknown>(`${this.baseUrl}/admin/institutions/${institutionId}/facturation`, {
+      raison_sociale: billing.legalName,
+      numero_entreprise: billing.enterpriseNumber,
+      adresse_rue: billing.street,
+      code_postal: billing.postalCode,
+      ville: billing.city,
+      pays: billing.country || 'BE',
+      email_facturation: billing.email || null
+    }, { headers: this.authHeaders() }).pipe(map((response) => this.toInstitution(response)));
+  }
+
+  getInvoices(): Observable<Invoice[]> {
+    return this.http.get<unknown[]>(`${this.baseUrl}/factures`, { headers: this.authHeaders() })
+      .pipe(map((response) => response.map((item) => this.toInvoice(item))));
+  }
+
+  downloadInvoice(invoiceId: number, format: 'pdf' | 'xml'): Observable<Blob> {
+    return this.http.get(`${this.baseUrl}/factures/${invoiceId}/${format}`, { headers: this.authHeaders(), responseType: 'blob' });
+  }
+
   adjustInstitutionCredits(institutionId: number, amount: number, reason: string): Observable<unknown> {
     return this.http.post(`${this.baseUrl}/admin/institutions/${institutionId}/credits/adjustments`, { amount, reason }, { headers: this.authHeaders() });
   }
@@ -758,7 +806,39 @@ export class ApiService {
       active: item['actif'] ?? item['active'],
       pending: item['en_attente'] ?? false,
       creditBalance: item['solde_credits'] ?? 0,
-      purchasesSuspended: item['achats_suspendus'] ?? false
+      purchasesSuspended: item['achats_suspendus'] ?? false,
+      billing: this.toBilling(item['facturation'])
+    };
+  }
+
+  private toBilling(value: unknown): InstitutionBilling {
+    const item = (value ?? {}) as Record<string, any>;
+    return {
+      legalName: item['raison_sociale'] ?? '',
+      enterpriseNumber: item['numero_entreprise'] ?? '',
+      street: item['adresse_rue'] ?? '',
+      postalCode: item['code_postal'] ?? '',
+      city: item['ville'] ?? '',
+      country: item['pays'] ?? 'BE',
+      email: item['email_facturation'] ?? '',
+      complete: item['complete'] ?? false
+    };
+  }
+
+  private toInvoice(value: unknown): Invoice {
+    const item = value as Record<string, any>;
+    return {
+      id: item['id'],
+      number: item['numero'] ?? null,
+      status: item['statut'],
+      issueDate: item['date_emission'],
+      description: item['description'],
+      netAmount: Number(item['montant_ht']),
+      vatRate: Number(item['taux_tva']),
+      vatAmount: Number(item['montant_tva']),
+      grossAmount: Number(item['montant_ttc']),
+      currency: item['devise'],
+      institution: item['institution']
     };
   }
 

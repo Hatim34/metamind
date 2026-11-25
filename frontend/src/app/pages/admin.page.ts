@@ -1,7 +1,7 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { DatePipe, NgTemplateOutlet } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ApiService, AuditLog, Institution, InstitutionPhoto, UserSession } from '../api.service';
+import { ApiService, AuditLog, Institution, InstitutionBilling, InstitutionPhoto, UserSession } from '../api.service';
 import { I18nService, TranslatePipe } from '../core/i18n';
 import { SessionService } from '../core/session.service';
 import { ToastService } from '../core/toast.service';
@@ -88,6 +88,32 @@ type Tab = 'comptes' | 'utilisateurs' | 'institutions' | 'configuration' | 'jour
                       <button type="button" class="m-btn m-btn--sm" (click)="saveInstitution(i)">{{ 'Enregistrer' | t }}</button>
                     </div>
                   </details>
+                  @if (billingOf(i.id); as b) {
+                    <details class="m-details">
+                      <summary>{{ 'Données de facturation' | t }} @if (!i.billing.complete) { <span class="m-ko">· {{ 'à compléter' | t }}</span> }</summary>
+                      <div class="m-stack">
+                        <label class="m-field m-small">{{ 'Raison sociale' | t }}
+                          <input class="m-input m-input--sm" [name]="'raison' + i.id" [(ngModel)]="b.legalName" maxlength="255" />
+                        </label>
+                        <label class="m-field m-small">{{ 'Numéro d\'entreprise (BCE)' | t }}
+                          <input class="m-input m-input--sm" [name]="'bce' + i.id" [(ngModel)]="b.enterpriseNumber" maxlength="20" />
+                        </label>
+                        <label class="m-field m-small">{{ 'Rue et numéro' | t }}
+                          <input class="m-input m-input--sm" [name]="'rue' + i.id" [(ngModel)]="b.street" maxlength="255" />
+                        </label>
+                        <label class="m-field m-small">{{ 'Code postal' | t }}
+                          <input class="m-input m-input--sm" [name]="'cp' + i.id" [(ngModel)]="b.postalCode" maxlength="20" />
+                        </label>
+                        <label class="m-field m-small">{{ 'Ville' | t }}
+                          <input class="m-input m-input--sm" [name]="'ville' + i.id" [(ngModel)]="b.city" maxlength="120" />
+                        </label>
+                        <label class="m-field m-small">{{ 'Email de facturation' | t }}
+                          <input class="m-input m-input--sm" type="email" [name]="'emailfact' + i.id" [(ngModel)]="b.email" maxlength="255" />
+                        </label>
+                        <button type="button" class="m-btn m-btn--sm" (click)="saveBilling(i)">{{ 'Enregistrer' | t }}</button>
+                      </div>
+                    </details>
+                  }
                   @if (i.active) {
                     <details class="m-details">
                       <summary>{{ 'Ajuster les crédits' | t }}</summary>
@@ -276,6 +302,7 @@ export class AdminPage {
   logTo = '';
   editNames: Record<number, string> = {};
   editDomains: Record<number, string> = {};
+  editBillings: Record<number, InstitutionBilling> = {};
   userFilter = '';
   userInstitution = '';
   adjustAmounts: Record<number, number | undefined> = {};
@@ -290,7 +317,8 @@ export class AdminPage {
     PUBLICATION_NOTICE: 'Notice publiée',
     SUPPRESSION_DOCUMENT: 'Document supprimé',
     SUPPRESSION_COMPTE: 'Compte supprimé',
-    RETRAIT_PUBLICATION: 'Retirée du catalogue'
+    RETRAIT_PUBLICATION: 'Retirée du catalogue',
+    EMISSION_FACTURE: 'Facture émise'
   };
   readonly fieldLabels: Record<string, string> = {
     titre: 'Titre', resume: 'Résumé', auteurs: 'Auteurs', mots_cles: 'Mots-clés', classification: 'Classification',
@@ -407,7 +435,7 @@ export class AdminPage {
     this.api.getInstitutions().subscribe({
       next: (list) => {
         this.institutions.set(list);
-        list.forEach((i) => { this.editNames[i.id] = i.name; this.editDomains[i.id] = i.emailDomain; });
+        list.forEach((i) => { this.editNames[i.id] = i.name; this.editDomains[i.id] = i.emailDomain; this.editBillings[i.id] = { ...i.billing }; });
       },
       error: () => undefined
     });
@@ -487,6 +515,23 @@ export class AdminPage {
     if (!changes.nom && !changes.domaineEmail) return;
     this.api.updateInstitution(i.id, changes).subscribe({
       next: () => { this.toasts.show(this.i18n.t('Institution modifiée.')); this.loadInstitutions(); },
+      error: (e) => this.toasts.show(e?.error?.message ?? this.i18n.t('La modification a échoué.'), 'error')
+    });
+  }
+
+  billingOf(id: number): InstitutionBilling | undefined {
+    return this.editBillings[id];
+  }
+
+  /** Les factures en attente de l'institution sont émises dès que ses données sont complètes. */
+  saveBilling(i: Institution): void {
+    const billing = this.editBillings[i.id];
+    if (!billing.legalName.trim() || !billing.enterpriseNumber.trim() || !billing.street.trim() || !billing.postalCode.trim() || !billing.city.trim()) {
+      this.toasts.show(this.i18n.t('Raison sociale, numéro d\'entreprise et adresse sont obligatoires.'), 'error');
+      return;
+    }
+    this.api.updateInstitutionBilling(i.id, billing).subscribe({
+      next: () => { this.toasts.show(this.i18n.t('Données de facturation enregistrées.')); this.loadInstitutions(); },
       error: (e) => this.toasts.show(e?.error?.message ?? this.i18n.t('La modification a échoué.'), 'error')
     });
   }
