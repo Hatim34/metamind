@@ -2,14 +2,15 @@ import { Component, OnDestroy, inject, signal } from '@angular/core';
 import { DatePipe, DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { ApiService, CreditAccount, CreditPackOption } from '../api.service';
+import { ApiService, CreditAccount, CreditPackOption, Invoice } from '../api.service';
+import { saveFile } from '../core/download';
 import { I18nService, TranslatePipe } from '../core/i18n';
 import { SessionService } from '../core/session.service';
 import { ToastService } from '../core/toast.service';
 
 const PAYMENT_REFERENCE_KEY = 'metamind.paiement.reference';
 
-/** Crédits (B9, B10) : solde, achat via Stripe Checkout avec CGV et renonciation à la rétractation, historique. */
+/** Crédits (B9, B10) : solde, achat via Stripe Checkout avec CGV et renonciation à la rétractation, historique et factures. */
 @Component({
   standalone: true,
   imports: [FormsModule, RouterLink, DatePipe, DecimalPipe, TranslatePipe],
@@ -79,6 +80,33 @@ const PAYMENT_REFERENCE_KEY = 'metamind.paiement.reference';
           </tbody>
         </table>
       </section>
+
+      <section class="m-sheet m-scroll">
+        <div class="m-sheet__head"><h2 class="m-h3">{{ 'Factures' | t }}</h2></div>
+        <table class="m-table">
+          <thead><tr><th>{{ 'Numéro' | t }}</th><th>{{ 'Date' | t }}</th>@if (session.isAdmin()) {<th>{{ 'Institution' | t }}</th>}<th class="m-right">{{ 'Total TTC' | t }}</th><th></th></tr></thead>
+          <tbody>
+            @for (invoice of invoices(); track invoice.id) {
+              <tr>
+                <td>{{ invoice.number ?? '–' }}</td>
+                <td class="m-muted">{{ invoice.issueDate | date: 'dd/MM/yyyy' }}</td>
+                @if (session.isAdmin()) {<td>{{ invoice.institution }}</td>}
+                <td class="m-right m-num">{{ invoice.grossAmount | number: '1.2-2' }} €</td>
+                <td class="m-right">
+                  @if (invoice.status === 'EMISE') {
+                    <button type="button" class="m-btn m-btn--ghost m-btn--sm" (click)="download(invoice, 'pdf')">PDF</button>
+                    <button type="button" class="m-btn m-btn--ghost m-btn--sm" (click)="download(invoice, 'xml')">XML Peppol</button>
+                  } @else {
+                    <span class="m-muted m-small">{{ 'En attente des données de facturation de l\'institution' | t }}</span>
+                  }
+                </td>
+              </tr>
+            } @empty {
+              <tr><td [attr.colspan]="session.isAdmin() ? 5 : 4" class="m-empty">{{ 'Aucune facture.' | t }}</td></tr>
+            }
+          </tbody>
+        </table>
+      </section>
     </div>
   `
 })
@@ -92,6 +120,7 @@ export class CreditsPage implements OnDestroy {
   readonly account = signal<CreditAccount | null>(null);
   readonly packs = signal<CreditPackOption[]>([]);
   readonly chosen = signal<CreditPackOption | null>(null);
+  readonly invoices = signal<Invoice[]>([]);
   readonly busy = signal(false);
   readonly returning = signal(this.route.snapshot.data['retourPaiement'] === true);
   readonly paymentState = signal<'attente' | 'confirme' | 'echec' | 'long'>('attente');
@@ -145,6 +174,14 @@ export class CreditsPage implements OnDestroy {
 
   loadAccount(): void {
     this.api.getCreditAccount().subscribe({ next: (a) => this.account.set(a), error: () => undefined });
+    this.api.getInvoices().subscribe({ next: (invoices) => this.invoices.set(invoices), error: () => undefined });
+  }
+
+  download(invoice: Invoice, format: 'pdf' | 'xml'): void {
+    this.api.downloadInvoice(invoice.id, format).subscribe({
+      next: (blob) => saveFile(blob, `Facture-${invoice.number}.${format}`),
+      error: () => this.toasts.show(this.i18n.t('La facture n\'a pas pu être téléchargée.'), 'error')
+    });
   }
 
   choose(pack: CreditPackOption): void {
