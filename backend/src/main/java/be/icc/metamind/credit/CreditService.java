@@ -24,6 +24,7 @@ import be.icc.metamind.document.AuditLogRepository;
 import be.icc.metamind.document.CreditPackEntity;
 import be.icc.metamind.document.CreditPackRepository;
 import be.icc.metamind.document.CreditPackStatus;
+import be.icc.metamind.invoice.InvoiceService;
 import be.icc.metamind.institution.InstitutionEntity;
 import be.icc.metamind.institution.InstitutionRepository;
 import be.icc.metamind.user.LibrarianActions;
@@ -50,6 +51,7 @@ public class CreditService {
 	private final AuditLogRepository auditLogRepository;
 	private final PaymentConsentRepository paymentConsentRepository;
 	private final StripeProcessedEventRepository stripeProcessedEventRepository;
+	private final InvoiceService invoiceService;
 	private final String publicUrl;
 	private final String stripeSecretKey;
 	private final String stripeWebhookSecret;
@@ -62,6 +64,7 @@ public class CreditService {
 			AuditLogRepository auditLogRepository,
 			PaymentConsentRepository paymentConsentRepository,
 			StripeProcessedEventRepository stripeProcessedEventRepository,
+			InvoiceService invoiceService,
 		@Value("${metamind.public-url:https://metamind-app.duckdns.org}") String publicUrl,
 		@Value("${metamind.stripe.secret-key:}") String stripeSecretKey,
 		@Value("${metamind.stripe.webhook-secret:}") String stripeWebhookSecret,
@@ -74,6 +77,7 @@ public class CreditService {
 		this.auditLogRepository = auditLogRepository;
 		this.paymentConsentRepository = paymentConsentRepository;
 		this.stripeProcessedEventRepository = stripeProcessedEventRepository;
+		this.invoiceService = invoiceService;
 		this.publicUrl = publicUrl;
 		this.stripeSecretKey = stripeSecretKey == null ? "" : stripeSecretKey.trim();
 		this.stripeWebhookSecret = stripeWebhookSecret == null ? "" : stripeWebhookSecret.trim();
@@ -171,6 +175,7 @@ public class CreditService {
 		if (!pack.isPaid()) {
 			pack.markPaid();
 			addPurchasedCredits(pack.getInstitution(), pack.getQuantite(), "Paiement confirme " + pack.getPaymentReference());
+			invoiceService.createFor(pack);
 		}
 		markStripeEvent(eventId, type);
 		return toResponse(pack.getInstitution());
