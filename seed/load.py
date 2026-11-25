@@ -125,6 +125,10 @@ class Api:
             print(f"DRY {method} {path}")
             return {}
         headers = kw.pop("headers", {})
+        if "files" in kw:
+            # Un fichier deja lu par un premier essai serait renvoye vide : on envoie son contenu.
+            kw["files"] = {cle: (nom, f.read() if hasattr(f, "read") else f, *reste)
+                           for cle, (nom, f, *reste) in kw["files"].items()}
         if token:
             headers["Authorization"] = f"Bearer {token}"
         derniere = None
@@ -293,6 +297,8 @@ def main():
     ap.add_argument("--limit", type=int, help="nombre max de documents (test rapide)")
     ap.add_argument("--skip", type=int, default=0, help="documents initiaux a ignorer pour reprendre un import interrompu")
     ap.add_argument("--dry-run", action="store_true")
+    ap.add_argument("--reprendre", type=int, default=0,
+                    help="documents deja charges, dans l'ordre de la boucle, a ne pas recharger apres une interruption")
     args = ap.parse_args()
 
     admin_email = os.environ.get("METAMIND_ADMIN_EMAIL")
@@ -311,11 +317,17 @@ def main():
     admin = api.login(admin_email, admin_pwd)
 
     result = {"institutions": {}, "documents": []}
+    deja = args.reprendre
     for inst in manifest["institutions"]:
+        n_inst = sum(1 for d in docs if d["institution"] == inst["code"])
+        if deja >= n_inst:
+            deja -= n_inst
+            continue
+        a_sauter, deja = deja, 0
         print(f"\n[{inst['code']}] {inst['name']}")
         inst_id = ensure_institution(api, admin, inst)
         users = create_librarians(api, admin, inst, inst_id, demo_pwd, rng, rng.choice([2, 3]))
-        n_docs = sum(1 for d in docs if d["institution"] == inst["code"])
+        n_docs = sum(1 for d in docs if d["institution"] == inst["code"]) - a_sauter
         dotation = n_docs + rng.choice([40, 60, 85])
         api.call("POST", f"/admin/institutions/{inst_id}/credits/adjustments", admin,
                  json={"amount": dotation, "reason": "Dotation initiale (jeu de démonstration)"})
@@ -323,7 +335,7 @@ def main():
         result["institutions"][inst["code"]] = {"id": inst_id, "utilisateurs": users, "dotation": dotation}
 
         eval_rows = []
-        for d in [d for d in docs if d["institution"] == inst["code"]]:
+        for d in [d for d in docs if d["institution"] == inst["code"]][a_sauter:]:
             gt = d["verite_terrain"]
             user = rng.choice(users)
             token = tokens[user["email"]]
@@ -371,6 +383,7 @@ def main():
             result["documents"].append({"document_id": doc_id, "key": d["key"], "institution": inst["code"],
                                         "etat": target, "par": user["email"],
                                         "date_publication": gt.get("date_publication")})
+            (DATA / "load_result.partiel.json").write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")
 
         if eval_rows:
             path = DATA / "evaluation_seed.csv"
