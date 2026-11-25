@@ -1,6 +1,7 @@
 package be.icc.metamind.auth;
 
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.time.Instant;
 import java.util.Base64;
 import java.util.regex.Matcher;
@@ -62,7 +63,8 @@ public class JwtService {
 		}
 
 		String unsignedToken = parts[0] + "." + parts[1];
-		if (!sign(unsignedToken).equals(parts[2])) {
+		// Comparaison en temps constant : la duree ne revele pas combien de caracteres de la signature sont justes.
+		if (!MessageDigest.isEqual(sign(unsignedToken).getBytes(StandardCharsets.US_ASCII), parts[2].getBytes(StandardCharsets.US_ASCII))) {
 			throw new ApiException(HttpStatus.UNAUTHORIZED, "La signature du jeton est invalide.");
 		}
 
