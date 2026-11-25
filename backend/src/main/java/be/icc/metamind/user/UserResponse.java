@@ -21,7 +21,11 @@ public record UserResponse(
 		long institutionId,
 
 		@JsonProperty("statut")
-		UserStatus status
+		UserStatus status,
+
+		/** Compte supprime a la demande de la personne ou par l'administrateur (identite effacee). */
+		@JsonProperty("supprime")
+		boolean deleted
 ) {
 	public static UserResponse from(UserAccount user) {
 		return new UserResponse(
@@ -32,7 +36,8 @@ public record UserResponse(
 				user.role(),
 				user.institution(),
 				0,
-				user.status()
+				user.status(),
+				user.email() != null && user.email().startsWith("compte-supprime-")
 		);
 	}
 
@@ -45,7 +50,8 @@ public record UserResponse(
 				user.getRole().name(),
 				user.getInstitution().getName(),
 				user.getInstitution().getId(),
-				user.getStatus()
+				user.getStatus(),
+				user.isAnonymized()
 		);
 	}
 }

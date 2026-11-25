@@ -763,6 +763,29 @@ class ApiControllerTests {
 	}
 
 	@Test
+	void administratorDeletesAnAccountThatCanNeverBeReactivated() throws Exception {
+		UserEntity user = userRepository.findByEmailIgnoreCase("sarah@institution-a.example").orElseThrow();
+
+		mockMvc.perform(delete("/api/v1/users/" + user.getId())
+				.header("Authorization", adminBearerToken()))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.supprime", is(true)))
+				.andExpect(jsonPath("$.email", is("compte-supprime-" + user.getId() + "@metamind.example")));
+
+		mockMvc.perform(patch("/api/v1/admin/users/" + user.getId())
+						.header("Authorization", adminBearerToken())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{\"statut\":\"ACTIF\"}"))
+				.andExpect(status().isConflict())
+				.andExpect(jsonPath("$.message", is("Ce compte a ete supprime : son identite est effacee et il ne peut plus etre modifie.")));
+
+		mockMvc.perform(delete("/api/v1/users/" + user.getId())
+				.header("Authorization", adminBearerToken()))
+				.andExpect(status().isConflict())
+				.andExpect(jsonPath("$.message", is("Ce compte est deja supprime.")));
+	}
+
+	@Test
 	void freeCreditPackIsRejected() throws Exception {
 		String body = """
 				{

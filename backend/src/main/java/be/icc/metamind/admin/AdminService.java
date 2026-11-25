@@ -96,6 +96,9 @@ public class AdminService {
 		if (administratorGuard.removesAdministration(request.role(), request.status())) {
 			administratorGuard.ensureAnotherActiveAdministratorRemains(user, "modifier ce compte");
 		}
+		if (user.isAnonymized() && (request.status() != null || request.role() != null)) {
+			throw new ApiException(HttpStatus.CONFLICT, "Ce compte a ete supprime : son identite est effacee et il ne peut plus etre modifie.");
+		}
 		if (request.status() == UserStatus.ACTIF && user.getInstitution().isPending()) {
 			throw new ApiException(HttpStatus.CONFLICT, "Validez d'abord la demande d'institution de ce compte.");
 		}

@@ -145,6 +145,11 @@ public class UserEntity {
 		passwordHash = "compte-desactive";
 	}
 
+	/** Compte supprime (RGPD) : son identite est effacee, il ne peut plus etre reactive. */
+	public boolean isAnonymized() {
+		return "compte-desactive".equals(passwordHash) && email != null && email.startsWith("compte-supprime-");
+	}
+
 	public void changePassword(String passwordHash) {
 		this.passwordHash = passwordHash;
 	}

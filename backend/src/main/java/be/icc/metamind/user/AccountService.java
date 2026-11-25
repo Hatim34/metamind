@@ -176,6 +176,9 @@ public class AccountService {
 	@Transactional
 	public UserResponse requestAccountDeletion(long id, UserEntity actor) {
 		UserEntity user = findUser(id);
+		if (user.isAnonymized()) {
+			throw new ApiException(HttpStatus.CONFLICT, "Ce compte est deja supprime.");
+		}
 		administratorGuard.ensureAnotherActiveAdministratorRemains(user, "supprimer ce compte");
 		boolean bySelf = actor.getId().equals(user.getId());
 		user.anonymizeAndDeactivate();
