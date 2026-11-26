@@ -5,6 +5,7 @@ import java.util.List;
 import be.icc.metamind.institution.InstitutionEntity;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -75,11 +76,49 @@ public interface DocumentRepository extends JpaRepository<DocumentEntity, Long> 
 				case when d.extractedText is null or length(d.extractedText) = 0 then false else true end)
 			from DocumentEntity d
 			join d.institution i
-			where i.id = :institutionId
-			   or (d.status = be.icc.metamind.document.DocumentStatus.PUBLIE
-			       and d.visibility = be.icc.metamind.document.DocumentVisibility.PUBLIC)
+			where d.status <> be.icc.metamind.document.DocumentStatus.SUPPRIME
+			  and (i.id = :institutionId
+			       or (d.status = be.icc.metamind.document.DocumentStatus.PUBLIE
+			           and d.visibility = be.icc.metamind.document.DocumentVisibility.PUBLIC))
 			""")
 	List<DocumentSummary> findSummariesVisibleForInstitution(@Param("institutionId") Long institutionId);
+
+	/**
+	 * Le traitement asynchrone ne doit jamais ressusciter une suppression logique
+	 * intervenue entre le lancement du traitement et sa fin.
+	 */
+	@Modifying
+	@Query("""
+			update DocumentEntity d
+			set d.status = be.icc.metamind.document.DocumentStatus.EXTRACTION
+			where d.id = :documentId
+			  and d.status <> be.icc.metamind.document.DocumentStatus.SUPPRIME
+			""")
+	int markProcessingIfNotDeleted(@Param("documentId") Long documentId);
+
+	@Modifying
+	@Query("""
+			update DocumentEntity d
+			set d.extractedText = :extractedText,
+			    d.coverImagePath = :coverImagePath,
+			    d.status = be.icc.metamind.document.DocumentStatus.EN_ATTENTE
+			where d.id = :documentId
+			  and d.status <> be.icc.metamind.document.DocumentStatus.SUPPRIME
+			""")
+	int completeProcessingIfNotDeleted(
+			@Param("documentId") Long documentId,
+			@Param("extractedText") String extractedText,
+			@Param("coverImagePath") String coverImagePath
+	);
+
+	@Modifying
+	@Query("""
+			update DocumentEntity d
+			set d.status = be.icc.metamind.document.DocumentStatus.ECHEC
+			where d.id = :documentId
+			  and d.status <> be.icc.metamind.document.DocumentStatus.SUPPRIME
+			""")
+	int markFileUnreadableIfNotDeleted(@Param("documentId") Long documentId);
 
 	/** Documents importes sous ce nom de fichier, pour leur rattacher un fichier perdu. */
 	@Query("select d.id from DocumentEntity d where d.fileName = :fileName")

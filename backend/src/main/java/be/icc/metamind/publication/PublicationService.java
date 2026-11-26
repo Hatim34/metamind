@@ -93,6 +93,7 @@ public class PublicationService {
 				: documentRepository.search(value);
 
 		return toResponses(documents.stream()
+				.filter(document -> document.status() != DocumentStatus.SUPPRIME)
 				.filter(document -> isVisibleFor(document, currentUser))
 				.toList());
 	}
@@ -376,6 +377,9 @@ public class PublicationService {
 		if (!canManage(document, currentUser)) {
 			throw new ApiException(HttpStatus.FORBIDDEN, "Ce document appartient a une autre institution.");
 		}
+		if (document.getStatus() == DocumentStatus.SUPPRIME) {
+			throw new ApiException(HttpStatus.BAD_REQUEST, "L'image d'un document supprime ne peut pas etre modifiee.");
+		}
 		return replaceCoverImage(id, image);
 	}
 
@@ -460,22 +464,26 @@ public class PublicationService {
 	}
 
 	private boolean isVisibleFor(DocumentEntity document, UserEntity currentUser) {
-		return isVisibleFor(document.getInstitution().getId(), document.getStatus() == DocumentStatus.PUBLIE
-				&& document.getVisibility() == DocumentVisibility.PUBLIC, currentUser);
+		return isVisibleFor(document.getInstitution().getId(), document.getStatus(), document.getVisibility(), currentUser);
 	}
 
 	private boolean isVisibleFor(DocumentSummary document, UserEntity currentUser) {
-		return isVisibleFor(document.institutionId(), document.isPublished(), currentUser);
+		return isVisibleFor(document.institutionId(), document.status(), document.visibility(), currentUser);
 	}
 
-	private boolean isVisibleFor(Long institutionId, boolean published, UserEntity currentUser) {
+	private boolean isVisibleFor(Long institutionId, DocumentStatus status, DocumentVisibility visibility, UserEntity currentUser) {
+		// Seul l'administrateur peut consulter l'archive de traçabilité. Les
+		// bibliothécaires ne peuvent plus télécharger le fichier ou l'image supprimés.
+		if (status == DocumentStatus.SUPPRIME) {
+			return currentUser != null && currentUser.getRole() == UserRole.ADMIN;
+		}
 		if (currentUser != null && currentUser.getRole() == UserRole.ADMIN) {
 			return true;
 		}
 		if (currentUser != null && institutionId.equals(currentUser.getInstitution().getId())) {
 			return true;
 		}
-		return published;
+		return status == DocumentStatus.PUBLIE && visibility == DocumentVisibility.PUBLIC;
 	}
 
 	private boolean canManage(DocumentEntity document, UserEntity currentUser) {

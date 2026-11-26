@@ -97,6 +97,9 @@ public class DocumentController {
 				&& !document.getInstitution().getId().equals(currentUser.getInstitution().getId())) {
 			throw new ApiException(HttpStatus.FORBIDDEN, "Ce document appartient a une autre institution.");
 		}
+		if (document.getStatus() == DocumentStatus.SUPPRIME) {
+			throw new ApiException(HttpStatus.BAD_REQUEST, "Un document supprime ne peut pas etre traite.");
+		}
 		if (document.getFilePath() == null || document.getFilePath().isBlank()) {
 			throw new ApiException(HttpStatus.BAD_REQUEST, "Aucun fichier n'est disponible pour ce document.");
 		}

@@ -44,7 +44,9 @@ public class DocumentProcessingService {
 		if (document == null) {
 			return;
 		}
-		document.markImportProcessing();
+		if (documentRepository.markProcessingIfNotDeleted(documentId) == 0) {
+			return;
+		}
 		try {
 			// Apres un redeploiement, seul le fichier conserve en base existe encore.
 			documentFileService.restoreOnDisk(documentId, filePath);
@@ -53,15 +55,15 @@ public class DocumentProcessingService {
 			if (coverPath == null) {
 				coverPath = documentUploadService.storePdfThumbnail(Path.of(filePath));
 			}
-			document.completeImportProcessing(extractedText, coverPath);
-			documentCoverService.persistFromPath(document.getId(), coverPath);
+			if (documentRepository.completeProcessingIfNotDeleted(documentId, extractedText, coverPath) > 0) {
+				documentCoverService.persistFromPath(documentId, coverPath);
+			}
 		}
 		catch (ApiException exception) {
-			document.markFileUnreadable();
+			documentRepository.markFileUnreadableIfNotDeleted(documentId);
 		}
 		catch (RuntimeException exception) {
-			document.markFileUnreadable();
+			documentRepository.markFileUnreadableIfNotDeleted(documentId);
 		}
-		documentRepository.save(document);
 	}
 }

@@ -21,6 +21,7 @@ import java.util.List;
 import java.nio.charset.StandardCharsets;
 
 import be.icc.metamind.document.AuthorRepository;
+import be.icc.metamind.document.AuditLogRepository;
 import be.icc.metamind.document.DocumentAuthorRepository;
 import be.icc.metamind.document.DocumentEntity;
 import be.icc.metamind.document.DocumentKeywordRepository;
@@ -69,6 +70,9 @@ class ApiControllerTests {
 
 	@Autowired
 	private DocumentRepository documentRepository;
+
+	@Autowired
+	private AuditLogRepository auditLogRepository;
 
 	@Autowired
 	private MetadataRepository metadataRepository;
@@ -1345,6 +1349,28 @@ class ApiControllerTests {
 
 		mockMvc.perform(get("/api/v1/publications/" + publication.getId()))
 				.andExpect(status().isForbidden());
+
+		// La conservation en base sert a l'audit, pas a maintenir l'acces de
+		// l'institution qui a supprime la publication.
+		mockMvc.perform(get("/api/v1/documents/" + publication.getId())
+				.header("Authorization", bearerToken()))
+				.andExpect(status().isForbidden());
+		mockMvc.perform(get("/api/v1/documents/" + publication.getId() + "/file")
+				.header("Authorization", bearerToken()))
+				.andExpect(status().isForbidden());
+		mockMvc.perform(get("/api/v1/documents/" + publication.getId() + "/image")
+				.header("Authorization", bearerToken()))
+				.andExpect(status().isForbidden());
+		mockMvc.perform(post("/api/v1/documents/" + publication.getId() + "/processing")
+				.header("Authorization", bearerToken()))
+				.andExpect(status().isBadRequest());
+
+		assertThat(documentRepository.findById(publication.getId()))
+				.hasValueSatisfying(document -> assertThat(document.getStatus()).isEqualTo(DocumentStatus.SUPPRIME));
+		assertThat(auditLogRepository.findByActionAndEntityTypeAndEntityIdOrderByCreatedAtDesc(
+				"SUPPRESSION_DOCUMENT", "documents", publication.getId()))
+				.singleElement()
+				.satisfies(log -> assertThat(log.getDetails()).contains("restent en base"));
 	}
 
 	@Test
